@@ -1,7 +1,7 @@
-import React from "react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { AuthProvider } from "@/lib/context/AuthContext";
+import { Suspense } from "react";
+import RootProvider from "@/components/providers/RootProvider";
 import "./globals.css";
 import "@/styles/layout.css";
 
@@ -15,15 +15,28 @@ export const metadata: Metadata = {
   description: "Sistema de gestión de votos y compromisos financieros para la IPUC",
 };
 
+function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="p-4 rounded-lg bg-gray-50 flex items-center gap-3">
+        <div className="w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin"></div>
+        <span className="text-sm text-gray-600">Cargando...</span>
+      </div>
+    </div>
+  );
+}
+
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="es" className={inter.variable}>
       <body className="font-sans antialiased">
-        <AuthProvider children={children} />
+        <Suspense fallback={<LoadingFallback />}>
+          <RootProvider>{children}</RootProvider>
+        </Suspense>
       </body>
     </html>
   );

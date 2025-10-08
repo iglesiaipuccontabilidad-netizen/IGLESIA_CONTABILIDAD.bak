@@ -28,7 +28,12 @@ export default function RegistroPage() {
             </div>
           }
         >
-          <form className="mt-8 space-y-6">
+          <form className="mt-8 space-y-6" action={async (formData: FormData) => {
+            const result = await signup(formData)
+            if (result.success) {
+              router.push(result.redirect)
+            }
+          }}>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label htmlFor="nombres" className="block text-sm font-medium text-gray-700">
@@ -123,7 +128,7 @@ export default function RegistroPage() {
 
             <div className="flex gap-4">
               <button
-                formAction={signup}
+                type="submit"
                 className="flex-1 justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
               >
                 Registrarse

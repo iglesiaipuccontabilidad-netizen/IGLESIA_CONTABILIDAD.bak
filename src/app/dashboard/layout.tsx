@@ -1,24 +1,35 @@
-﻿'use client'
+﻿import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 
-import React from 'react'
-// import styles from './layout.module.css'
-import Sidebar from '../../components/Sidebar'
-import DashboardHeader from '../../components/DashboardHeader'
-
-interface DashboardLayoutProps {
-  children: React.ReactNode
+function Loading() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="p-4 rounded-lg bg-gray-50 flex items-center gap-3">
+        <div className="animate-spin h-5 w-5 text-blue-500 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        <span className="text-sm text-gray-600">Cargando...</span>
+      </div>
+    </div>
+  )
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+const DashboardLayoutClient = dynamic(
+  () => import('@/components/DashboardLayoutClient'),
+  {
+    loading: Loading,
+    ssr: true
+  }
+)
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
-    <div className="dashboardLayout">
-      <Sidebar />
-      <main className="mainContent">
-        <DashboardHeader />
-        <div className="contentWrapper">
-          {children}
-        </div>
-      </main>
-    </div>
+    <DashboardLayoutClient>
+      <Suspense fallback={<Loading />}>
+        {children}
+      </Suspense>
+    </DashboardLayoutClient>
   )
 }

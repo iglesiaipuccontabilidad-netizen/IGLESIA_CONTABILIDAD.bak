@@ -113,23 +113,18 @@ tablas:
 ### Gestión de Usuarios
 ```yaml
 usuarios:
-  roles:
-    admin:
-      - Gestión completa del sistema
-      - Aprobación de nuevos usuarios
-      - Acceso a todas las funcionalidades
-    usuario:
-      - Registro de pagos
-      - Visualización de votos propios
-    pendiente:
-      - Acceso limitado
-      - Espera aprobación de admin
+  acceso:
+    descripcion: "Sistema simplificado de acceso único"
+    caracteristicas:
+      - "Todos los usuarios tienen acceso completo al sistema"
+      - "No hay roles diferenciados"
+      - "Autenticación simple por email/password"
+      - "Acceso directo después del login exitoso"
 
   funcionalidades:
-    - Registro de nuevos usuarios
-    - Aprobación/Rechazo de usuarios
-    - Gestión de roles
-    - Activación/Desactivación de usuarios
+    - Registro de nuevos usuarios con email/password
+    - Inicio de sesión directo
+    - Acceso a todas las funcionalidades del sistema
 ```
 
 ### Gestión de Miembros
@@ -213,9 +208,11 @@ rutas:
 seguridad:
   autenticacion:
     proveedor: "Supabase Auth"
-    metodos:
-      - "Email/Password"
-      - "Magic Link"
+    metodo: "Email/Password"
+    notas:
+      - "Sistema simplificado usando solo autenticación por email/password"
+      - "No se requiere confirmación de email"
+      - "No se utilizan magic links u otros métodos de autenticación"
   
   row_level_security:
     usuarios:

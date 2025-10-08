@@ -76,7 +76,7 @@ export default function Sidebar() {
         }
       ]
     },
-    ...(member?.rol === "admin" ? [{
+    {
       title: "Administración",
       items: [
         {
@@ -89,7 +89,7 @@ export default function Sidebar() {
           )
         }
       ]
-    }] : [])
+    }
   ]
 
   return (

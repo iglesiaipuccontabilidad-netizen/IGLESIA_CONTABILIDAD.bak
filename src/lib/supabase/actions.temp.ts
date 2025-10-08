@@ -6,7 +6,7 @@ import { VotoConRelaciones, VotoBasico, InsertPago, VotoUpdate } from '@/types/s
 import { typedFromTable } from './typed-client'
 
 export async function createActionClient() {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

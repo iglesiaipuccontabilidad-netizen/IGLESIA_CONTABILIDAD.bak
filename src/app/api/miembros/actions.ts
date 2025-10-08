@@ -6,10 +6,10 @@ import { redirect } from 'next/navigation'
 
 export async function createMember(formData: FormData) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verificar sesión del usuario
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await (supabase as any).auth.getSession()
     
     if (sessionError) {
       throw new Error('Error al verificar la sesión')
@@ -30,7 +30,7 @@ export async function createMember(formData: FormData) {
     }
 
     // Verificar si ya existe un miembro con esa cédula
-    const { data: existingMember, error: checkError } = await supabase
+    const { data: existingMember, error: checkError } = await (supabase as any)
       .from('miembros')
       .select('id')
       .eq('cedula', cedula)
@@ -45,7 +45,7 @@ export async function createMember(formData: FormData) {
     }
 
     // Crear el miembro en la base de datos
-    const { error: memberError } = await supabase
+    const { error: memberError } = await (supabase as any)
       .from('miembros')
       .insert([{
         nombres,
@@ -53,7 +53,7 @@ export async function createMember(formData: FormData) {
         cedula,
         email,
         telefono
-      }] as const)
+      }])
 
     if (memberError) {
       console.error('Error al crear miembro:', memberError)

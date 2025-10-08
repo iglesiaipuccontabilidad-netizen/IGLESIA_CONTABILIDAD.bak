@@ -6,10 +6,10 @@ import layoutStyles from '@/styles/layout.module.css'
 import Link from 'next/link'
 
 export default async function MiembrosPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Obtener la lista de miembros con su conteo de votos activos
-  const { data: miembros, error } = await supabase
+  const { data: miembros, error } = await (supabase as any)
     .from('miembros')
     .select(`
       *,
@@ -47,6 +47,7 @@ export default async function MiembrosPage() {
             {...member}
             email={member.email ?? ''}
             telefono={member.telefono ?? ''}
+            cedula={member.cedula ?? ''}
           />
         ))}
       </div>

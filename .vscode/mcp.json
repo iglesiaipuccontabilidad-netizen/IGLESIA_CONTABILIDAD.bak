@@ -1,6 +1,6 @@
 {
 	"servers": {
-		"supabase": {
+		"mcpsupabase": {
 			"type": "stdio",
 			"command": "npx",
 			"args": [

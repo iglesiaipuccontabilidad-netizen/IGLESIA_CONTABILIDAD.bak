@@ -1,75 +1,25 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
-export interface Database {
+export type Database = {
   public: {
     Tables: {
-      miembros: {
-        Row: {
-          id: string
-          nombres: string
-          apellidos: string
-          cedula: string
-          fecha_nacimiento: string | null
-          genero: 'M' | 'F' | null
-          telefono: string | null
-          email: string | null
-          direccion: string | null
-          fecha_ingreso: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          nombres: string
-          apellidos: string
-          cedula: string
-          fecha_nacimiento?: string | null
-          genero?: 'M' | 'F' | null
-          telefono?: string | null
-          email?: string | null
-          direccion?: string | null
-          fecha_ingreso?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      },
       usuarios: {
         Row: {
           id: string
-          email: string | null
-          rol: 'admin' | 'usuario' | 'pendiente'
-          estado: 'activo' | 'inactivo'
+          email: string
           created_at: string
           updated_at: string
+          rol: 'admin' | 'usuario' | 'pendiente'
+          estado: 'activo' | 'inactivo' | 'pendiente'
         }
         Insert: {
           id?: string
-          email?: string | null
+          email: string
           rol?: 'admin' | 'usuario' | 'pendiente'
-          estado?: 'activo' | 'inactivo'
-          created_at?: string
-          updated_at?: string
+          estado?: 'activo' | 'inactivo' | 'pendiente'
         }
         Update: {
-          id?: string
-          nombres?: string
-          apellidos?: string
-          cedula?: string
-          fecha_nacimiento?: string | null
-          genero?: 'M' | 'F' | null
-          telefono?: string | null
-          email?: string | null
-          direccion?: string | null
+          email?: string
           rol?: 'admin' | 'usuario' | 'pendiente'
-          estado?: 'activo' | 'inactivo'
-          created_at?: string
-          updated_at?: string
+          estado?: 'activo' | 'inactivo' | 'pendiente'
         }
       }
       votos: {
@@ -94,23 +44,50 @@ export interface Database {
           recaudado?: number
           fecha_limite: string
           estado?: 'activo' | 'completado' | 'cancelado'
-          created_at?: string
-          updated_at?: string
-          creado_por?: string
+          creado_por: string
           ultima_actualizacion_por?: string
         }
         Update: {
-          id?: string
           miembro_id?: string
           proposito?: string
           monto_total?: number
           recaudado?: number
           fecha_limite?: string
           estado?: 'activo' | 'completado' | 'cancelado'
-          created_at?: string
-          updated_at?: string
-          creado_por?: string
           ultima_actualizacion_por?: string
+        }
+      }
+      miembros: {
+        Row: {
+          id: string
+          nombres: string
+          apellidos: string
+          cedula: string
+          telefono: string | null
+          email: string | null
+          direccion: string | null
+          created_at: string
+          updated_at: string
+          fecha_ingreso: string
+        }
+        Insert: {
+          id?: string
+          nombres: string
+          apellidos: string
+          cedula: string
+          telefono?: string | null
+          email?: string | null
+          direccion?: string | null
+          fecha_ingreso: string
+        }
+        Update: {
+          nombres?: string
+          apellidos?: string
+          cedula?: string
+          telefono?: string | null
+          email?: string | null
+          direccion?: string | null
+          fecha_ingreso?: string
         }
       }
       pagos: {
@@ -127,19 +104,16 @@ export interface Database {
           id?: string
           voto_id: string
           monto: number
-          fecha_pago?: string
+          fecha_pago: string
           nota?: string | null
           registrado_por: string
-          created_at?: string
         }
         Update: {
-          id?: string
           voto_id?: string
           monto?: number
           fecha_pago?: string
           nota?: string | null
           registrado_por?: string
-          created_at?: string
         }
       }
     }

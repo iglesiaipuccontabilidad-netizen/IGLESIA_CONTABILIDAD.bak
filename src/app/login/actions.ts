@@ -1,320 +1,107 @@
 'use server'
 
-import { createActionClient } from '@/lib/supabase/actions'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { AUTH_ERRORS, parseAuthError } from '@/lib/auth/errors'
-import { Database } from '@/lib/database.types'
-
-export async function login(formData: FormData) {
-  try {
-    const email = formData.get('email')?.toString()?.trim()
-    const password = formData.get('password')?.toString()
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      throw new Error(AUTH_ERRORS.InvalidEmail)
-    }
-
-    if (!password || password.length < 6) {
-      throw new Error(AUTH_ERRORS.WeakPassword)
-    }
-
-    const supabase = await createActionClient()
-
-    console.log('Iniciando login con:', { email })
-
-    // Primero intentamos enviar un enlace mágico para confirmar el email si es necesario
-    const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false // No crear usuario si no existe
-      }
-    })
-
-    // Si no hay error con el magic link, significa que el usuario existe
-    // Si hay error, intentamos el login normal de todos modos
-    if (magicLinkError && !magicLinkError.message.includes('Email not confirmed')) {
-      console.log('Usuario no encontrado o error:', magicLinkError)
-    } else {
-      console.log('Se envió un enlace de confirmación si era necesario')
-    }
-    
-    const result = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    
-    console.log('Resultado de autenticación:', result)
-
-    if (result.error) {
-      console.error('Error de autenticación:', result.error)
-      throw new Error(parseAuthError(result.error))
-    }
-
-    const user = result.data.user
-    if (!user) {
-      throw new Error(AUTH_ERRORS.UserNotFound)
-    }
-
-    // Verificar el estado del usuario en la tabla usuarios
-    type UserStatus = {
-      estado: 'activo' | 'inactivo'
-      rol: 'admin' | 'usuario' | 'pendiente'
-    }
-
-    const { data: usuario, error: usuarioError } = await supabase
-      .from('usuarios')
-      .select('estado, rol')
-      .eq('id', user.id)
-      .single() as { data: UserStatus | null, error: any }
-
-    if (usuarioError) {
-      console.error('Error al verificar estado del usuario:', usuarioError)
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DatabaseError)
-    }
-
-    if (!usuario) {
-      console.error('No se encontró el perfil del usuario')
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.ProfileNotFound)
-    }
-
-    if (usuario.estado === 'inactivo') {
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.AccountInactive)
-    }
-
-    if (usuario.rol === 'pendiente') {
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.PendingApproval)
-    }
-
-    // Todo está bien, redirigir al dashboard
-    revalidatePath('/')
-    return redirect('/dashboard')
-      } catch (error) {
-        if (error instanceof Error) {
-          throw error
-        }
-        throw new Error(AUTH_ERRORS.NetworkError)
-      }
-    }
-
-export async function signup(formData: FormData) {
-  const supabase = await createActionClient()
-  let user = null
-
-  try {
-    const nombres = formData.get('nombres')?.toString()?.trim()
-    const apellidos = formData.get('apellidos')?.toString()?.trim()
-    const cedula = formData.get('cedula')?.toString()?.trim()
-    const email = formData.get('email')?.toString()?.trim()
-    const password = formData.get('password')?.toString()
-    const telefono = formData.get('telefono')?.toString()?.trim()
-
-    if (!nombres || !apellidos || !cedula || !email || !password || !telefono) {
-      throw new Error(AUTH_ERRORS.InvalidData)
-    }
-
-    // Para desarrollo, usamos admin.createUser para evitar confirmación de email
-    const { data: { user: createdUser }, error: signUpError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        nombres,
-        apellidos,
-        cedula,
-        telefono
-      }
-    })
-
-    if (signUpError) {
-      console.error('Error de registro:', signUpError)
-      throw new Error(parseAuthError(signUpError))
-    }
-
-    if (!createdUser) {
-      throw new Error(AUTH_ERRORS.SignupError)
-    }
-
-    user = createdUser
-
-    // Verificar si el miembro ya existe
-    const { data: existingMembers, error: checkError } = await supabase
-      .from('miembros')
-      .select('id')
-      .eq('id', user.id)
-      
-    if (checkError) {
-      console.error('Error al verificar miembro existente:', checkError)
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DatabaseError)
-    }
-
-    if (existingMembers && existingMembers.length > 0) {
-      console.log('El miembro ya existe:', existingMembers[0])
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DuplicateEmail)
-    }
-
-    // Verificar si ya existe un miembro con ese correo
-    const { data: emailCheck, error: emailCheckError } = await supabase
-      .from('miembros')
-      .select('id')
-      .eq('email', email)
-
-    if (emailCheckError) {
-      console.error('Error al verificar correo existente:', emailCheckError)
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DatabaseError)
-    }
-
-    if (emailCheck && emailCheck.length > 0) {
-      console.log('El correo ya está registrado')
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DuplicateEmail)
-    }
-
-    // Verificar si ya existe un miembro con esa cédula
-    const { data: cedulaCheck, error: cedulaCheckError } = await supabase
-      .from('miembros')
-      .select('id')
-      .eq('cedula', cedula)
-
-    if (cedulaCheckError) {
-      console.error('Error al verificar cédula existente:', cedulaCheckError)
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DatabaseError)
-    }
-
-    if (cedulaCheck && cedulaCheck.length > 0) {
-      console.log('La cédula ya está registrada')
-      await supabase.auth.signOut()
-      throw new Error(AUTH_ERRORS.DuplicateEmail)
-    }
-
-    // Insertar en tabla miembros usando función de base de datos
-    const { data: miembroData, error: miembroError } = await (supabase as any)
-      .rpc('registrar_miembro', {
-        p_id: user.id,
-        p_nombres: nombres,
-        p_apellidos: apellidos,
-        p_cedula: cedula,
-        p_email: email,
-        p_telefono: telefono,
-        p_rol: email.includes('admin') ? 'admin' : 'pendiente',
-        p_estado: 'activo'
-      })
-
-    if (miembroError) {
-      console.error('Error al crear miembro:', miembroError)
-      await supabase.auth.signOut()
-      // Si el error es de llave duplicada, significa que el perfil ya existe
-      if (miembroError.message.includes('duplicate key')) {
-        throw new Error(AUTH_ERRORS.DuplicateEmail)
-      }
-      throw new Error(AUTH_ERRORS.ProfileCreationError)
-    }
-    
-    console.log('Miembro creado exitosamente:', miembroData)
-
-    return redirect('/login?mensaje=Cuenta creada exitosamente. Ya puedes iniciar sesión.')
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
-    }
-    throw new Error(AUTH_ERRORS.NetworkError)
-  }
-}
+import { cookies } from 'next/headers'
 
 export async function logout() {
-  const supabase = await createActionClient()
-  await supabase.auth.signOut()
-  revalidatePath('/')
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signOut()
+  
+  if (error) {
+    console.error('Error al cerrar sesión:', error.message)
+  }
+  
+  revalidatePath('/', 'layout')
   redirect('/login')
 }
 
-export async function aprobarUsuario(userId: string) {
+export async function login(formData: FormData) {
   try {
-    const supabase = await createActionClient()
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
-    // Verificar si el usuario actual es admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error(AUTH_ERRORS.UserNotFound)
-
-    const { data: adminCheck, error: adminError } = await (supabase as any)
-      .from('usuarios')
-      .select('rol')
-      .eq('id', user.id)
-      .single()
-
-    if (adminError) {
-      throw new Error(AUTH_ERRORS.DatabaseError)
+    if (!email || !password) {
+      return { error: 'Por favor ingresa tu correo y contraseña' }
     }
 
-    if (!adminCheck || adminCheck.rol !== 'admin') {
-      throw new Error(AUTH_ERRORS.AdminRequired)
+    const supabase = await createClient()
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      console.error('Error de login:', error.message)
+      return { 
+        error: error.message === 'Invalid login credentials' 
+          ? 'Credenciales inválidas'
+          : 'Ha ocurrido un error al iniciar sesión'
+      }
     }
 
-    // Actualizar el rol del usuario
-    const { error: updateError } = await (supabase as any)
-      .from('usuarios')
-      .update({ rol: 'usuario', estado: 'activo' })
-      .eq('id', userId)
-
-    if (updateError) {
-      throw new Error(AUTH_ERRORS.DatabaseError)
+    if (!data.user) {
+      return { error: 'Usuario no encontrado' }
     }
 
-    revalidatePath('/dashboard/admin/usuarios')
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
-    }
-    throw new Error(AUTH_ERRORS.NetworkError)
+    revalidatePath('/', 'layout')
+    return { success: true, redirect: '/dashboard' }
+  } catch (error: any) {
+    console.error('Error en login:', error)
+    return { error: error.message || 'Ha ocurrido un error al iniciar sesión' }
   }
 }
 
-export async function rechazarUsuario(userId: string) {
+export async function signup(formData: FormData) {
   try {
-    const supabase = await createActionClient()
+    const supabase = await createClient()
 
-    // Verificar si el usuario actual es admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error(AUTH_ERRORS.UserNotFound)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+    const nombre = formData.get('nombre') as string
+    const apellido = formData.get('apellido') as string
 
-    const { data: adminCheck, error: adminError } = await (supabase as any)
-      .from('usuarios')
-      .select('rol')
-      .eq('id', user.id)
-      .single()
-
-    if (adminError) {
-      throw new Error(AUTH_ERRORS.DatabaseError)
+    if (!email || !password || !confirmPassword || !nombre || !apellido) {
+      return { error: 'Por favor completa todos los campos' }
     }
 
-    if (!adminCheck || adminCheck.rol !== 'admin') {
-      throw new Error(AUTH_ERRORS.AdminRequired)
+    if (password !== confirmPassword) {
+      return { error: 'Las contraseñas no coinciden' }
     }
 
-    // Actualizar el estado del usuario
-    const { error: updateError } = await (supabase as any)
-      .from('usuarios')
-      .update({ estado: 'inactivo' })
-      .eq('id', userId)
+    const { error: signUpError, data } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nombre,
+          apellido,
+        },
+      },
+    })
 
-    if (updateError) {
-      throw new Error(AUTH_ERRORS.DatabaseError)
+    if (signUpError) {
+      console.error('Error en registro:', signUpError)
+      return { 
+        error: signUpError.message === 'User already registered'
+          ? 'El usuario ya está registrado'
+          : 'Ha ocurrido un error durante el registro'
+      }
     }
 
-    revalidatePath('/dashboard/admin/usuarios')
+    // Si el registro fue exitoso, retornamos éxito
+    return { 
+      success: true, 
+      redirect: '/login?mensaje=Registro exitoso. Por favor inicia sesión.' 
+    }
+
   } catch (error) {
-    if (error instanceof Error) {
-      throw error
+    console.error('Error en signup:', error)
+    return { 
+      error: error instanceof Error ? error.message : 'Error al registrar usuario' 
     }
-    throw new Error(AUTH_ERRORS.NetworkError)
   }
 }
-  

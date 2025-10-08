@@ -8,7 +8,7 @@ import type { Database } from '@/lib/database.types'
 type AuthContextType = {
   user: User | null
   isLoading: boolean
-  member: Database['public']['Tables']['usuarios']['Row'] | null
+  member: { id: string; email: string; } | null
 }
 
 const AuthContext = createContext<AuthContextType>({

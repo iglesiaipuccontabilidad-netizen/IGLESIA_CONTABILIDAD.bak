@@ -6,3 +6,19 @@ export function formatCurrency(amount: number): string {
     maximumFractionDigits: 0
   }).format(amount)
 }
+
+export function formatDate(date: string | Date): string {
+  return new Date(date).toLocaleDateString('es-CO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+export function getProgressStatus(percentage: number): string {
+  if (percentage >= 100) return 'completado'
+  if (percentage >= 75) return 'buen-progreso'
+  if (percentage >= 50) return 'progreso-medio'
+  if (percentage >= 25) return 'progreso-bajo'
+  return 'iniciando'
+}

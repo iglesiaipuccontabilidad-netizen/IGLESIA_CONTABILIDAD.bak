@@ -4,7 +4,7 @@ import { typedFromTable } from '@/lib/supabase/typed-client'
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     const { email, password, rol } = await request.json()
 
     // Validar datos
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Crear el usuario en auth
-    const { data: authUser, error: authError } = await supabase.auth.signUp({
+    const { data: authUser, error: authError } = await (supabase as any).auth.signUp({
       email,
       password,
     })
@@ -52,8 +52,8 @@ export async function POST(request: Request) {
     }
 
     // Crear el registro en la tabla miembros
-    const { error: dbError } = await (supabase
-      .from('usuarios') as unknown as any)
+    const { error: dbError } = await (supabase as any)
+      .from('usuarios')
       .insert({
         id: authUser.user.id,
         email: email,
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
     if (dbError) {
       // Si falla la inserción en la tabla miembros, eliminar el usuario de auth
-      await supabase.auth.admin.deleteUser(authUser.user.id)
+      await (supabase as any).auth.admin.deleteUser(authUser.user.id)
       return NextResponse.json(
         { error: 'Error al crear el perfil del usuario: ' + dbError.message },
         { status: 500 }

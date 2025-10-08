@@ -1,0 +1,170 @@
+import { Suspense } from 'react'
+import { createClient } from '@/lib/supabase/server'
+import DashboardCards from '@/components/dashboard/DashboardCards'
+import VotosActivosTable from '@/components/dashboard/VotosActivosTable'
+import styles from '@/styles/dashboard.module.css'
+import { Database } from '@/lib/database.types'
+import { Voto } from '@/types/dashboard'
+
+// Tipos base de Supabase
+type TablaVotos = Database['public']['Tables']['votos']['Row']
+type TablaMiembros = Database['public']['Tables']['miembros']['Row']
+
+// Interfaces para los datos del dashboard
+interface DashboardStats {
+  total_comprometido: number
+  total_recaudado: number
+  total_pendiente: number
+  votos_activos: number
+}
+
+async function getDashboardStats() {
+  const supabase = await createClient()
+  
+  // Obtener los totales de todos los votos
+  const { data: votosData, error: votosError } = await supabase
+    .from('votos')
+    .select('monto_total, recaudado')
+    .eq('estado', 'activo')
+    .returns<Array<{ monto_total: number; recaudado: number }>>()
+
+  if (votosError) {
+    console.error('Error al obtener votos:', votosError)
+    throw new Error('No se pudieron obtener las estadísticas del dashboard')
+  }
+
+  // Calcular las estadísticas
+  const stats: DashboardStats = {
+    total_comprometido: votosData.reduce((sum, voto) => sum + (voto.monto_total || 0), 0),
+    total_recaudado: votosData.reduce((sum, voto) => sum + (voto.recaudado || 0), 0),
+    total_pendiente: 0, // Se calcula abajo
+    votos_activos: votosData.length
+  }
+
+  // Calcular el total pendiente
+  stats.total_pendiente = stats.total_comprometido - stats.total_recaudado
+
+  return stats
+}
+
+interface VotoRaw {
+  id: string
+  proposito: string
+  monto_total: number
+  recaudado: number | null
+  fecha_limite: string
+  estado: 'activo' | 'completado' | 'cancelado'
+  miembro: {
+    id: string
+    nombres: string
+    apellidos: string
+    cedula: string
+  }
+}
+
+async function getVotosActivos() {
+  try {
+    const supabase = await createClient()
+    
+    // Primero verificar la sesión
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      console.error('No hay sesión activa')
+      return []
+    }
+
+    const { data, error } = await supabase
+      .from('votos')
+      .select(`
+        id,
+        proposito,
+        monto_total,
+        recaudado,
+        fecha_limite,
+        estado,
+        miembro:miembros (
+          id,
+          nombres,
+          apellidos,
+          cedula
+        )
+      `)
+      .eq('estado', 'activo')
+      .order('fecha_limite', { ascending: true })
+      .returns<VotoRaw[]>()
+
+    if (error) {
+      console.error('Error detallado:', error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error('Error al obtener votos activos:', error)
+    return []
+  } catch (error) {
+    console.error('Error al obtener votos activos:', error)
+    return []
+  }
+
+type DeudorConVotos = TablaMiembros & {
+  votos: Array<Pick<TablaVotos, 'monto_total' | 'recaudado' | 'fecha_limite' | 'estado'>>
+}
+
+type DeudorProcesado = DeudorConVotos & {
+  deudaTotal: number
+}
+
+
+
+export default async function DashboardPage() {
+  try {
+    const [stats, votosRaw] = await Promise.all([
+      getDashboardStats().catch(() => ({
+        total_comprometido: 0,
+        total_recaudado: 0,
+        total_pendiente: 0,
+        votos_activos: 0
+      })),
+      getVotosActivos().catch(() => [])
+    ])
+
+    // Transformar los datos para los componentes
+    const votosFormateados: Voto[] = votosRaw.map((voto: VotoRaw) => ({
+      id: voto.id,
+      proposito: voto.proposito,
+      monto: voto.monto_total,
+      recaudado: voto.recaudado ?? 0,
+      fecha_limite: voto.fecha_limite,
+      miembro: {
+        nombres: voto.miembro.nombres,
+        apellidos: voto.miembro.apellidos
+      }
+    }))
+
+    return (
+      <div className={styles.mainContainer}>
+        <Suspense fallback={<div>Cargando estadísticas...</div>}>
+          <DashboardCards
+            totalComprometido={stats.total_comprometido}
+            totalRecaudado={stats.total_recaudado}
+            totalPendiente={stats.total_pendiente}
+            votosActivos={stats.votos_activos}
+          />
+        </Suspense>
+        
+        <div className={styles.dashboardContent}>
+          <Suspense fallback={<div>Cargando votos activos...</div>}>
+            <VotosActivosTable votos={votosFormateados} />
+          </Suspense>
+        </div>
+      </div>
+    )
+  } catch (error) {
+    console.error('Error en DashboardPage:', error)
+    return <div>Error al cargar el dashboard</div>
+  }
+}

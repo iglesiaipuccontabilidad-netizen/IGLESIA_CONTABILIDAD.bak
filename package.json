@@ -6,34 +6,49 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "clean": "rm -rf .next out",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "prepare": "husky install"
   },
   "dependencies": {
-    "@headlessui/react": "^2.2.9",
-    "@heroicons/react": "^2.2.0",
+    "@headlessui/react": "^2.0.0",
+    "@heroicons/react": "^2.1.1",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/mcp-server-supabase": "^0.5.5",
     "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.57.4",
-    "@tabler/icons-react": "^3.35.0",
-    "@types/uuid": "^10.0.0",
-    "next": "14.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.74.0",
+    "@tabler/icons-react": "2.32.0",
+    "encoding": "^0.1.13",
+    "next": "^15.0.3",
+    "next-pwa": "^5.6.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "react-error-boundary": "^4.0.12",
-    "uuid": "^13.0.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@types/next": "^8.0.7",
-    "@types/node": "^20.11.0",
-    "@types/react": "^18.3.24",
-    "@types/react-dom": "^18.3.7",
-    "autoprefixer": "^10.4.14",
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "autoprefixer": "10.4.17",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.1.0",
-    "postcss": "^8.4.31",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "postcss": "8.4.33",
     "postcss-import": "^16.1.1",
-    "tailwindcss": "^3.3.0",
-    "typescript": "^5.3.3"
+    "prettier": "^3.2.4",
+    "tailwindcss": "3.4.1",
+    "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }

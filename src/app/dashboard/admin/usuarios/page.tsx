@@ -1,14 +1,18 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase-browser'
 import { useAuth } from '@/lib/context/AuthContext'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { aprobarUsuario, rechazarUsuario } from '@/app/login/actions'
+import { aprobarUsuario, rechazarUsuario } from '@/app/actions/usuarios'
 import { Database } from '@/lib/database.types'
 import { ErrorBoundary } from 'react-error-boundary'
 import { useRouter } from 'next/navigation'
 import { IconUserCircle, IconRefresh, IconUserCheck, IconUserX } from "@tabler/icons-react"
+
+// Helper para los iconos de Tabler
+const Icon = ({ icon: IconComponent, size = 24, className = '' }: { icon: React.ComponentType<{ size?: number; className?: string }>; size?: number; className?: string }) => {
+  return <IconComponent size={size} className={className} />
+}
 import styles from '@/styles/components/AdminUsuarios.module.css'
 import CrearUsuarioForm from '@/components/admin/CrearUsuarioForm'
 
@@ -19,7 +23,6 @@ export default function Page() {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { user } = useAuth()
-  const supabase = createClient()
   const router = useRouter()
 
   // Obtener el rol del usuario actual
@@ -100,10 +103,10 @@ export default function Page() {
   }
 
   const getEstadoIcon = (rol: string, estado: string) => {
-    if (estado === 'inactivo') return <IconUserX className="w-4 h-4" />
-    if (rol === 'pendiente') return <IconUserCircle className="w-4 h-4" />
-    if (rol === 'admin') return <IconUserCheck className="w-4 h-4 text-purple-500" />
-    return <IconUserCheck className="w-4 h-4 text-green-500" />
+    if (estado === 'inactivo') return <IconUserX width={16} height={16} />
+    if (rol === 'pendiente') return <IconUserCircle width={16} height={16} />
+    if (rol === 'admin') return <IconUserCheck width={16} height={16} stroke={1.5} className="text-purple-500" />
+    return <IconUserCheck width={16} height={16} stroke={1.5} className="text-green-500" />
   }
 
   const handleUserCreated = () => {
@@ -139,22 +142,25 @@ export default function Page() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>
-          <IconUserCircle className="w-8 h-8" />
+          <IconUserCircle size={32} />
           Gestión de Usuarios
         </h1>
       </div>
 
       <div className={styles.content}>
         <div className={styles.formSection}>
-          <CrearUsuarioForm onSuccess={handleUserCreated} />
+          <Suspense fallback={<div>Cargando formulario...</div>}>
+            <CrearUsuarioForm onSuccess={handleUserCreated} />
+          </Suspense>
         </div>
 
         <div className={styles.listSection}>
-          <ErrorBoundary
+          <Suspense fallback={<div>Cargando lista de usuarios...</div>}>
+            <ErrorBoundary
         fallback={
           <div className="rounded-lg bg-red-50 p-4 border border-red-200 animate-pulse">
             <div className="text-sm text-red-700 flex items-center gap-2">
-              <IconRefresh className="w-5 h-5 animate-spin" />
+              <IconRefresh size={20} className="animate-spin" />
               Ha ocurrido un error al cargar los usuarios
             </div>
           </div>
@@ -245,27 +251,54 @@ export default function Page() {
                     {usuario.rol === 'pendiente' && (
                       <div className="flex justify-end gap-2">
                         <button 
-                          onClick={() => aprobarUsuario(usuario.id)}
+                          onClick={async () => {
+                            try {
+                              const result = await aprobarUsuario(usuario.id)
+                              if (result.success) {
+                                await cargarUsuarios()
+                              }
+                            } catch (error) {
+                              console.error('Error al aprobar usuario:', error)
+                            }
+                          }}
                           className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors duration-150"
                         >
-                          <IconUserCheck className="w-4 h-4 mr-1.5" />
+                          <IconUserCheck size={16} style={{ marginRight: '0.375rem' }} />
                           Aprobar
                         </button>
                         <button
-                          onClick={() => rechazarUsuario(usuario.id)}
+                          onClick={async () => {
+                            try {
+                              const result = await rechazarUsuario(usuario.id)
+                              if (result.success) {
+                                await cargarUsuarios()
+                              }
+                            } catch (error) {
+                              console.error('Error al rechazar usuario:', error)
+                            }
+                          }}
                           className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors duration-150"
                         >
-                          <IconUserX className="w-4 h-4 mr-1.5" />
+                          <IconUserX size={16} style={{ marginRight: '0.375rem' }} />
                           Rechazar
                         </button>
                       </div>
                     )}
                     {usuario.estado === 'inactivo' && (
                       <button
-                        onClick={() => aprobarUsuario(usuario.id)}
+                        onClick={async () => {
+                          try {
+                            const result = await aprobarUsuario(usuario.id)
+                            if (result.success) {
+                              await cargarUsuarios()
+                            }
+                          } catch (error) {
+                            console.error('Error al reactivar usuario:', error)
+                          }
+                        }}
                         className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors duration-150"
                       >
-                        <IconRefresh className="w-4 h-4 mr-1.5" />
+                        <IconRefresh size={16} style={{ marginRight: '0.375rem' }} />
                         Reactivar
                       </button>
                     )}
@@ -277,6 +310,7 @@ export default function Page() {
           </div>
         </div>
       </ErrorBoundary>
+          </Suspense>
         </div>
       </div>
     </div>

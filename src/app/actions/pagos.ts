@@ -19,14 +19,17 @@ export async function registrarPago(data: PagoInput) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        async get(name: string) {
+          const cookieJar = await cookies()
+          return cookieJar.get(name)?.value
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
+        async set(name: string, value: string, options: any) {
+          const cookieJar = await cookies()
+          cookieJar.set(name, value, options)
         },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options })
+        async remove(name: string, options: any) {
+          const cookieJar = await cookies()
+          cookieJar.delete(name)
         },
       },
     }
