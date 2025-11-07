@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, LogOut } from 'lucide-react'
 import { DeleteConfirmation } from './DeleteConfirmation'
 import { eliminarMiembro } from '@/app/actions/miembros'
+import { logout } from '@/app/login/actions'
 import toast from 'react-hot-toast'
 
 interface Voto {
@@ -41,13 +42,26 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
     <div className="container mx-auto px-4 py-8">
       {/* Encabezado */}
       <div className="mb-8">
-        <Link 
-          href="/dashboard/miembros" 
-          className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver a la lista de miembros
-        </Link>
+        <div className="flex justify-between items-center mb-4">
+          <Link 
+            href="/dashboard/miembros" 
+            className="inline-flex items-center text-blue-600 hover:text-blue-700"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver a la lista de miembros
+          </Link>
+
+          <form action={logout}>
+            <button
+              type="submit"
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700"
+              title="Cerrar Sesión"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar Sesión
+            </button>
+          </form>
+        </div>
         
         <div className="flex items-start justify-between">
           <div>

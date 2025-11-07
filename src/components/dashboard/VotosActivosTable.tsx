@@ -102,10 +102,10 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
               const daysRemaining = getDaysRemaining(voto.fecha_limite)
               
               return (
-                <tr key={voto.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={voto.id} className="hover:bg-primary-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-r from-primary-500 via-primary-600 to-cyan-500 flex items-center justify-center text-white font-semibold">
                         {voto.miembro.nombres.charAt(0)}{voto.miembro.apellidos.charAt(0)}
                       </div>
                       <div>
@@ -124,9 +124,9 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
                   <td className="px-6 py-4">
                     <div className="flex flex-col items-center space-y-1">
                       <span className="text-xs font-medium text-slate-600">{Math.round(progreso)}%</span>
-                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-500"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-500"
                           style={{ width: `${progreso}%` }}
                         ></div>
                       </div>
@@ -178,11 +178,11 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
           const daysRemaining = getDaysRemaining(voto.fecha_limite)
           
           return (
-            <div key={voto.id} className="p-6 hover:bg-slate-50 transition-colors">
+            <div key={voto.id} className="p-6 hover:bg-primary-50 transition-colors">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white font-semibold text-sm">
+                  <div className="flex-shrink-0 h-12 w-12 rounded-full bg-gradient-to-r from-primary-500 via-primary-600 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
                     {voto.miembro.nombres.charAt(0)}{voto.miembro.apellidos.charAt(0)}
                   </div>
                   <div>
@@ -193,11 +193,17 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
                   </div>
                 </div>
                 {daysRemaining >= 0 ? (
-                  <span className={`badge ${daysRemaining <= 7 ? 'badge-danger' : 'badge-primary'}`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    daysRemaining <= 7 
+                      ? 'bg-rose-50 text-rose-500'
+                      : 'bg-primary-50 text-primary-500'
+                  }`}>
                     {daysRemaining === 0 ? 'Hoy' : `${daysRemaining}d`}
                   </span>
                 ) : (
-                  <span className="badge badge-danger">Vencido</span>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-500">
+                    Vencido
+                  </span>
                 )}
               </div>
 
@@ -205,15 +211,9 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
               <p className="text-sm text-slate-700 mb-4">{voto.proposito}</p>
 
               {/* Montos */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Monto Total</p>
-                  <p className="text-sm font-semibold text-slate-900">{formatCurrency(voto.monto_total)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Recaudado</p>
-                  <p className="text-sm font-semibold text-green-600">{formatCurrency(voto.total_pagado)}</p>
-                </div>
+              <div className="mb-4">
+                <p className="text-xs text-slate-500 mb-1">Monto Total</p>
+                <p className="text-sm font-semibold text-slate-900">{formatCurrency(voto.monto_total)}</p>
               </div>
 
               {/* Progreso */}

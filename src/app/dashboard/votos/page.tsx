@@ -287,7 +287,6 @@ export default function VotosPage() {
                   <th scope="col" className="px-6 py-4 text-left">Miembro</th>
                   <th scope="col" className="px-6 py-4 text-left">Propósito</th>
                   <th scope="col" className="px-6 py-4 text-right">Monto total</th>
-                  <th scope="col" className="px-6 py-4 text-right">Recaudado</th>
                   <th scope="col" className="px-6 py-4 text-left">Progreso</th>
                   <th scope="col" className="px-6 py-4 text-center">Estado</th>
                   <th scope="col" className="px-6 py-4 text-center">Fecha límite</th>
@@ -322,9 +321,6 @@ export default function VotosPage() {
                         </td>
                         <td className="px-6 py-4 text-right font-semibold text-slate-900">
                           {formatearMonto(Number(voto.monto_total))}
-                        </td>
-                        <td className="px-6 py-4 text-right text-emerald-600 font-semibold">
-                          {formatearMonto(voto.total_pagado)}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
@@ -388,7 +384,7 @@ export default function VotosPage() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-6 py-16 text-center text-sm text-slate-500">
+                    <td colSpan={7} className="px-6 py-16 text-center text-sm text-slate-500">
                       No se encontraron votos que coincidan con los filtros aplicados.
                     </td>
                   </tr>
