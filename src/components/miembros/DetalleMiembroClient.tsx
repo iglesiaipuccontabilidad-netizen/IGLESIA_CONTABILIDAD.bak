@@ -140,12 +140,13 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
                 </Link>
               </div>
 
-              {miembro.votos && miembro.votos.length > 0 ? (
-                <div className="space-y-4">
-                  {miembro.votos.map((voto) => (
-                    <div 
+              <div className="space-y-4">
+                {miembro.votos && miembro.votos.length > 0 ? (
+                  miembro.votos.map((voto) => (
+                    <Link 
+                      href={`/dashboard/votos/${voto.id}`}
                       key={voto.id}
-                      className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      className="block p-4 border border-gray-200 rounded-lg hover:bg-primary-50 hover:border-primary-200 transition-colors"
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -159,7 +160,7 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
                         <span className={`
                           px-2 py-1 text-xs rounded-full
                           ${voto.estado === 'activo' 
-                            ? 'bg-green-100 text-green-800' 
+                            ? 'bg-emerald-100 text-emerald-800' 
                             : 'bg-gray-100 text-gray-800'
                           }
                         `}>
@@ -174,9 +175,9 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
                             {Math.round((voto.recaudado / voto.monto_total) * 100)}%
                           </span>
                         </div>
-                        <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+                        <div className="mt-1 w-full bg-slate-100 rounded-full h-2">
                           <div
-                            className="bg-blue-600 h-2 rounded-full"
+                            className="h-full rounded-full bg-gradient-to-r from-primary-500 to-cyan-500 transition-all"
                             style={{
                               width: `${(voto.recaudado / voto.monto_total) * 100}%`
                             }}
@@ -184,29 +185,25 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
                         </div>
                         <div className="flex justify-between mt-1 text-xs text-gray-500">
                           <span>
-                            Recaudado: {new Intl.NumberFormat('es-CO', {
-                              style: 'currency',
-                              currency: 'COP',
-                              minimumFractionDigits: 0
-                            }).format(voto.recaudado)}
-                          </span>
-                          <span>
                             Meta: {new Intl.NumberFormat('es-CO', {
                               style: 'currency',
                               currency: 'COP',
                               minimumFractionDigits: 0
                             }).format(voto.monto_total)}
                           </span>
+                          <span>
+                            Progreso: {Math.round((voto.recaudado / voto.monto_total) * 100)}%
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-sm">
-                  No hay votos activos para mostrar.
-                </p>
-              )}
+                    </Link>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No hay votos activos para mostrar.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
