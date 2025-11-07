@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { getVotosWithDetails } from '@/app/actions/votos-actions'
 import type { VotoDetalle } from '@/types/votos'
+import ActualizarEstadoVotoButton from '@/components/votos/ActualizarEstadoVotoButton'
 
 interface FiltrosVotos {
   busqueda: string
@@ -34,6 +35,26 @@ export default function VotosPage() {
     estado: ''
   })
   const [loading, setLoading] = useState(true)
+  const [actualizando, setActualizando] = useState(false)
+
+  const actualizarEstados = async () => {
+    try {
+      setActualizando(true)
+      const { actualizarTodosLosEstados } = await import('@/app/actions/actualizar-todos-estados')
+      const resultado = await actualizarTodosLosEstados()
+      
+      if (!resultado.success) {
+        console.error('Error al actualizar estados:', resultado.error)
+        return
+      }
+
+      await cargarVotos()
+    } catch (error) {
+      console.error('Error al actualizar estados:', error)
+    } finally {
+      setActualizando(false)
+    }
+  }
 
   const cargarVotos = useCallback(async () => {
     try {
@@ -170,6 +191,28 @@ export default function VotosPage() {
             <p className="max-w-2xl text-sm text-slate-600">
               Analiza el avance de los compromisos financieros de la congregación, controla su estado y registra nuevos pagos o votos desde un panel moderno y organizado.
             </p>
+            <button
+              onClick={actualizarEstados}
+              disabled={actualizando}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50"
+            >
+              {actualizando ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Actualizando estados...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Actualizar estados
+                </>
+              )}
+            </button>
           </div>
 
           <Link
@@ -192,37 +235,70 @@ export default function VotosPage() {
               title: 'Total comprometido',
               value: formatearMonto(estadisticas.totalComprometido),
               helper: 'Valor total de los votos registrados',
-              gradient: 'from-primary-500 to-primary-700'
+              bgColor: 'bg-primary-50',
+              iconColor: 'text-primary-600',
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )
             },
             {
               title: 'Total recaudado',
               value: formatearMonto(estadisticas.totalRecaudado),
               helper: `${estadisticas.porcentajeGlobal.toFixed(1)}% del total`,
-              gradient: 'from-primary-500 to-cyan-500'
+              bgColor: 'bg-white',
+              iconColor: 'text-cyan-600',
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              )
             },
             {
               title: 'Monto pendiente',
               value: formatearMonto(estadisticas.totalPendiente),
               helper: 'Por recaudar en votos activos',
-              gradient: 'from-amber-400 to-orange-500'
+              bgColor: 'bg-rose-50',
+              iconColor: 'text-rose-600',
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )
             },
             {
               title: 'Votos activos',
               value: estadisticas.votosActivos,
               helper: `de ${votos.length} votos totales`,
-              gradient: 'from-emerald-500 to-cyan-500'
+              bgColor: 'bg-emerald-50',
+              iconColor: 'text-emerald-600',
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )
             }
           ].map((card, index) => (
             <div
               key={card.title}
-              className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/90 p-6 shadow-soft backdrop-blur transition hover:-translate-y-1 hover:shadow-medium"
+              className={`group relative overflow-hidden rounded-lg ${card.bgColor} p-4 transition-all duration-300
+                shadow hover:shadow-md hover:-translate-y-0.5`}
               style={{ animationDelay: `${index * 40}ms` }}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-10 transition group-hover:opacity-20`} />
-              <div className="relative flex flex-col space-y-3">
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{card.title}</span>
-                <span className="text-3xl font-bold text-slate-900">{card.value}</span>
-                <span className="text-sm text-slate-500">{card.helper}</span>
+              <div className="relative flex flex-col space-y-1">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                    {card.title}
+                  </span>
+                  <div className={`${card.iconColor} rounded-full p-1`}>
+                    {card.icon}
+                  </div>
+                </div>
+                <span className="text-2xl font-bold text-slate-900">{card.value}</span>
+                <span className="text-xs text-slate-500">
+                  {card.helper}
+                </span>
               </div>
             </div>
           ))}
@@ -356,6 +432,21 @@ export default function VotosPage() {
                         <td className="px-6 py-4 text-center text-slate-600">
                           {new Date(voto.fecha_limite).toLocaleDateString('es-CO')}
                         </td>
+                        <td className="px-6 py-4 text-right space-x-2">
+                          <Link
+                            href={`/dashboard/votos/${voto.id}`}
+                            className="p-2 text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center"
+                          >
+                            Ver
+                          </Link>
+                          <ActualizarEstadoVotoButton votoId={voto.id} />
+                          <Link
+                            href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
+                            className="p-2 text-emerald-600 hover:text-emerald-800 transition-colors inline-flex items-center"
+                          >
+                            Pago
+                          </Link>
+                        </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link
@@ -377,6 +468,20 @@ export default function VotosPage() {
                               </svg>
                               Pago
                             </Link>
+                            <button
+                              onClick={async () => {
+                                const { actualizarEstadoVoto } = await import('@/app/actions/actualizar-estado-voto')
+                                await actualizarEstadoVoto(voto.id)
+                                await cargarVotos() // Recargar los votos
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
+                              title="Actualizar estado"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                              </svg>
+                              Actualizar
+                            </button>
                           </div>
                         </td>
                       </tr>

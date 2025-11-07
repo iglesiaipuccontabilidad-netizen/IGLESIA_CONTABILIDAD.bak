@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
+import { actualizarEstadoVoto } from './actualizar-estado-voto'
 
 export interface PagoInput {
   id: string
@@ -67,10 +68,12 @@ export async function registrarPago(data: PagoInput) {
       throw new Error('Error al registrar el pago')
     }
 
+    const nuevoMontoRecaudado = Number(voto.data.recaudado) + data.monto
+    
     const actualizacion = await supabase
       .from('votos')
       .update({
-        recaudado: Number(voto.data.recaudado) + data.monto,
+        recaudado: nuevoMontoRecaudado,
         updated_at: new Date().toISOString(),
         ultima_actualizacion_por: user.id
       })
@@ -80,6 +83,9 @@ export async function registrarPago(data: PagoInput) {
       // TODO: Implementar rollback del pago si falla la actualización
       throw new Error('Error al actualizar el voto')
     }
+
+    // Actualizar el estado del voto después de registrar el pago
+    await actualizarEstadoVoto(data.id)
 
     revalidatePath(`/dashboard/votos/${data.id}`)
     revalidatePath(`/dashboard/pagos/nuevo?voto=${data.id}`)

@@ -4,26 +4,28 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import styles from '../styles/navigation.module.css'
 
+import { DashboardIcon, MembersIcon, VotosIcon, PagosIcon } from './icons'
+
 const navigationItems = [
   { 
     href: '/dashboard',
     label: 'Dashboard',
-    icon: '/window.svg'
+    Icon: DashboardIcon
   },
   { 
     href: '/miembros',
     label: 'Miembros',
-    icon: '/file.svg'
+    Icon: MembersIcon
   },
   { 
     href: '/votos',
     label: 'Votos',
-    icon: '/globe.svg'
+    Icon: VotosIcon
   },
   { 
     href: '/pagos',
     label: 'Pagos',
-    icon: '/next.svg'
+    Icon: PagosIcon
   }
 ]
 
@@ -46,7 +48,7 @@ const Navigation = () => {
           className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
         >
           <span className={styles.icon}>
-            <img src={item.icon} alt="" width={24} height={24} />
+            <item.Icon className="w-6 h-6" />
           </span>
           <span>{item.label}</span>
         </Link>

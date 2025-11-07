@@ -2,6 +2,7 @@
 
 import { Menu } from 'lucide-react'
 import styles from './DashboardHeader.module.css'
+import { useEffect, useState } from 'react'
 
 interface DashboardHeaderProps {
   onMobileMenuClick: () => void
@@ -18,7 +19,16 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuClick }) 
         <Menu className={styles.menuIcon} />
       </button>
       <div className={styles.headerContent}>
-        {/* Aquí puedes agregar más elementos del header */}
+        <div className={styles.logoSection}>
+          <img
+            src="/LogoIpuc.png"
+            alt="Logo IPUC"
+            className={styles.ipucLogo}
+          />
+          <div className={styles.headerTitle}>
+            Sistema de Votos IPUC
+          </div>
+        </div>
       </div>
     </header>
   )

@@ -12,14 +12,8 @@ export function Header({ userName, userRole, currentPage }: HeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles['header-content']}>
-        <div className={styles['logo-section']}>
-          <div className={styles.logo}>IPUC</div>
-          <div>
-            <h1 className={styles['header-title']}>Sistema de Votos IPUC</h1>
-            <div className={styles.breadcrumb}>
-              <Link href="/dashboard">Inicio</Link> / {currentPage}
-            </div>
-          </div>
+        <div className={styles.breadcrumb}>
+          <Link href="/dashboard">Inicio</Link> / {currentPage}
         </div>
 
         <div className={styles['user-menu']}>

@@ -2,22 +2,37 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
 import RootProvider from "@/components/providers/RootProvider";
+import WindowTitle from "@/components/WindowTitle";
 import "./globals.css";
 import "@/styles/layout.css";
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: 'swap',
+  fallback: ['system-ui', 'arial'],
 });
 
 export const metadata: Metadata = {
   title: "Sistema de Votos IPUC",
   description: "Sistema de gestión de votos y compromisos financieros para la IPUC",
+  manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',
+    apple: '/LogoIpuc.png',
     shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
-  }
+  },
+  themeColor: '#2563eb',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Sistema de Votos IPUC'
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 function LoadingFallback() {
@@ -38,6 +53,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${inter.variable} bg-background`}>
+      <WindowTitle />
       <body className="font-sans antialiased min-h-screen bg-background text-foreground">
         <Suspense fallback={<LoadingFallback />}>
           <RootProvider>{children}</RootProvider>
