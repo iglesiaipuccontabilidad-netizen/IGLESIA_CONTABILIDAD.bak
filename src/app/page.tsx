@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default async function Home() {
+export default function Home() {
   redirect('/login')
-  return null // This line will never execute
 }
