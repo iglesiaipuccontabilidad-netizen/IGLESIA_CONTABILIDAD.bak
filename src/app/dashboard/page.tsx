@@ -154,23 +154,37 @@ export default async function DashboardPage() {
     }))
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30">
-        <div className="container-custom py-8 space-y-8 animate-fade-in">
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-blue-50 relative overflow-hidden">
+        {/* Decoraciones de fondo */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-cyan-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 right-1/4 w-80 h-80 bg-gradient-to-br from-indigo-400/20 to-violet-400/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="container-custom py-8 space-y-8 animate-fade-in relative z-10">
           {/* Header del Dashboard */}
           <div className="page-header">
             <div>
-              <h1 className="page-title">Dashboard</h1>
-              <p className="text-slate-600 mt-1">Resumen general de votos y compromisos financieros</p>
+              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Dashboard
+              </h1>
+              <p className="text-slate-600 mt-2 flex items-center space-x-2">
+                <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                <span>Resumen general de votos y compromisos financieros</span>
+              </p>
             </div>
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-slate-500">
-                Última actualización: {new Date().toLocaleDateString('es-CO', { 
-                  day: 'numeric', 
-                  month: 'short', 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </span>
+              <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-violet-200 shadow-sm">
+                <span className="text-xs text-violet-600 font-medium">
+                  Última actualización: {new Date().toLocaleDateString('es-CO', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </span>
+              </div>
             </div>
           </div>
 

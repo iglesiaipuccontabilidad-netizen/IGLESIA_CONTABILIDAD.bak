@@ -1,21 +1,35 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
 import type { Database } from '../database.types'
-import { getCookie, setCookie, removeCookie } from '@/app/actions/cookies'
+import { cookies } from 'next/headers'
 
 export async function createClient() {
+  const cookieStore = await cookies()
+  
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name: string) {
-          return getCookie(name)
+          return cookieStore.get(name)?.value
         },
-        async set(name: string, value: string, options: CookieOptions) {
-          await setCookie(name, value, options)
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set(name, value, options)
+          } catch (error) {
+            // La función set fue llamada desde un componente de servidor
+            // Esto se puede ignorar si tienes middleware refrescando las sesiones
+            console.debug('Error al configurar cookie:', error)
+          }
         },
-        async remove(name: string, options: CookieOptions) {
-          await removeCookie(name, options)
+        remove(name: string, options: any) {
+          try {
+            cookieStore.set(name, '', { ...options, maxAge: 0 })
+          } catch (error) {
+            // La función remove fue llamada desde un componente de servidor
+            // Esto se puede ignorar si tienes middleware refrescando las sesiones
+            console.debug('Error al eliminar cookie:', error)
+          }
         },
       },
     }

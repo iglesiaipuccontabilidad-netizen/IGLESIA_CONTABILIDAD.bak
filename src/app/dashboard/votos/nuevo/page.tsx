@@ -43,19 +43,41 @@ export default async function NuevoVotoPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-4 py-8">
-      <div className="container max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-          {/* Header con gradiente */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <div className="flex items-center justify-between">
+    <main className="min-h-screen bg-gradient-to-br from-violet-50 via-fuchsia-50 to-pink-50 px-4 py-8 relative overflow-hidden">
+      {/* Decoraciones de fondo */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-br from-violet-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-br from-fuchsia-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="container max-w-4xl mx-auto relative z-10">
+        <div className="bg-white rounded-2xl shadow-xl border border-violet-200 overflow-hidden">
+          {/* Header con gradiente colorido */}
+          <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-8 py-6 relative overflow-hidden">
+            {/* Patrón decorativo */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
+            </div>
+            
+            <div className="flex items-center justify-between relative z-10">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-1">Nuevo Voto</h1>
-                <p className="text-blue-100 text-sm">Registra un nuevo compromiso financiero</p>
+                <h1 className="text-3xl font-bold text-white mb-1 flex items-center space-x-3">
+                  <span className="inline-block w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </span>
+                  <span>Nuevo Voto</span>
+                </h1>
+                <p className="text-violet-100 text-sm mt-1">Registra un nuevo compromiso financiero</p>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2">
-                  <span className="text-white text-sm font-medium">{miembros?.length || 0} miembros disponibles</span>
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 ring-2 ring-white/30">
+                  <div className="flex items-center space-x-2">
+                    <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span className="text-white text-sm font-medium">{miembros?.length || 0} miembros disponibles</span>
+                  </div>
                 </div>
               </div>
             </div>

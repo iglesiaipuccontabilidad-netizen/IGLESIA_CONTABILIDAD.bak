@@ -38,9 +38,10 @@ export default function DashboardCards({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      gradient: 'from-blue-500 to-blue-600',
-      bgGradient: 'from-blue-50 to-blue-100',
-      iconBg: 'bg-blue-500',
+      gradient: 'from-cyan-500 via-blue-500 to-indigo-600',
+      bgGradient: 'from-cyan-50 via-blue-50 to-indigo-100',
+      iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-600',
+      ringColor: 'ring-cyan-500/50',
     },
     {
       title: 'Total Recaudado',
@@ -51,9 +52,10 @@ export default function DashboardCards({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      gradient: 'from-green-500 to-emerald-600',
-      bgGradient: 'from-green-50 to-emerald-100',
-      iconBg: 'bg-green-500',
+      gradient: 'from-emerald-500 via-teal-500 to-green-600',
+      bgGradient: 'from-emerald-50 via-teal-50 to-green-100',
+      iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+      ringColor: 'ring-emerald-500/50',
     },
     {
       title: 'Total Pendiente',
@@ -64,9 +66,10 @@ export default function DashboardCards({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      gradient: 'from-amber-500 to-orange-600',
-      bgGradient: 'from-amber-50 to-orange-100',
-      iconBg: 'bg-amber-500',
+      gradient: 'from-amber-500 via-orange-500 to-rose-600',
+      bgGradient: 'from-amber-50 via-orange-50 to-rose-100',
+      iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600',
+      ringColor: 'ring-amber-500/50',
     },
     {
       title: 'Votos Activos',
@@ -77,9 +80,10 @@ export default function DashboardCards({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
       ),
-      gradient: 'from-purple-500 to-indigo-600',
-      bgGradient: 'from-purple-50 to-indigo-100',
-      iconBg: 'bg-purple-500',
+      gradient: 'from-violet-500 via-purple-500 to-fuchsia-600',
+      bgGradient: 'from-violet-50 via-purple-50 to-fuchsia-100',
+      iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
+      ringColor: 'ring-violet-500/50',
     },
   ]
 
@@ -98,7 +102,7 @@ export default function DashboardCards({
           <div className="relative p-6">
             {/* Header con icono */}
             <div className="flex items-start justify-between mb-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${card.iconBg} text-white shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+              <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${card.iconBg} text-white shadow-lg ring-4 ${card.ringColor} transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
                 {card.icon}
               </div>
             </div>

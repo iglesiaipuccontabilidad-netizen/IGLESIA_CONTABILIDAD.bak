@@ -9,10 +9,11 @@ import { useEffect, useState, useTransition } from 'react'
 // Componente de carga que coincide exactamente con la estructura del formulario
 function LoadingState() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-blue-700 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-950 via-purple-900 to-fuchsia-900 px-4 py-12 sm:px-6 lg:px-8 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-12 h-64 w-64 -translate-x-1/2 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute bottom-0 right-12 h-48 w-48 rounded-full bg-cyan-400/20 blur-2xl" />
+        <div className="absolute left-1/2 top-12 h-96 w-96 -translate-x-1/2 rounded-full bg-gradient-to-br from-cyan-400/30 to-blue-500/30 blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-12 h-80 w-80 rounded-full bg-gradient-to-br from-pink-400/30 to-rose-500/30 blur-3xl" />
+        <div className="absolute top-1/2 left-12 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/20 blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-white/20 bg-white/95 p-10 shadow-2xl backdrop-blur">
@@ -33,7 +34,7 @@ function LoadingState() {
             Preparando el formulario de ingreso...
           </p>
           <div className="mt-10 flex justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+            <div className="h-10 w-10 animate-spin rounded-full border-2 border-violet-600 border-t-transparent"></div>
           </div>
         </div>
       </div>
@@ -85,16 +86,17 @@ function LoginForm({ mensaje }: LoginFormProps) {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-blue-950 to-blue-700 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-violet-950 via-purple-900 to-fuchsia-900 px-4 py-12 sm:px-6 lg:px-8 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-12 h-64 w-64 -translate-x-1/2 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute bottom-0 right-12 h-48 w-48 rounded-full bg-cyan-400/20 blur-2xl" />
+        <div className="absolute left-1/2 top-12 h-96 w-96 -translate-x-1/2 rounded-full bg-gradient-to-br from-cyan-400/30 to-blue-500/30 blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-12 h-80 w-80 rounded-full bg-gradient-to-br from-pink-400/30 to-rose-500/30 blur-3xl" />
+        <div className="absolute top-1/2 left-12 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/20 blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-white/20 bg-white/95 p-10 shadow-2xl backdrop-blur">
         <div className="flex flex-col">
           <div className="flex flex-col items-center text-center">
-            <div className="inline-flex items-center justify-center rounded-2xl bg-blue-600/10 p-3">
+            <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 p-3 ring-4 ring-violet-400/30">
               <Image
                 src="/LogoIpuc.png"
                 alt="Logo IPUC"
@@ -103,7 +105,7 @@ function LoginForm({ mensaje }: LoginFormProps) {
                 priority
               />
             </div>
-            <h2 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-6 text-3xl font-bold tracking-tight bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent">
               Inicia sesión
             </h2>
             <p className="mt-2 text-sm text-slate-500">

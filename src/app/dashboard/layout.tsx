@@ -1,33 +1,7 @@
-﻿import { Suspense } from 'react'
+import { Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { redirect } from 'next/navigation'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-
-async function getSession() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          const cookie = cookieStore.get(name)
-          return cookie?.value
-        },
-        set(name: string, value: string, options: any) {
-          // This is a server component, we don't need to set cookies
-        },
-        remove(name: string, options: any) {
-          // This is a server component, we don't need to remove cookies
-        },
-      },
-    }
-  )
-  
-  const { data: { session } } = await supabase.auth.getSession()
-  return session
-}
+import { createClient } from '@/lib/supabase/server'
 
 function Loading() {
   return (
@@ -53,21 +27,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          const cookie = cookieStore.get(name)
-          return cookie?.value
-        },
-        set() {},
-        remove() {},
-      },
-    }
-  )
+  // Usar createClient que ya maneja las cookies correctamente
+  const supabase = await createClient()
   
   const { data: { session } } = await supabase.auth.getSession()
   

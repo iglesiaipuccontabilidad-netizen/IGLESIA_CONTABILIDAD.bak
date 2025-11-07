@@ -68,8 +68,8 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
         throw new Error(`El monto máximo es $${montoPendiente.toLocaleString('es-CO')}`)
       }
 
-      // 4. Registrar pago
-      const { data: result, error: txError } = await supabase.rpc(
+      // 3. Registrar pago
+      const { data: result, error: txError } = await supabase.rpc<RegistrarPagoResult>(
         'registrar_pago',
         {
           p_voto_id: votoId,
@@ -79,18 +79,18 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
           p_nota: formData.nota || null,
           p_registrado_por: session.data.session.user.id,
           p_monto_total: montoTotal
-        }
+        } as RegistrarPagoArgs
       )
 
       if (txError) throw new Error(txError.message)
       if (!result?.success) throw new Error('No se pudo registrar el pago')
 
-      // 5. Éxito
+      // 4. Éxito
       toast.success('Pago registrado con éxito', { id: toastId })
       
-      // 6. Redireccionar
-      router.push(`/dashboard/votos/${votoId}`)
+      // 5. Redireccionar
       router.refresh()
+      router.push(`/dashboard/votos/${votoId}`)
     } catch (error: any) {
       console.error('Error al procesar pago:', error)
       const errorMessage = error.message || 'Error al procesar el pago'

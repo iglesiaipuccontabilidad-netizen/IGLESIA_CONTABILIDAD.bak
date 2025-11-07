@@ -13,23 +13,20 @@ export interface PagoInput {
 }
 
 export async function registrarPago(data: PagoInput) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        async get(name: string) {
-          const cookieJar = await cookies()
-          return cookieJar.get(name)?.value
+        get(name: string) {
+          return cookieStore.get(name)?.value
         },
-        async set(name: string, value: string, options: any) {
-          const cookieJar = await cookies()
-          cookieJar.set(name, value, options)
+        set(name: string, value: string, options: any) {
+          cookieStore.set(name, value, options)
         },
-        async remove(name: string, options: any) {
-          const cookieJar = await cookies()
-          cookieJar.delete(name)
+        remove(name: string, options: any) {
+          cookieStore.delete(name)
         },
       },
     }
