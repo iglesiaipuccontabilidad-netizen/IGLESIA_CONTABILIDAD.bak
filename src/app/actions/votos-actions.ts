@@ -234,6 +234,10 @@ export async function getVotosWithDetails(): Promise<{
           id,
           nombres,
           apellidos
+        ),
+        pagos(
+          monto,
+          fecha_pago
         )
       `)
       .order('created_at', { ascending: false })
@@ -241,10 +245,14 @@ export async function getVotosWithDetails(): Promise<{
     if (error) throw error
 
     // Procesar y calcular totales
-    const votosProcessed = votos.map((voto: any) => ({
-      ...voto,
-      progreso: Math.round(((voto.recaudado || 0) / voto.monto_total) * 100)
-    }))
+    const votosProcessed = votos.map((voto: any) => {
+      const total_pagado = voto.pagos?.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0) || 0;
+      return {
+        ...voto,
+        total_pagado,
+        progreso: Math.round((total_pagado / voto.monto_total) * 100)
+      };
+    })
 
     return { data: votosProcessed, error: null }
   } catch (error) {

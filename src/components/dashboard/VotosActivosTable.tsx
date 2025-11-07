@@ -10,9 +10,10 @@ interface Voto {
     apellidos: string
   }
   proposito: string
-  monto: number
-  recaudado: number
+  monto_total: number
+  total_pagado: number
   fecha_limite: string
+  progreso: number
 }
 
 interface VotosActivosTableProps {
@@ -90,7 +91,6 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
               <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Miembro</th>
               <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Propósito</th>
               <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Monto</th>
-              <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Recaudado</th>
               <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Progreso</th>
               <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Fecha Límite</th>
               <th className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th>
@@ -98,7 +98,7 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
           </thead>
           <tbody className="divide-y divide-slate-200">
             {filteredVotos.map((voto, index) => {
-              const progreso = (voto.recaudado / voto.monto) * 100
+              const progreso = voto.progreso
               const daysRemaining = getDaysRemaining(voto.fecha_limite)
               
               return (
@@ -119,10 +119,7 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
                     <p className="text-sm text-slate-900 max-w-xs truncate">{voto.proposito}</p>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(voto.monto)}</p>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <p className="text-sm font-semibold text-green-600">{formatCurrency(voto.recaudado)}</p>
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(voto.monto_total)}</p>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col items-center space-y-1">
@@ -176,7 +173,8 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
       {/* Cards Mobile */}
       <div className="lg:hidden divide-y divide-slate-200">
         {filteredVotos.map((voto) => {
-          const progreso = (voto.recaudado / voto.monto) * 100
+          const recaudado = voto.total_pagado || 0
+          const progreso = voto.monto_total > 0 ? (recaudado / voto.monto_total) * 100 : 0
           const daysRemaining = getDaysRemaining(voto.fecha_limite)
           
           return (
@@ -210,11 +208,11 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Monto Total</p>
-                  <p className="text-sm font-semibold text-slate-900">{formatCurrency(voto.monto)}</p>
+                  <p className="text-sm font-semibold text-slate-900">{formatCurrency(voto.monto_total)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Recaudado</p>
-                  <p className="text-sm font-semibold text-green-600">{formatCurrency(voto.recaudado)}</p>
+                  <p className="text-sm font-semibold text-green-600">{formatCurrency(voto.total_pagado)}</p>
                 </div>
               </div>
 
