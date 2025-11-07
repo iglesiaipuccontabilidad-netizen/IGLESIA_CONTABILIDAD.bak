@@ -6,7 +6,7 @@
   background: linear-gradient(180deg, rgba(21, 42, 85, 0.85) 0%, rgba(21, 42, 85, 0.95) 60%, rgba(18, 63, 116, 0.98) 100%);
   color: #f8fafc;
   padding: 1.25rem 1rem;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   position: fixed;
   left: 0;
   top: 0;
@@ -15,11 +15,70 @@
   backdrop-filter: blur(18px);
   box-shadow: 12px 0 40px rgba(21, 42, 85, 0.22);
   font-size: 0.9rem;
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+
+  .sidebar.mobileVisible {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+
+  .sidebar.mobileVisible {
+    transform: translateX(0);
+  }
 }
 
 .sidebar.collapsed {
   width: 72px;
   padding: 1.25rem 0.75rem;
+}
+
+.mobileOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  backdrop-filter: blur(4px);
+}
+
+@media (max-width: 768px) {
+  .mobileOverlay.visible {
+    display: block;
+  }
+}
+
+.mobileOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 40;
+  backdrop-filter: blur(4px);
+}
+
+@media (max-width: 768px) {
+  .mobileOverlay.visible {
+    display: block;
+  }
 }
 
 .brandRow {

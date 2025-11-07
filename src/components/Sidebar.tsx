@@ -20,10 +20,27 @@ type MenuSection = {
   items: MenuItem[]
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  isMobileMenuVisible?: boolean;
+  onMobileMenuClose?: () => void;
+}
+
+export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose }: SidebarProps) {
   const pathname = usePathname()
   const { member } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
+
+  // Efecto para manejar el scroll del body cuando el menú móvil está abierto
+  React.useEffect(() => {
+    if (isMobileMenuVisible) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuVisible])
 
   const menuSections: MenuSection[] = React.useMemo(() => [
     {
@@ -97,24 +114,34 @@ export default function Sidebar() {
     return pathname === href || pathname.startsWith(`${href}/`)
   }
 
+    // Eliminada función toggleMobileMenu no utilizada
+
   return (
-    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
+    <>
+      {isMobileMenuVisible && (
+        <div 
+          className={`${styles.mobileOverlay} ${styles.visible}`}
+          onClick={onMobileMenuClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""} ${isMobileMenuVisible ? styles.mobileVisible : ""}`}>
       <div className={styles.brandRow}>
-        <div className={styles.brandMark}>IPUC</div>
-        {!isCollapsed && (
-          <div className={styles.brandCopy}>
-            <span className={styles.brandTitle}>Contabilidad</span>
-            <span className={styles.brandSubtitle}>Gestión integral de votos</span>
-          </div>
-        )}
-        <button
-          onClick={handleToggle}
-          className={styles.collapseButton}
-          aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
-        >
-          <ChevronLeft className={styles.collapseIcon} />
-        </button>
-      </div>
+            <div className={styles.brandMark}>IPUC</div>
+            {!isCollapsed && (
+            <div className={styles.brandCopy}>
+              <span className={styles.brandTitle}>Contabilidad</span>
+              <span className={styles.brandSubtitle}>Gestión integral de votos</span>
+            </div>
+          )}
+          <button
+            onClick={handleToggle}
+            className={styles.collapseButton}
+            aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
+          >
+            <ChevronLeft className={styles.collapseIcon} />
+          </button>
+        </div>
 
       <nav className={styles.navigation} aria-label="Menú principal">
         {menuSections.map((section) => (
@@ -186,5 +213,6 @@ export default function Sidebar() {
         )}
       </div>
     </aside>
+    </>
   )
 }

@@ -28,7 +28,12 @@ function LoadingFallback() {
 function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
+
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuVisible(prev => !prev)
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -62,21 +67,16 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
 
   return (
     <div className={styles.dashboardLayout}>
-      <Suspense fallback={
-        <div className="w-64 bg-gray-100 animate-pulse h-screen" />
-      }>
-        <Sidebar />
-      </Suspense>
-      <main className={styles.mainContent}>
-        <Suspense fallback={
-          <div className="h-16 bg-gray-100 animate-pulse" />
-        }>
-          <DashboardHeader />
-        </Suspense>
-        <div className={styles.contentWrapper}>
+      <Sidebar 
+        isMobileMenuVisible={isMobileMenuVisible} 
+        onMobileMenuClose={() => setIsMobileMenuVisible(false)} 
+      />
+      <div className={styles.mainContent}>
+        <DashboardHeader onMobileMenuClick={handleMobileMenuToggle} />
+        <main className={styles.contentWrapper}>
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }
