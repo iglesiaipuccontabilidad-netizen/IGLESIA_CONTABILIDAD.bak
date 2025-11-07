@@ -3,14 +3,15 @@
   flex-direction: column;
   width: 260px;
   height: 100vh;
-  background: linear-gradient(180deg, var(--azul-oscuro) 0%, var(--azul-medio) 100%);
+  background: linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul-medio) 100%);
   color: var(--blanco);
-  padding: 1rem;
+  padding: 1.5rem;
   transition: width 0.3s ease;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 50;
+  box-shadow: 2px 0 12px rgba(21, 42, 85, 0.1);
 }
 
 .sidebar.collapsed {
@@ -20,15 +21,17 @@
 .logo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1rem 0;
+  justify-content: flex-start;
+  padding: 0.5rem 0;
   margin-bottom: 2rem;
+  gap: 1rem;
 }
 
 .logoText {
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--blanco);
+  letter-spacing: 0.5px;
 }
 
 .navigation {

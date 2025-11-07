@@ -1,0 +1,177 @@
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import RegistroPagoForm from '@/components/pagos/RegistroPagoForm'
+import { Database } from '@/lib/database.types'
+import { createClient } from '@/lib/supabase/server'
+import styles from '@/styles/pagos.module.css'
+
+type VotoWithMiembro = Database['public']['Tables']['votos']['Row'] & {
+  miembro: Database['public']['Tables']['miembros']['Row']
+}
+
+// Configuración de la página
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+async function getVotoDetails(votoId: string): Promise<VotoWithMiembro | null> {
+  try {
+    const supabase = await createClient()
+
+    const { data: voto, error } = await supabase
+      .from('votos')
+      .select(`
+        *,
+        miembro:miembros!inner (
+          id,
+          nombres,
+          apellidos,
+          cedula
+        )
+      `)
+      .eq('id', votoId)
+      .single()
+
+    if (error) throw error
+
+    return voto
+  } catch (error) {
+    console.error('Error al obtener detalles del voto:', error)
+    return null
+  }
+}
+
+export default async function NuevoPagoPage({
+  searchParams
+}: {
+  searchParams: { [key: string]: string | undefined }
+}) {
+  try {
+    // Validar y extraer el ID del voto de los parámetros
+    const { voto: votoId } = await Promise.resolve(searchParams)
+    if (!votoId) {
+      redirect('/dashboard/votos')
+    }
+
+    // Inicializar el cliente de Supabase
+    const supabase = await createClient()
+
+    // Verificar sesión y obtener el usuario
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('Error al verificar la sesión:', sessionError)
+      redirect('/login?redirect=' + encodeURIComponent('/dashboard/pagos/nuevo?voto=' + searchParams.voto))
+    }
+
+    if (!session || !session.user) {
+      console.log('No hay sesión activa')
+      redirect('/login?redirect=' + encodeURIComponent('/dashboard/pagos/nuevo?voto=' + searchParams.voto))
+    }
+
+    // Verificar que el usuario tenga acceso
+    const { data: usuario, error: userError } = await supabase
+      .from('usuarios')
+      .select('estado, rol')
+      .eq('id', session.user.id)
+      .single() as {
+        data: {
+          estado: 'activo' | 'inactivo' | 'pendiente'
+          rol: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
+        } | null,
+        error: any
+      }
+
+    const { voto } = await Promise.resolve(searchParams)
+    
+    if (userError || !usuario) {
+      console.error('Error al verificar permisos del usuario:', userError)
+      redirect('/login?redirect=' + encodeURIComponent('/dashboard/pagos/nuevo?voto=' + voto))
+    }
+
+    if (usuario.estado !== 'activo') {
+      redirect('/dashboard?error=usuario-inactivo')
+    }
+
+    // Verificar roles permitidos
+    if (!['admin', 'tesorero'].includes(usuario.rol)) {
+      redirect('/dashboard?error=acceso-denegado')
+    }
+
+    const params = await Promise.resolve(searchParams)
+    const votoId = params.voto
+    if (!votoId) redirect('/dashboard/votos')
+
+    const voto = await getVotoDetails(votoId)
+    if (!voto) redirect('/dashboard/votos')
+
+    const montoPendiente = voto.monto_total - (voto.recaudado || 0)
+
+    return (
+      <div className={styles.container}>
+        <nav className={styles.breadcrumbs}>
+          <Link href="/dashboard/votos" className={styles.breadcrumbLink}>
+            ← Volver a la lista de votos
+          </Link>
+        </nav>
+
+        <div className={styles.header}>
+          <h1 className={styles.title}>Registrar Nuevo Pago</h1>
+        </div>
+
+        <div className={styles.content}>
+          <div className={styles.votoInfo}>
+            <h2 className={styles.subtitle}>Detalles del Voto</h2>
+            <div className={styles.infoGrid}>
+              <div className={styles.infoItem}>
+                <span className={styles.label}>Propósito:</span>
+                <span className={styles.value}>{voto.proposito}</span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.label}>Miembro:</span>
+                <span className={styles.value}>
+                  {voto.miembro.nombres} {voto.miembro.apellidos}
+                </span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.label}>Monto Total:</span>
+                <span className={styles.value}>
+                  {new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                  }).format(voto.monto_total)}
+                </span>
+              </div>
+              <div className={styles.infoItem}>
+                <span className={styles.label}>Pendiente:</span>
+                <span className={styles.value}>
+                  {new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                  }).format(montoPendiente)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <Suspense fallback={<div>Cargando formulario...</div>}>
+            <RegistroPagoForm 
+              votoId={voto.id} 
+              montoPendiente={montoPendiente}
+              montoTotal={voto.monto_total}
+            />
+          </Suspense>
+        </div>
+      </div>
+    )
+  } catch (error) {
+    console.error('Error en la página de nuevo pago:', error)
+    return (
+      <div className="p-4 text-red-600 bg-red-50 rounded-lg">
+        Error al cargar la página. Por favor, intenta de nuevo.
+      </div>
+    )
+  }
+}

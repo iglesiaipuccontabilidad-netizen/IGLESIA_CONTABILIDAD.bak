@@ -36,8 +36,34 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem;
-  background-color: #F8FAFC;
+  background-color: var(--fondo);
   min-height: calc(100vh - 64px);
+}
+
+.panelsContainer {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.mainPanel {
+  grid-column: 1;
+}
+
+.secondaryPanel {
+  grid-column: 2;
+}
+
+@media (max-width: 1024px) {
+  .panelsContainer {
+    grid-template-columns: 1fr;
+  }
+  
+  .mainPanel,
+  .secondaryPanel {
+    grid-column: 1;
+  }
 }
 
 .kpisSection {

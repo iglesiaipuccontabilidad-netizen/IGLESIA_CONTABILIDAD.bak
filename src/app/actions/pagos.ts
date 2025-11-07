@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
 
 export interface PagoInput {
-  votoId: string
+  id: string
   monto: number
   fecha: string
   nota?: string | null
@@ -44,7 +44,7 @@ export async function registrarPago(data: PagoInput) {
     const voto = await supabase
       .from('votos')
       .select('monto_total, recaudado')
-      .eq('id', data.votoId)
+      .eq('id', data.id)
       .single()
 
     if (voto.error || !voto.data) {
@@ -59,7 +59,7 @@ export async function registrarPago(data: PagoInput) {
     const pago = await supabase
       .from('pagos')
       .insert({
-        voto_id: data.votoId,
+        voto_id: data.id,
         monto: data.monto,
         fecha_pago: data.fecha,
         nota: data.nota,
@@ -77,15 +77,15 @@ export async function registrarPago(data: PagoInput) {
         updated_at: new Date().toISOString(),
         ultima_actualizacion_por: user.id
       })
-      .eq('id', data.votoId)
+      .eq('id', data.id)
 
     if (actualizacion.error) {
       // TODO: Implementar rollback del pago si falla la actualización
       throw new Error('Error al actualizar el voto')
     }
 
-    revalidatePath(`/dashboard/votos/${data.votoId}`)
-    revalidatePath(`/dashboard/votos/${data.votoId}/pago`)
+    revalidatePath(`/dashboard/votos/${data.id}`)
+    revalidatePath(`/dashboard/pagos/nuevo?voto=${data.id}`)
     revalidatePath('/dashboard/votos')
 
     return { success: true }

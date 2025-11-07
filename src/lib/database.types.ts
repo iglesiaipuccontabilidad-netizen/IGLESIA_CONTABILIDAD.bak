@@ -1,3 +1,11 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type Database = {
   public: {
     Tables: {
@@ -7,19 +15,65 @@ export type Database = {
           email: string
           created_at: string
           updated_at: string
-          rol: 'admin' | 'usuario' | 'pendiente'
+          rol: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
           estado: 'activo' | 'inactivo' | 'pendiente'
         }
         Insert: {
-          id?: string
+          id: string
           email: string
-          rol?: 'admin' | 'usuario' | 'pendiente'
-          estado?: 'activo' | 'inactivo' | 'pendiente'
+          created_at?: string
+          updated_at?: string
+          rol: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
+          estado: 'activo' | 'inactivo' | 'pendiente'
         }
         Update: {
           email?: string
-          rol?: 'admin' | 'usuario' | 'pendiente'
+          rol?: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
           estado?: 'activo' | 'inactivo' | 'pendiente'
+        }
+      }
+      miembros: {
+        Row: {
+          id: string
+          nombres: string
+          apellidos: string
+          cedula: string
+          telefono: string | null
+          email: string | null
+          direccion: string | null
+          created_at: string
+          updated_at: string
+          fecha_ingreso: string
+          usuario_id: string | null
+          estado: 'activo' | 'inactivo'
+          rol: 'miembro' | 'admin' | 'tesorero'
+        }
+        Insert: {
+          id?: string
+          nombres: string
+          apellidos: string
+          cedula: string
+          telefono?: string | null
+          email?: string | null
+          direccion?: string | null
+          created_at?: string
+          updated_at?: string
+          fecha_ingreso: string
+          usuario_id?: string | null
+          estado?: 'activo' | 'inactivo'
+          rol?: 'miembro' | 'admin' | 'tesorero'
+        }
+        Update: {
+          nombres?: string
+          apellidos?: string
+          cedula?: string
+          telefono?: string | null
+          email?: string | null
+          direccion?: string | null
+          fecha_ingreso?: string
+          usuario_id?: string | null
+          estado?: 'activo' | 'inactivo'
+          rol?: 'miembro' | 'admin' | 'tesorero'
         }
       }
       votos: {
@@ -57,39 +111,6 @@ export type Database = {
           ultima_actualizacion_por?: string
         }
       }
-      miembros: {
-        Row: {
-          id: string
-          nombres: string
-          apellidos: string
-          cedula: string
-          telefono: string | null
-          email: string | null
-          direccion: string | null
-          created_at: string
-          updated_at: string
-          fecha_ingreso: string
-        }
-        Insert: {
-          id?: string
-          nombres: string
-          apellidos: string
-          cedula: string
-          telefono?: string | null
-          email?: string | null
-          direccion?: string | null
-          fecha_ingreso: string
-        }
-        Update: {
-          nombres?: string
-          apellidos?: string
-          cedula?: string
-          telefono?: string | null
-          email?: string | null
-          direccion?: string | null
-          fecha_ingreso?: string
-        }
-      }
       pagos: {
         Row: {
           id: string
@@ -121,7 +142,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      registrar_pago: {
+        Args: {
+          p_voto_id: string
+          p_monto: number
+          p_fecha_pago: string
+          p_metodo_pago: string
+          p_nota: string | null
+          p_registrado_por: string
+          p_monto_total: number
+        }
+        Returns: {
+          success: boolean
+          recaudado: number
+          estado: string
+        }
+      }
     }
     Enums: {
       [_ in never]: never

@@ -7,12 +7,18 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
+export const formatearPeso = formatCurrency
+
 export function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('es-CO', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
+}
+
+export function formatearCedula(cedula: string): string {
+  return cedula.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
 }
 
 export function getProgressStatus(percentage: number): string {

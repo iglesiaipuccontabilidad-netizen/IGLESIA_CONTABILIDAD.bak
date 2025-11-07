@@ -1,0 +1,912 @@
+'use client'
+
+import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
+import tableStyles from '@/styles/components/Table.module.css'
+import headerStyles from '@/styles/components/Header.module.css'
+import loadingStyles from '@/styles/components/Loading.module.css'
+import { Database } from '@/lib/database.types'
+import { User } from '@supabase/auth-helpers-nextjs'
+
+// Tipos de la base de datos
+type TablaVotos = Database['public']['Tables']['votos']['Row']
+type TablaPagos = Database['public']['Tables']['pagos']['Row']
+
+// Interfaces
+interface VotoConDetalles extends TablaVotos {
+  miembros: {
+    id: string
+    nombres: string
+    apellidos: string
+  } | null
+  pagos: TablaPagos[]
+  total_pagado: number
+}
+
+interface FiltrosVotos {
+  busqueda: string
+  proposito: string
+  estado: string
+  fecha_inicio?: string
+  fecha_fin?: string
+}
+
+// Constantes
+const ESTADOS_VOTO = {
+  ACTIVO: 'activo',
+  COMPLETADO: 'completado',
+  VENCIDO: 'vencido'
+} as const
+
+const PROPOSITOS_VOTO = {
+  TEMPLO: 'Templo',
+  MISIONES: 'Misiones',
+  EVANGELIZACION: 'Evangelización'
+} as const
+
+// Componente principal
+export default function VotosPage() {
+  const [votos, setVotos] = useState<VotoConDetalles[]>([])
+  const [usuarioActual, setUsuarioActual] = useState<User | null>(null)
+  const [filtros, setFiltros] = useState<FiltrosVotos>({
+    busqueda: '',
+    proposito: '',
+    estado: ''
+  })
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  const cargarVotos = useCallback(async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('votos')
+        .select(`
+          *,
+          miembros:miembro_id (
+            id,
+            nombres,
+            apellidos
+          ),
+          pagos (
+            id,
+            monto,
+            fecha
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const votosConTotales = data.map((voto: any) => ({
+        ...voto,
+        total_pagado: voto.pagos?.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0) || 0
+      }))
+
+      setVotos(votosConTotales)
+    } catch (error) {
+      console.error('Error al cargar votos:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  useEffect(() => {
+    const verificarAcceso = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          setUsuarioActual(session.user)
+          await cargarVotos()
+        }
+      } catch (error) {
+        console.error('Error al verificar acceso:', error)
+      }
+    }
+
+    verificarAcceso()
+  }, [cargarVotos])
+
+  const aplicarFiltros = useCallback((voto: VotoConDetalles) => {
+    const { busqueda, proposito, estado, fecha_inicio, fecha_fin } = filtros
+    const nombreCompleto = voto.miembros ? 
+      `${voto.miembros.nombres} ${voto.miembros.apellidos}`.toLowerCase() : ''
+    
+    const cumpleBusqueda = !busqueda || 
+      nombreCompleto.includes(busqueda.toLowerCase()) ||
+      voto.proposito.toLowerCase().includes(busqueda.toLowerCase())
+    
+    const cumpleProposito = !proposito || 
+      voto.proposito.toLowerCase() === proposito.toLowerCase()
+    
+    const cumpleEstado = !estado || voto.estado === estado
+    
+    const cumpleFechaInicio = !fecha_inicio || 
+      new Date(voto.created_at) >= new Date(fecha_inicio)
+    
+    const cumpleFechaFin = !fecha_fin || 
+      new Date(voto.created_at) <= new Date(fecha_fin)
+
+    return cumpleBusqueda && cumpleProposito && cumpleEstado && 
+           cumpleFechaInicio && cumpleFechaFin
+  }, [filtros])
+
+type TablaVotos = Database['public']['Tables']['votos']['Row']
+type TablaPagos = Database['public']['Tables']['pagos']['Row']
+
+interface VotoConDetalles extends TablaVotos {
+  miembros: {
+    id: string
+    nombres: string
+    apellidos: string
+  } | null
+  pagos: TablaPagos[]
+  total_pagado: number
+}
+
+interface FiltrosVotos {
+  busqueda: string
+  proposito: string
+  estado: string
+  fecha_inicio?: string
+  fecha_fin?: string
+}
+
+const ESTADOS_VOTO = {
+  ACTIVO: 'activo',
+  COMPLETADO: 'completado',
+  VENCIDO: 'vencido'
+} as const
+
+const PROPOSITOS_VOTO = {
+  TEMPLO: 'Templo',
+  MISIONES: 'Misiones',
+  EVANGELIZACION: 'Evangelización'
+} as const
+
+export default function VotosPage() {
+  const [votos, setVotos] = useState<VotoConDetalles[]>([])
+  const [usuarioActual, setUsuarioActual] = useState<User | null>(null)
+  const [filtros, setFiltros] = useState<FiltrosVotos>({
+    busqueda: '',
+    proposito: '',
+    estado: ''
+  })
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  const cargarVotos = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('votos')
+        .select(`
+          *,
+          miembros:miembro_id (
+            id,
+            nombres,
+            apellidos
+          ),
+          pagos (
+            id,
+            monto,
+            fecha
+          )
+        `)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      const votosConTotales: VotoConDetalles[] = data.map(voto => ({
+        ...voto,
+        total_pagado: voto.pagos?.reduce((sum, pago) => sum + (pago.monto || 0), 0) || 0
+      }))
+
+      setVotos(votosConTotales)
+    } catch (error) {
+      console.error('Error al cargar votos:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  useEffect(() => {
+    const verificarAcceso = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          setUsuarioActual(session.user)
+          await cargarVotos()
+        }
+      } catch (error) {
+        console.error('Error al verificar acceso:', error)
+      }
+    }
+
+    verificarAcceso()
+  }, [cargarVotos])
+
+  const aplicarFiltros = useCallback((voto: VotoConDetalles) => {
+    const { busqueda, proposito, estado, fecha_inicio, fecha_fin } = filtros
+    const nombreCompleto = `${voto.miembros?.nombres || ''} ${voto.miembros?.apellidos || ''}`.toLowerCase()
+    
+    const cumpleBusqueda = !busqueda || 
+      nombreCompleto.includes(busqueda.toLowerCase()) ||
+      voto.proposito.toLowerCase().includes(busqueda.toLowerCase())
+    
+    const cumpleProposito = !proposito || 
+      voto.proposito.toLowerCase() === proposito.toLowerCase()
+    
+    const cumpleEstado = !estado || voto.estado === estado
+    
+    const cumpleFechaInicio = !fecha_inicio || 
+      new Date(voto.created_at) >= new Date(fecha_inicio)
+    
+    const cumpleFechaFin = !fecha_fin || 
+      new Date(voto.created_at) <= new Date(fecha_fin)
+
+    return cumpleBusqueda && cumpleProposito && cumpleEstado && 
+           cumpleFechaInicio && cumpleFechaFin
+  }, [filtros])
+
+  const votosFiltrados = votos.filter(aplicarFiltros)
+
+  const formatearMonto = (monto: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(monto)
+  }
+
+  const calcularProgreso = (voto: VotoConDetalles) => {
+    const progreso = (voto.total_pagado / Number(voto.monto_total)) * 100
+    return Math.min(Math.max(progreso, 0), 100)
+  }
+
+  if (loading) {
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        <div className={loadingStyles.loading}></div>
+        <p>Cargando votos...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className={headerStyles.header}>
+        <h1 className="text-2xl font-bold mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+            <path d="m8 12 2 2 4-4"/>
+          </svg>
+          Votos
+        </h1>
+        <Link
+          href="/dashboard/votos/nuevo"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Nuevo Voto
+        </Link>
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o propósito..."
+          className="p-2 border rounded"
+          value={filtros.busqueda}
+          onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
+        />
+        <select
+          className="p-2 border rounded"
+          value={filtros.estado}
+          onChange={(e) => setFiltros(prev => ({ ...prev, estado: e.target.value }))}
+        >
+          <option value="">Todos los estados</option>
+          {Object.values(ESTADOS_VOTO).map(estado => (
+            <option key={estado} value={estado}>
+              {estado.charAt(0).toUpperCase() + estado.slice(1)}
+            </option>
+          ))}
+        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            placeholder="Fecha inicio"
+            className="p-2 border rounded"
+            onChange={(e) => setFiltros(prev => ({ ...prev, fecha_inicio: e.target.value }))}
+          />
+          <input
+            type="date"
+            placeholder="Fecha fin"
+            className="p-2 border rounded"
+            onChange={(e) => setFiltros(prev => ({ ...prev, fecha_fin: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      <div className={tableStyles.tableContainer}>
+        <table className={tableStyles.table}>
+          <thead>
+            <tr>
+              <th>Miembro</th>
+              <th>Propósito</th>
+              <th>Monto Total</th>
+              <th>Recaudado</th>
+              <th>Progreso</th>
+              <th>Estado</th>
+              <th>Fecha Límite</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {votosFiltrados.length > 0 ? (
+              votosFiltrados.map((voto) => {
+                const progreso = calcularProgreso(voto)
+                
+                return (
+                  <tr key={voto.id}>
+                    <td>{voto.miembros ? `${voto.miembros.nombres} ${voto.miembros.apellidos}` : 'N/A'}</td>
+                    <td>{voto.proposito}</td>
+                    <td>{formatearMonto(Number(voto.monto_total))}</td>
+                    <td>{formatearMonto(voto.total_pagado)}</td>
+                    <td>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div
+                          className="bg-blue-600 h-2.5 rounded-full"
+                          style={{ width: `${progreso}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-600">{progreso.toFixed(1)}%</span>
+                    </td>
+                    <td>
+                      <span className={`px-2 py-1 rounded text-sm ${
+                        voto.estado === ESTADOS_VOTO.ACTIVO ? 'bg-green-100 text-green-800' :
+                        voto.estado === ESTADOS_VOTO.COMPLETADO ? 'bg-blue-100 text-blue-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {voto.estado}
+                      </span>
+                    </td>
+                    <td>{new Date(voto.fecha_limite).toLocaleDateString('es-CO')}</td>
+                    <td className="space-x-2">
+                      <Link
+                        href={`/dashboard/votos/${voto.id}`}
+                        className="text-blue-500 hover:text-blue-700 inline-flex items-center gap-1"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                        </svg>
+                        Ver
+                      </Link>
+                      <Link
+                        href={`/dashboard/votos/${voto.id}/pago`}
+                        className="text-green-500 hover:text-green-700 inline-flex items-center gap-1"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.171-.879-1.172-2.303 0-3.182C10.536 7.719 11.768 7.5 12 7.5c1.45 0 2.9.549 4.003 1.657" />
+                        </svg>
+                        Pago
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })
+            ) : (
+              <tr>
+                <td colSpan={8} className="text-center py-4 text-gray-500">
+                  No se encontraron votos que coincidan con los filtros
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )nt'
+
+import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
+import tableStyles from '@/styles/components/Table.module.css'
+import headerStyles from '@/styles/components/Header.module.css'
+import loadingStyles from '@/styles/components/Loading.module.css'
+import { Database } from '@/lib/database.types'
+import { User } from '@supabase/auth-helpers-nextjs'
+
+type TablaVotos = Database['public']['Tables']['votos']['Row']
+type TablaMiembros = Database['public']['Tables']['miembros']['Row']
+
+interface Miembro {
+  id: string;
+  nombres: string;
+  apellidos: string;
+}
+
+interface VotoConMiembro extends TablaVotos {
+  miembro_id: string;
+  nombres: string;
+  apellidos: string;
+  total_pagado: number;
+}
+
+interface FiltrosVotos {
+  busqueda: string;
+  proposito: string;
+  estado: string;
+  fecha_inicio?: string;
+  fecha_fin?: string;
+}
+
+export default function VotosPage() {
+  const [votos, setVotos] = useState<VotoConMiembro[]>([])
+  const [usuarioActual, setUsuarioActual] = useState<any>(null)
+  const [filtros, setFiltros] = useState<FiltrosVotos>({
+    busqueda: '',
+    proposito: '',
+    estado: ''
+  })
+  const [loading, setLoading] = useState(true)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const verificarAcceso = async () => {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setUsuarioActual(session.user);
+          await cargarVotos();
+        }
+      } catch (error) {
+        console.error('Error al verificar acceso:', error);
+      }
+    };
+
+    verificarAcceso();
+      }
+    }
+
+    verificarAcceso();
+  }, []);
+
+  const cargarVotos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('votos')
+        .select(`
+          *,
+          miembros:miembro_id (
+            id,
+            nombres,
+            apellidos
+          ),
+          pagos (
+            monto
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Procesar los datos para calcular el total pagado
+      const votosConTotales = data.map(voto => ({
+        ...voto,
+        miembro_id: voto.miembros?.id || '',
+        nombres: voto.miembros?.nombres || '',
+        apellidos: voto.miembros?.apellidos || '',
+        total_pagado: voto.pagos?.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0) || 0
+      }));
+
+      setVotos(votosConTotales);
+    } catch (error) {
+      console.error('Error al cargar votos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const aplicarFiltros = (voto: VotoConMiembro) => {
+    const { busqueda, proposito, estado, fecha_inicio, fecha_fin } = filtros;
+    const nombreCompleto = `${voto.nombres} ${voto.apellidos}`.toLowerCase();
+    
+    const cumpleBusqueda = !busqueda || 
+      nombreCompleto.includes(busqueda.toLowerCase()) ||
+      voto.proposito.toLowerCase().includes(busqueda.toLowerCase());
+    
+    const cumpleProposito = !proposito || 
+      voto.proposito.toLowerCase().includes(proposito.toLowerCase());
+    
+    const cumpleEstado = !estado || voto.estado === estado;
+    
+    const cumpleFechaInicio = !fecha_inicio || 
+      new Date(voto.created_at) >= new Date(fecha_inicio);
+    
+    const cumpleFechaFin = !fecha_fin || 
+      new Date(voto.created_at) <= new Date(fecha_fin);
+
+    return cumpleBusqueda && cumpleProposito && cumpleEstado && 
+           cumpleFechaInicio && cumpleFechaFin;
+  }
+
+  const votosFiltrados = votos.filter(aplicarFiltros);
+
+  if (loading) {
+    return (
+      <div className={loadingStyles.loadingContainer}>
+        <div className={loadingStyles.loading}></div>
+        <p>Cargando votos...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className={headerStyles.header}>
+        <h1 className="text-2xl font-bold mb-4">Votos</h1>
+        <Link
+          href="/dashboard/votos/nuevo"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Nuevo Voto
+        </Link>
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o propósito..."
+          className="p-2 border rounded"
+          value={filtros.busqueda}
+          onChange={(e) => setFiltros({...filtros, busqueda: e.target.value})}
+        />
+        <select
+          className="p-2 border rounded"
+          value={filtros.estado}
+          onChange={(e) => setFiltros({...filtros, estado: e.target.value})}
+        >
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="completado">Completado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            placeholder="Fecha inicio"
+            className="p-2 border rounded"
+            onChange={(e) => setFiltros({...filtros, fecha_inicio: e.target.value})}
+          />
+          <input
+            type="date"
+            placeholder="Fecha fin"
+            className="p-2 border rounded"
+            onChange={(e) => setFiltros({...filtros, fecha_fin: e.target.value})}
+          />
+        </div>
+      </div>
+
+      <div className={tableStyles.tableContainer}>
+        <table className={tableStyles.table}>
+          <thead>
+            <tr>
+              <th>Miembro</th>
+              <th>Propósito</th>
+              <th>Monto Total</th>
+              <th>Recaudado</th>
+              <th>Progreso</th>
+              <th>Estado</th>
+              <th>Fecha Límite</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {votosFiltrados.map((voto) => {
+              const progreso = (Number(voto.total_pagado) / Number(voto.monto_total)) * 100;
+              
+              return (
+                <tr key={voto.id}>
+                  <td>{`${voto.nombres} ${voto.apellidos}`}</td>
+                  <td>{voto.proposito}</td>
+                  <td>{new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP'
+                  }).format(Number(voto.monto_total))}</td>
+                  <td>{new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP'
+                  }).format(Number(voto.total_pagado))}</td>
+                  <td>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div
+                        className="bg-blue-600 h-2.5 rounded-full"
+                        style={{ width: `${progreso}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm text-gray-600">{progreso.toFixed(1)}%</span>
+                  </td>
+                  <td>
+                    <span className={`px-2 py-1 rounded text-sm ${
+                      voto.estado === 'activo' ? 'bg-green-100 text-green-800' :
+                      voto.estado === 'completado' ? 'bg-blue-100 text-blue-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {voto.estado}
+                    </span>
+                  </td>
+                  <td>{new Date(voto.fecha_limite).toLocaleDateString()}</td>
+                  <td>
+                    <Link
+                      href={`/dashboard/votos/${voto.id}`}
+                      className="text-blue-500 hover:text-blue-700 mr-2"
+                    >
+                      Ver
+                    </Link>
+                    <Link
+                      href={`/dashboard/votos/${voto.id}/pago`}
+                      className="text-green-500 hover:text-green-700"
+                    >
+                      Registrar Pago
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+        
+        // Verificar acceso a la tabla miembros
+        const { data: miembros, error: errorMiembros } = await supabase
+          .from('miembros')
+          .select('*');
+        
+        console.log('Acceso a miembros:', { data: miembros, error: errorMiembros });
+        
+        // Cargar votos después de verificar acceso
+        await cargarVotos();
+      } else {
+        console.log('No hay usuario autenticado');
+      }
+    };
+    
+    verificarAcceso();
+  }, []) // Se ejecuta solo al montar el componente
+
+  const cargarVotos = async () => {
+    try {
+      setLoading(true)
+      console.log('Iniciando consulta de votos...');
+      
+      // Obtener los votos
+      const { data: votosData, error: votosError } = await supabase
+        .from('votos')
+        .select('*')
+        .returns<TablaVotos[]>();
+
+      if (votosError) {
+        console.error('Error al obtener votos:', votosError);
+        throw votosError;
+      }
+
+      console.log('Votos obtenidos:', votosData?.length || 0);
+
+      if (!votosData || votosData.length === 0) {
+        setVotos([]);
+        return;
+      }
+
+      // Obtener los miembros relacionados
+      const miembrosIds = votosData.map(voto => voto.miembro_id);
+      const { data: miembrosData, error: miembrosError } = await supabase
+        .from('miembros')
+        .select('id, nombres, apellidos')
+        .in('id', miembrosIds)
+        .returns<Miembro[]>();
+
+      if (miembrosError) {
+        console.error('Error al obtener miembros:', miembrosError);
+        throw miembrosError;
+      }
+
+      console.log('Miembros obtenidos:', miembrosData?.length || 0);
+
+      // Combinar los datos con tipos correctos
+      const datosCompletos: VotoConMiembro[] = votosData.map(voto => ({
+        ...voto,
+        miembros: miembrosData?.find(miembro => miembro.id === voto.miembro_id) || null
+      }));
+        
+      console.log('Votos combinados:', datosCompletos.length);
+      console.log('Datos crudos recibidos:', JSON.stringify(datosCompletos, null, 2));
+      console.log('Datos de votos recibidos:', datosCompletos.length, 'registros')
+      
+      // Validar la estructura de los datos recibidos
+      const votosValidos = datosCompletos.filter((voto: VotoConMiembro) => 
+        voto &&
+        voto.miembros &&
+        voto.miembros.nombres &&
+        voto.miembros.apellidos
+      );
+      
+      console.log('Votos válidos:', votosValidos.length)
+      setVotos(votosValidos)
+    } catch (err: any) {
+      console.error('Error al cargar votos:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const votosFiltrados = votos.filter(voto => {
+    // Solo aplicar filtros si hay términos de búsqueda
+    const nombreCompleto = voto.miembros ? 
+      `${voto.miembros.nombres} ${voto.miembros.apellidos}`.toLowerCase() :
+      '';
+    const busquedaMin = filtros.busqueda.toLowerCase()
+    
+    // Validar proposito antes de usar toLowerCase()
+    const propositoLower = voto.proposito?.toLowerCase() || ''
+    
+    const cumpleBusqueda = !filtros.busqueda || 
+      nombreCompleto.includes(busquedaMin) || 
+      propositoLower.includes(busquedaMin)
+    
+    const cumpleProposito = !filtros.proposito || voto.proposito === filtros.proposito
+    const cumpleEstado = !filtros.estado || voto.estado === filtros.estado
+
+    return cumpleBusqueda && cumpleProposito && cumpleEstado
+  })
+
+  const formatearMonto = (monto: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(monto)
+  }
+
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const calcularProgreso = (total: number, recaudado: number | null) => {
+    if (!recaudado) return 0
+    return Math.round((recaudado / total) * 100)
+  }
+
+  return (
+    <div className="container">
+      <div className={headerStyles.header}>
+        <h1 className={headerStyles.title}>
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+            <path d="m8 12 2 2 4-4"/>
+          </svg>
+          Votos
+        </h1>
+        <Link href="/dashboard/votos/nuevo" className={headerStyles.buttonPrimary}>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+          Nuevo Voto
+        </Link>
+      </div>
+
+      <div className={headerStyles.filters}>
+        <input
+          type="text"
+          placeholder="Buscar por nombre o propósito..."
+          value={filtros.busqueda}
+          onChange={(e) => setFiltros(prev => ({ ...prev, busqueda: e.target.value }))}
+          className={headerStyles.searchInput}
+        />
+        <select
+          value={filtros.proposito}
+          onChange={(e) => setFiltros(prev => ({ ...prev, proposito: e.target.value }))}
+          className={headerStyles.select}
+        >
+          <option value="">Todos los propósitos</option>
+          <option value="Templo">Templo</option>
+          <option value="Misiones">Misiones</option>
+          <option value="Evangelización">Evangelización</option>
+        </select>
+        <select
+          value={filtros.estado}
+          onChange={(e) => setFiltros(prev => ({ ...prev, estado: e.target.value }))}
+          className={headerStyles.select}
+        >
+          <option value="">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="completado">Completado</option>
+          <option value="vencido">Vencido</option>
+        </select>
+      </div>
+
+      {loading ? (
+        <div className={loadingStyles.loading}>
+          <div className={loadingStyles.spinner} />
+          Cargando votos...
+        </div>
+      ) : (
+        <div className={tableStyles.tableWrapper}>
+          <table className={tableStyles.table}>
+            <thead>
+              <tr>
+                <th>Miembro</th>
+                <th>Propósito</th>
+                <th>Monto Comprometido</th>
+                <th>Monto Recaudado</th>
+                <th>Progreso</th>
+                <th>Fecha Límite</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {votosFiltrados.length > 0 ? (
+                votosFiltrados.map(voto => (
+                  <tr key={voto.id}>
+                    <td>{voto.miembros ? `${voto.miembros.nombres} ${voto.miembros.apellidos}` : 'Miembro no encontrado'}</td>
+                    <td>{voto.proposito}</td>
+                    <td>{formatearMonto(voto.monto_total)}</td>
+                    <td>{formatearMonto(voto.recaudado || 0)}</td>
+                    <td>
+                      <div className={tableStyles.progressBar}>
+                        <div 
+                          className={tableStyles.progressFill}
+                          style={{width: `${calcularProgreso(voto.monto_total, voto.recaudado)}%`}}
+                        />
+                        <span>{calcularProgreso(voto.monto_total, voto.recaudado)}%</span>
+                      </div>
+                    </td>
+                    <td>{formatearFecha(voto.fecha_limite)}</td>
+                    <td>
+                      <span className={`${tableStyles.badge} ${tableStyles[voto.estado]}`}>
+                        {voto.estado}
+                      </span>
+                    </td>
+                    <td>
+                      <Link 
+                        href={`/dashboard/votos/${voto.id}`}
+                        className={tableStyles.actionButton}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Ver
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className={tableStyles.emptyMessage}>
+                    {loading ? 'Cargando votos...' : 'No se encontraron votos'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}

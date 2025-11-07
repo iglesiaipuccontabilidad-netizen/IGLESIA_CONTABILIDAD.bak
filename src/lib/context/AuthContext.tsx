@@ -24,58 +24,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
 
   useEffect(() => {
-    const loadUserAndMember = async () => {
-      try {
-        // Obtener sesión actual
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
+    let mounted = true
 
-        if (user) {
-          // Obtener miembro si hay usuario
-          const { data: member } = await supabase
-            .from('usuarios')
-            .select('*')
-            .eq('id', user.id)
-            .single()
-          setMember(member)
+    async function initialize() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) throw error
+
+        if (mounted) {
+          if (session?.user) {
+            setUser(session.user)
+            const { data: memberData } = await supabase
+              .from('usuarios')
+              .select('*')
+              .eq('id', session.user.id)
+              .single()
+            setMember(memberData)
+          } else {
+            setUser(null)
+            setMember(null)
+          }
         }
       } catch (error) {
         console.error('Error loading user:', error)
+        if (mounted) {
+          setUser(null)
+          setMember(null)
+        }
       } finally {
-        setIsLoading(false)
+        if (mounted) {
+          setIsLoading(false)
+        }
       }
     }
 
-    // Cargar datos iniciales
-    loadUserAndMember()
+    initialize()
 
-    // Escuchar cambios en la autenticación
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        const { data: member } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        setMember(member)
-      } else {
-        setMember(null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return
+
+        if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setMember(null)
+          setIsLoading(false)
+          return
+        }
+
+        if (session?.user) {
+          setUser(session.user)
+          const { data: memberData } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          setMember(memberData)
+        }
+        setIsLoading(false)
       }
-      
-      setIsLoading(false)
-    })
+    )
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
     }
   }, [supabase])
 
+  const value = {
+    user,
+    isLoading,
+    member,
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, member }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )

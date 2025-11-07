@@ -1,56 +1,96 @@
 import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/lib/database.types'
-import MemberList from '@/components/miembros/MemberList'
-import { MemberCard } from '@/components/miembros/MemberCard'
-import layoutStyles from '@/styles/layout.module.css'
+import { MiembrosGrid } from '@/components/miembros/MiembrosGrid'
 import Link from 'next/link'
+import { VotoBase } from '@/types/miembros'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export default async function MiembrosPage() {
   const supabase = await createClient();
 
-  // Obtener la lista de miembros con su conteo de votos activos
-  const { data: miembros, error } = await (supabase as any)
+  type MiembroRow = Database['public']['Tables']['miembros']['Row'];
+  type MiembrosResponse = MiembroRow & {
+    votos_activos: VotoBase[] | null;
+  };
+
+  const { data: miembros, error } = await supabase
     .from('miembros')
     .select(`
-      *,
-      votos_activos:votos!inner(
-        id
+      id,
+      nombres,
+      apellidos,
+      cedula,
+      email,
+      telefono,
+      estado,
+      votos_activos:votos(
+        id,
+        estado,
+        proposito,
+        monto_total,
+        recaudado
       )
     `)
-    .eq('votos.estado', 'activo')
     .order('apellidos', { ascending: true })
-    .order('nombres', { ascending: true });
+    .order('nombres', { ascending: true }) as unknown as { 
+      data: MiembrosResponse[] | null;
+      error: any;
+    };
 
-  // Puedes manejar el error aquí si lo deseas
   if (error) {
-    return <div>Error al cargar los miembros: {error.message}</div>;
+    console.error('Error al cargar miembros:', error);
+    return (
+      <div className="p-4">
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+          Error al cargar los miembros. Por favor, intenta de nuevo.
+        </div>
+      </div>
+    );
   }
 
+  if (!miembros) {
+    return (
+      <div className="p-4">
+        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
+          No se encontraron miembros.
+        </div>
+      </div>
+    );
+  }
+
+  const miembrosFormateados = miembros.map(miembro => ({
+    id: miembro.id,
+    nombres: miembro.nombres,
+    apellidos: miembro.apellidos,
+    email: miembro.email || '',
+    telefono: miembro.telefono || '',
+    estado: miembro.estado,
+    votos_count: miembro.votos_activos?.length || 0
+  }));
+
   return (
-    <>
-      <div className={layoutStyles['page-header']}>
-        <h1 className={layoutStyles['page-title']}>Miembros</h1>
-        <Link 
-          href="/dashboard/miembros/nuevo" 
-          className={layoutStyles['btn-primary']}
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Miembros ({miembrosFormateados.length})
+          </h1>
+          <p className="text-gray-500 mt-1">
+            Gestiona los miembros de la iglesia y sus votos
+          </p>
+        </div>
+        
+        <Link
+          href="/dashboard/miembros/nuevo"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           + Nuevo Miembro
         </Link>
       </div>
 
-      <div className={layoutStyles['members-grid']}>
-        {miembros?.map((member: Database['public']['Tables']['miembros']['Row'] & {
-          votos_activos: { id: string }[]
-        }) => (
-          <MemberCard
-            key={member.id}
-            {...member}
-            email={member.email ?? ''}
-            telefono={member.telefono ?? ''}
-            cedula={member.cedula ?? ''}
-          />
-        ))}
-      </div>
-    </>
+      <MiembrosGrid miembros={miembrosFormateados} />
+    </div>
   );
 }

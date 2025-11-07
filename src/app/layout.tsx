@@ -32,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className={inter.variable}>
-      <body className="font-sans antialiased">
+    <html lang="es" className={`${inter.variable} bg-background`}>
+      <body className="font-sans antialiased min-h-screen bg-background text-foreground">
         <Suspense fallback={<LoadingFallback />}>
           <RootProvider>{children}</RootProvider>
         </Suspense>

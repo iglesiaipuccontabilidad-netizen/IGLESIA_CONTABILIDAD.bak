@@ -32,10 +32,13 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
 
   useEffect(() => {
     setMounted(true)
-    if (!isLoading && !user) {
+  }, [])
+
+  useEffect(() => {
+    if (mounted && !isLoading && !user) {
       router.replace('/login')
     }
-  }, [user, isLoading, router])
+  }, [user, isLoading, router, mounted])
 
   // No renderizar nada hasta que el componente esté montado en el cliente
   if (!mounted) {

@@ -1,0 +1,266 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import styles from '@/styles/pagos.module.css'
+import { Database } from '@/lib/database.types'
+
+interface PagoFormData {
+  monto: string
+  fecha_pago: string
+  metodo_pago: 'efectivo' | 'transferencia' | 'cheque' | 'otro'
+  nota: string
+}
+
+interface RegistroPagoFormProps {
+  votoId: string
+  montoPendiente: number
+  montoTotal: number
+}
+
+export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }: RegistroPagoFormProps) {
+  const router = useRouter()
+  const supabase = createClientComponentClient<Database>()
+  
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [formData, setFormData] = useState<PagoFormData>({
+    monto: '',
+    fecha_pago: new Date().toISOString().split('T')[0],
+    metodo_pago: 'efectivo',
+    nota: ''
+  })
+
+  const verifyUserPermissions = async (userId: string) => {
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', userId)
+      .single()
+
+    if (userError) {
+      throw new Error('Error al verificar permisos de usuario')
+    }
+
+    if (!userData || !['admin', 'tesorero'].includes(userData.rol)) {
+      throw new Error('No tienes permisos para registrar pagos')
+    }
+
+    if (userData.estado !== 'activo') {
+      throw new Error('Tu cuenta no está activa')
+    }
+
+    return userData
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (loading) {
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      // 1. Verificar sesión y usuario
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+      if (userError || !user) {
+        const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search)
+        router.replace('/login?redirect=' + redirectUrl)
+        return
+      }
+
+      // 2. Validar el monto
+      const monto = parseFloat(formData.monto)
+      if (isNaN(monto) || monto <= 0) {
+        throw new Error('El monto debe ser mayor a 0')
+      }
+
+      if (monto > montoPendiente) {
+        throw new Error(`El monto no puede ser mayor al saldo pendiente (${montoPendiente})`)
+      }
+
+      // 3. Verificar permisos de usuario
+      await verifyUserPermissions(user.id)
+
+      // 4. Registrar el pago
+      const { data: result, error: txError } = await supabase.rpc(
+        'registrar_pago',
+        {
+          p_voto_id: votoId,
+          p_monto: monto,
+          p_fecha_pago: formData.fecha_pago,
+          p_metodo_pago: formData.metodo_pago,
+          p_nota: formData.nota || null,
+          p_registrado_por: user.id,
+          p_monto_total: montoTotal
+        }
+      )
+
+      if (txError) {
+        // Manejar error de sesión expirada
+        if (txError.message?.includes('JWT expired')) {
+          const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search)
+          router.replace('/login?redirect=' + redirectUrl)
+          return
+        }
+        
+        // Manejar error de permisos
+        if (txError.message?.includes('permission denied')) {
+          throw new Error('No tienes permisos para registrar pagos')
+        }
+
+        // Otros errores
+        throw new Error('Error al procesar el pago: ' + txError.message)
+      }
+
+      if (!result?.success) {
+        throw new Error('No se pudo confirmar el registro del pago')
+      }
+
+      // 5. Mostrar mensaje de éxito
+      alert('Pago registrado exitosamente')
+      
+      try {
+        // 6. Revalidar datos
+        router.refresh()
+        
+        // 7. Asegurar que la revalidación se complete
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // 8. Redireccionar usando path seguro y replace en lugar de push
+        const safePath = `/dashboard/votos/${encodeURIComponent(votoId).trim()}`
+        router.replace(safePath)
+      } catch (navError) {
+        console.error('Error en la navegación:', navError)
+        // Si falla la navegación, intentamos con la ruta base
+        router.replace('/dashboard/votos')
+      }
+
+    } catch (error: any) {
+      console.error('Error en el proceso de pago:', error)
+      setError(error.message || 'Ocurrió un error al procesar el pago')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <div className={styles.formGroup}>
+        <label htmlFor="monto" className={styles.label}>
+          Monto del Pago *
+        </label>
+        <input
+          type="number"
+          id="monto"
+          name="monto"
+          value={formData.monto}
+          onChange={handleChange}
+          placeholder="Ingresa el monto del pago"
+          className={styles.input}
+          required
+          min="1"
+          max={montoPendiente}
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="fecha_pago" className={styles.label}>
+          Fecha del Pago *
+        </label>
+        <input
+          type="date"
+          id="fecha_pago"
+          name="fecha_pago"
+          value={formData.fecha_pago}
+          onChange={handleChange}
+          className={`${styles.input} ${styles.dateInput}`}
+          required
+        />
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="metodo_pago" className={styles.label}>
+          Método de Pago *
+        </label>
+        <select
+          id="metodo_pago"
+          name="metodo_pago"
+          value={formData.metodo_pago}
+          onChange={handleChange}
+          className={styles.select}
+          required
+        >
+          <option value="efectivo">Efectivo</option>
+          <option value="transferencia">Transferencia</option>
+          <option value="cheque">Cheque</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="nota" className={styles.label}>
+          Nota (opcional)
+        </label>
+        <textarea
+          id="nota"
+          name="nota"
+          value={formData.nota}
+          onChange={handleChange}
+          placeholder="Añade una nota o comentario"
+          className={styles.textarea}
+          rows={3}
+        />
+      </div>
+
+      {error && (
+        <div className={styles.error}>
+          {error}
+        </div>
+      )}
+
+      <div className={styles.formActions}>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className={styles.cancelButton}
+          disabled={loading}
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className={`${styles.submitButton} ${loading ? styles.loading : ''}`}
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+              </svg>
+              Registrando...
+            </>
+          ) : (
+            <>
+              <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Registrar Pago
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  )
+}

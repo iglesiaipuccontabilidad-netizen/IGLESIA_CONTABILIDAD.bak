@@ -1,17 +1,24 @@
 ﻿.dashboardLayout {
   display: flex;
   min-height: 100vh;
+  background-color: var(--fondo);
 }
 
 .mainContent {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #f9fafb;
+  background-color: var(--fondo);
+  min-height: 100vh;
+  padding-left: 260px;
 }
 
 .contentWrapper {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  min-width: 0;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }

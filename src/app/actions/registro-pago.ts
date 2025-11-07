@@ -15,7 +15,7 @@ export type ActionState = {
 } | null
 
 export async function procesarPago(
-  votoId: string,
+  id: string,
   prevState: ActionState | null,
   formData: FormData
 ): Promise<ActionResponse> {
@@ -48,7 +48,7 @@ export async function procesarPago(
 
     // Registrar el pago
     const result = await registrarPago({
-      votoId,
+      id,
       monto,
       fecha,
       nota
@@ -61,11 +61,11 @@ export async function procesarPago(
       }
     }
 
-        // Revalidar todas las rutas que muestran información de votos
+    // Revalidar todas las rutas que muestran información de votos
     revalidatePath('/dashboard', 'layout') // Revalida el dashboard principal
     revalidatePath('/dashboard/votos', 'layout') // Revalida la lista de votos
-    revalidatePath(`/dashboard/votos/${votoId}`) // Revalida los detalles del voto específico
-    revalidatePath(`/dashboard/pagos/${votoId}`) // Revalida la página de pagos
+    revalidatePath(`/dashboard/votos/${id}`) // Revalida los detalles del voto específico
+    revalidatePath(`/dashboard/pagos/${id}`) // Revalida la página de pagos
 
     return { 
       error: null, 

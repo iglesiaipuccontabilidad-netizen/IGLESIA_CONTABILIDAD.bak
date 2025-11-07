@@ -104,10 +104,10 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
                 </td>
                 <td className="px-6 py-4">
                   <div className={styles.actions}>
-                    <Link href={`/votos/${voto.id}`} className={styles.btnSecondary}>
+                    <Link href={`/dashboard/votos/${voto.id}`} className={styles.btnSecondary}>
                       Ver Detalles
                     </Link>
-                    <Link href={`/pagos/${voto.id}`} className={styles.btnPrimary}>
+                    <Link href={`/dashboard/pagos/nuevo?voto=${voto.id}`} className={styles.btnPrimary}>
                       Registrar Pago
                     </Link>
                   </div>

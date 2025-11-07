@@ -21,6 +21,58 @@ tecnologias:
   estilado: 
     - Tailwind CSS
     - CSS Modules
+    - Variables CSS Personalizadas
+  variables_css:
+    colores_base:
+      azul_oscuro: "#152A55"
+      azul_medio: "#3D6AB0"
+      blanco: "#FFFFFF"
+      amarillo: "#F0D447"
+      celeste_claro: "#8EB6E4"
+      gris_claro: "#DDE5F0"
+      verde_success: "#22C55E"
+      rojo_warning: "#EF4444"
+      gris_texto: "#64748B"
+      fondo: "#F8FAFC"
+    
+    gradientes:
+      header: "135deg, var(--azul-oscuro) 0%, var(--azul-medio) 100%"
+      progreso: "90deg, var(--verde-success) 0%, var(--celeste-claro) 100%"
+      tabla_header: "135deg, var(--azul-oscuro) 0%, var(--azul-medio) 100%"
+    
+    fondos_transparentes:
+      amarillo: "rgba(240, 212, 71, 0.1)"
+      azul: "rgba(61, 106, 176, 0.05)"
+      celeste: "rgba(142, 182, 228, 0.1)"
+      blanco: "rgba(255, 255, 255, 0.1)"
+    
+    bordes:
+      card_left: "4px solid"
+      tabla_radius: "8px"
+      input_radius: "8px"
+      avatar_radius: "50%"
+    
+    sombras:
+      card: "0 2px 12px rgba(21, 42, 85, 0.08)"
+      card_hover: "0 4px 20px rgba(21, 42, 85, 0.12)"
+      header: "0 2px 10px rgba(21, 42, 85, 0.1)"
+    
+    dimensiones:
+      header_height: "auto"
+      logo_size: "50px"
+      avatar_size: "35px"
+      progress_height: "6px"
+      container_max: "1400px"
+    
+    transiciones:
+      hover: "all 0.3s ease"
+      transform: "transform 0.2s ease, box-shadow 0.2s ease"
+    
+    animaciones:
+      slideIn: "@keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }"
   estado:
     - React Context (AuthContext)
   hosting: Vercel
@@ -228,6 +280,309 @@ seguridad:
       - "Administradores pueden ver todos"
 ```
 
+## Diseño del Dashboard
+
+### Layout Principal
+```yaml
+dashboard_layout:
+  header:
+    estilo:
+      fondo: "linear-gradient(135deg, var(--azul-oscuro) 0%, var(--azul-medio) 100%)"
+      sombra: "var(--sombra-header)"
+      posicion: "sticky"
+      top: "0"
+      z_index: "100"
+      padding: "1rem 2rem"
+    
+    header_content:
+      max_width: "var(--container-max)"
+      margin: "0 auto"
+      display: "flex"
+      justify_content: "space-between"
+      align_items: "center"
+    
+    logo_section:
+      display: "flex"
+      align_items: "center"
+      gap: "1rem"
+      logo:
+        width: "var(--logo-size)"
+        height: "var(--logo-size)"
+        background: "var(--blanco)"
+        border_radius: "50%"
+        display: "flex"
+        align_items: "center"
+        justify_content: "center"
+        font_weight: "bold"
+        color: "var(--azul-oscuro)"
+        font_size: "1.2rem"
+        text: "IPUC"
+      titulo:
+        color: "var(--blanco)"
+        font_size: "1.5rem"
+        font_weight: "600"
+    
+    user_menu:
+      display: "flex"
+      align_items: "center"
+      gap: "1rem"
+      color: "var(--blanco)"
+      info:
+        text_align: "right"
+        nombre:
+          font_weight: "600"
+          margin_bottom: "0.2rem"
+        rol:
+          font_size: "0.8rem"
+          opacity: "0.8"
+      dropdown:
+        background: "var(--fondo-blanco-transparente)"
+        border: "1px solid rgba(255, 255, 255, 0.2)"
+        padding: "0.5rem 1rem"
+        border_radius: "8px"
+        hover:
+          background: "rgba(255, 255, 255, 0.2)"
+
+  contenedor_principal:
+    max_width: "var(--container-max)"
+    margin: "0 auto"
+    padding: "2rem"
+    background: "var(--fondo)"
+    
+  kpis_section:
+    display: "grid"
+    grid_template: "repeat(auto-fit, minmax(280px, 1fr))"
+    gap: "1.5rem"
+    margin_bottom: "2rem"
+    animation: "slideIn 0.6s ease-out"
+
+  tarjetas_estadisticas:
+    kpi_card:
+      estilo_base:
+        background: "var(--blanco)"
+        border_radius: "12px"
+        padding: "1.5rem"
+        box_shadow: "var(--sombra-card)"
+        border_left: "var(--borde-card-left)"
+        transition: "var(--transition-transform)"
+        animation: "slideIn 0.6s ease-out"
+      hover:
+        transform: "translateY(-2px)"
+        box_shadow: "var(--sombra-card-hover)"
+      variantes:
+        total_comprometido:
+          border_color: "var(--azul-medio)"
+          icon_bg: "rgba(61, 106, 176, 0.1)"
+          icon_color: "var(--azul-medio)"
+        total_recaudado:
+          border_color: "var(--verde-success)"
+          icon_bg: "rgba(34, 197, 94, 0.1)"
+          icon_color: "var(--verde-success)"
+        total_pendiente:
+          border_color: "var(--amarillo)"
+          icon_bg: "rgba(240, 212, 71, 0.1)"
+          icon_color: "#B45309"
+        votos_activos:
+          border_color: "var(--celeste-claro)"
+          icon_bg: "rgba(142, 182, 228, 0.1)"
+          icon_color: "var(--celeste-claro)"
+      
+      componentes:
+        header:
+          display: "flex"
+          justify_content: "space-between"
+          align_items: "center"
+          margin_bottom: "1rem"
+        titulo:
+          font_size: "0.9rem"
+          font_weight: "600"
+          color: "var(--gris-texto)"
+          text_transform: "uppercase"
+          letter_spacing: "0.5px"
+        icono:
+          width: "40px"
+          height: "40px"
+          border_radius: "8px"
+          display: "flex"
+          align_items: "center"
+          justify_content: "center"
+          font_size: "1.2rem"
+        valor:
+          font_size: "2rem"
+          font_weight: "700"
+          color: "var(--azul-oscuro)"
+          margin_bottom: "0.5rem"
+        tendencia:
+          font_size: "0.8rem"
+          color: "var(--verde-success)"
+    
+    content_section:
+      display: "grid"
+      grid_template_columns: "70% 30%"
+      gap: "2rem"
+      
+      panel_votos:
+        background: "var(--blanco)"
+        border_radius: "12px"
+        padding: "1.5rem"
+        box_shadow: "var(--sombra-card)"
+        animation: "slideIn 0.6s ease-out"
+        
+        header:
+          display: "flex"
+          justify_content: "space-between"
+          align_items: "center"
+          margin_bottom: "1.5rem"
+          padding_bottom: "1rem"
+          border_bottom: "2px solid var(--gris-claro)"
+          
+        filtros:
+          display: "flex"
+          gap: "1rem"
+          margin_bottom: "1.5rem"
+          flex_wrap: "wrap"
+          inputs:
+            padding: "0.7rem 1rem"
+            border: "2px solid var(--gris-claro)"
+            border_radius: "var(--input-radius)"
+            font_size: "0.9rem"
+            transition: "border-color 0.3s ease"
+            focus:
+              outline: "none"
+              border_color: "var(--azul-medio)"
+        
+        tabla:
+          width: "100%"
+          border_collapse: "collapse"
+          thead:
+            background: "var(--gradiente-tabla-header)"
+            color: "var(--blanco)"
+            th:
+              padding: "1rem 0.8rem"
+              text_align: "left"
+              font_weight: "600"
+              font_size: "0.9rem"
+              first_child:
+                border_radius: "8px 0 0 0"
+              last_child:
+                border_radius: "0 8px 0 0"
+          tbody:
+            tr:
+              hover:
+                background: "var(--fondo-azul-transparente)"
+            td:
+              padding: "1rem 0.8rem"
+              border_bottom: "1px solid var(--gris-claro)"
+              vertical_align: "middle"
+          
+          miembro_info:
+            display: "flex"
+            align_items: "center"
+            gap: "0.8rem"
+            avatar:
+              width: "var(--avatar-size)"
+              height: "var(--avatar-size)"
+              border_radius: "var(--avatar-radius)"
+              background: "var(--celeste-claro)"
+              color: "var(--blanco)"
+              display: "flex"
+              align_items: "center"
+              justify_content: "center"
+              font_weight: "600"
+              font_size: "0.9rem"
+            detalles:
+              nombre:
+                font_weight: "600"
+                color: "var(--azul-oscuro)"
+                margin_bottom: "0.2rem"
+              cedula:
+                font_size: "0.8rem"
+                color: "var(--gris-texto)"
+          
+          proposito_tag:
+            background: "var(--amarillo)"
+            color: "var(--azul-oscuro)"
+            padding: "0.3rem 0.8rem"
+            border_radius: "20px"
+            font_size: "0.8rem"
+            font_weight: "600"
+          
+          progress_container:
+            display: "flex"
+            align_items: "center"
+            gap: "0.8rem"
+            barra:
+              flex: "1"
+              height: "var(--progress-height)"
+              background: "var(--gris-claro)"
+              border_radius: "3px"
+              overflow: "hidden"
+              fill:
+                height: "100%"
+                background: "var(--gradiente-progreso)"
+                transition: "width 0.3s ease"
+            texto:
+              font_weight: "600"
+              font_size: "0.9rem"
+              color: "var(--azul-oscuro)"
+              min_width: "40px"
+      
+      panel_lateral:
+        seguimiento:
+          top_deudores:
+            item:
+              fondo: "rgba(240, 212, 71, 0.1)"
+              borde: "3px amarillo"
+              info:
+                nombre: "600 weight"
+                monto: "rojo-warning"
+          alertas:
+            estilo: "lista con iconos"
+            separacion: "bordes gris-claro"
+
+  responsive:
+    breakpoints:
+      desktop:
+        min_width: "1200px"
+        content_section:
+          grid_template_columns: "70% 30%"
+      
+      tablet:
+        max_width: "1200px"
+        content_section:
+          grid_template_columns: "1fr"
+      
+      mobile:
+        max_width: "768px"
+        ajustes:
+          main_container:
+            padding: "1rem"
+          
+          header_content:
+            flex_direction: "column"
+            gap: "1rem"
+          
+          filtros:
+            flex_direction: "column"
+            filter_input:
+              min_width: "auto"
+          
+          tabla_container:
+            font_size: "0.8rem"
+          
+          kpi_value:
+            font_size: "1.5rem"
+    
+    notas_responsive:
+      - "Diseño fluido que se adapta a diferentes tamaños de pantalla"
+      - "Grid responsivo para KPIs que ajusta automáticamente el número de columnas"
+      - "Menú de usuario colapsable en móvil"
+      - "Filtros apilados en vista móvil para mejor usabilidad"
+      - "Tabla con scroll horizontal en móvil"
+      - "Tamaños de fuente reducidos en móvil para mejor legibilidad"
+      - "Panel de seguimiento se mueve debajo de la tabla en tablet y móvil"
+```
+
 ## Flujos de Trabajo Principales
 
 ### Registro de Nuevo Miembro
@@ -271,18 +626,23 @@ componentes:
   
   layout:
     - Layout: "Layout principal de la aplicación"
-    - Sidebar: "Navegación lateral"
+    - Sidebar: "Navegación lateral con gradiente personalizado"
     - DashboardHeader: "Encabezado del dashboard"
   
   miembros:
     - MemberList: "Lista de miembros"
-    - MemberCard: "Tarjeta de miembro"
+    - MemberCard: "Tarjeta de miembro con estilo IPUC"
     - MiembroCombobox: "Selector de miembros"
   
+  dashboard:
+    - DashboardCards: "Tarjetas de estadísticas principales"
+    - VotosActivosPanel: "Panel principal de votos activos con progreso visual"
+    - VotosActivosTable: "Tabla compacta de votos activos"
+  
   votos:
-    - VotosActivosTable: "Tabla de votos activos"
-    - VotoCard: "Tarjeta de voto"
+    - VotoCard: "Tarjeta de voto con barra de progreso y estadísticas"
     - VotoInfo: "Información detallada del voto"
+    - VotoProgress: "Componente de progreso con gradiente"
   
   pagos:
     - PagoForm: "Formulario de registro de pago"

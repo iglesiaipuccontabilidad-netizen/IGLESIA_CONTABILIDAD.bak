@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { type Database } from '@/lib/database.types'
 
 export async function logout() {
   const supabase = await createClient()
@@ -17,10 +17,104 @@ export async function logout() {
   redirect('/login')
 }
 
+export async function signup(formData: FormData) {
+  try {
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const nombres = formData.get('nombres') as string
+    const apellidos = formData.get('apellidos') as string
+    const cedula = formData.get('cedula') as string
+    const telefono = formData.get('telefono') as string
+    const direccion = formData.get('direccion') as string
+
+    if (!email || !password || !nombres || !apellidos || !cedula) {
+      return { error: 'Todos los campos son obligatorios' }
+    }
+
+    const supabase = await createClient()
+
+    // 1. Crear el usuario en auth.users
+    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nombres,
+          apellidos,
+          email_verified: false,
+          phone_verified: false,
+        }
+      }
+    })
+
+    if (signUpError) {
+      console.error('Error al crear usuario:', signUpError)
+      return { error: 'Error al crear la cuenta. Por favor intenta de nuevo.' }
+    }
+
+    if (!authData.user) {
+      return { error: 'Error al crear la cuenta' }
+    }
+
+    // 2. Crear el registro en la tabla usuarios
+    const nuevoUsuario: Database['public']['Tables']['usuarios']['Insert'] = {
+      id: authData.user.id,
+      email,
+      rol: 'pendiente',
+      estado: 'pendiente',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    const { error: userError } = await supabase
+      .from('usuarios')
+      .insert(nuevoUsuario as any)
+
+    if (userError) {
+      console.error('Error al crear registro de usuario:', userError)
+      await supabase.auth.signOut()
+      return { error: 'Error al crear el registro de usuario' }
+    }
+
+    // 3. Crear el registro en la tabla miembros
+    const nuevoMiembro: Database['public']['Tables']['miembros']['Insert'] = {
+      id: authData.user.id,
+      nombres,
+      apellidos,
+      cedula,
+      email,
+      telefono: telefono || null,
+      direccion: direccion || null,
+      fecha_ingreso: new Date().toISOString(),
+      estado: 'inactivo',
+      rol: 'miembro'
+    }
+
+    const { error: memberError } = await supabase
+      .from('miembros')
+      .insert(nuevoMiembro as any)
+
+    if (memberError) {
+      console.error('Error al crear registro de miembro:', memberError)
+      await supabase.auth.signOut()
+      return { error: 'Error al crear el registro de miembro' }
+    }
+
+    return {
+      success: true,
+      redirect: '/login?message=registro-exitoso'
+    }
+  } catch (error: any) {
+    console.error('Error en registro:', error)
+    return { error: error.message || 'Ha ocurrido un error al registrarse' }
+  }
+}
+
 export async function login(formData: FormData) {
   try {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const redirectTo = formData.get('redirect_to') as string
 
     if (!email || !password) {
       return { error: 'Por favor ingresa tu correo y contraseña' }
@@ -46,62 +140,50 @@ export async function login(formData: FormData) {
       return { error: 'Usuario no encontrado' }
     }
 
-    revalidatePath('/', 'layout')
-    return { success: true, redirect: '/dashboard' }
-  } catch (error: any) {
-    console.error('Error en login:', error)
-    return { error: error.message || 'Ha ocurrido un error al iniciar sesión' }
-  }
-}
+    // Verificar si el usuario existe en la tabla usuarios y está activo
+    type UsuarioRow = Database['public']['Tables']['usuarios']['Row']
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('id, email, rol, estado')
+      .eq('id', data.user.id)
+      .maybeSingle() as { 
+        data: UsuarioRow | null, 
+        error: any 
+      }
 
-export async function signup(formData: FormData) {
-  try {
-    const supabase = await createClient()
+    console.log('Resultado de verificación de usuario:', { userData, userError })
 
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const confirmPassword = formData.get('confirmPassword') as string
-    const nombre = formData.get('nombre') as string
-    const apellido = formData.get('apellido') as string
-
-    if (!email || !password || !confirmPassword || !nombre || !apellido) {
-      return { error: 'Por favor completa todos los campos' }
-    }
-
-    if (password !== confirmPassword) {
-      return { error: 'Las contraseñas no coinciden' }
-    }
-
-    const { error: signUpError, data } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nombre,
-          apellido,
-        },
-      },
-    })
-
-    if (signUpError) {
-      console.error('Error en registro:', signUpError)
+    if (userError) {
+      console.error('Error al verificar usuario:', userError)
+      await supabase.auth.signOut()
       return { 
-        error: signUpError.message === 'User already registered'
-          ? 'El usuario ya está registrado'
-          : 'Ha ocurrido un error durante el registro'
+        error: 'Error al verificar usuario. Por favor intenta nuevamente.' 
       }
     }
 
-    // Si el registro fue exitoso, retornamos éxito
-    return { 
-      success: true, 
-      redirect: '/login?mensaje=Registro exitoso. Por favor inicia sesión.' 
+    if (!userData) {
+      console.error('Usuario no encontrado en la tabla usuarios')
+      await supabase.auth.signOut()
+      return { 
+        error: 'Usuario no encontrado en el sistema. Por favor contacta al administrador.' 
+      }
     }
 
-  } catch (error) {
-    console.error('Error en signup:', error)
-    return { 
-      error: error instanceof Error ? error.message : 'Error al registrar usuario' 
+    if (userData.estado !== 'activo') {
+      console.error('Usuario inactivo:', userData.estado)
+      await supabase.auth.signOut()
+      return { 
+        error: 'Usuario no autorizado o inactivo. Por favor contacta al administrador.' 
+      }
     }
+
+    revalidatePath('/', 'layout')
+    return { 
+      success: true, 
+      redirect: redirectTo || '/dashboard' 
+    }
+  } catch (error: any) {
+    console.error('Error en login:', error)
+    return { error: error.message || 'Ha ocurrido un error al iniciar sesión' }
   }
 }

@@ -1,6 +1,21 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IPUC Contabilidad
 
-## Getting Started
+Sistema de gestión contable para la Iglesia Pentecostal Unida de Colombia.
+
+## Documentación
+
+1. [Autenticación y Control de Acceso](./docs/AUTHENTICATION.md)
+   - Roles y permisos
+   - Flujos de autenticación
+   - Páginas protegidas
+   - Mejores prácticas
+
+2. [Estructura del Proyecto](./PROJECT_DOCUMENTATION.md)
+   - Tecnologías utilizadas
+   - Estructura de directorios
+   - Configuración del proyecto
+
+## Para Empezar
 
 First, run the development server:
 

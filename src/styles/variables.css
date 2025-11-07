@@ -1,19 +1,92 @@
 :root {
-  --azul-oscuro: #152A55;
-  --azul-medio: #3D6AB0;
-  --blanco: #FFFFFF;
-  --amarillo: #F0D447;
-  --celeste-claro: #8EB6E4;
-  --gris-claro: #DDE5F0;
-  --verde-success: #22C55E;
-  --rojo-warning: #EF4444;
-  --gris-texto: #64748B;
-  --fondo: #F8FAFC;
+  /* Colores principales */
+  --azul-oscuro: #1a365d;
+  --azul-medio: #2c5282;
+  --azul-claro: #4299e1;
+  
+  /* Colores base */
+  --blanco: #ffffff;
+  --negro: #000000;
+  --gris-claro: #f7fafc;
+  --gris-medio: #e2e8f0;
+  --gris-oscuro: #2d3748;
+
+  /* Colores de fondo */
+  --color-bg: var(--blanco);
+  --color-bg-secondary: var(--gris-claro);
+  --color-page-bg: var(--gris-claro);
+
+  /* Colores de texto */
+  --color-text-primary: var(--gris-oscuro);
+  --color-text-secondary: #4a5568;
+
+  /* Colores de borde */
+  --color-border: var(--gris-medio);
+  --color-border-focus: var(--azul-claro);
+
+  /* Estados */
+  --color-success: #059669;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
+  --color-info: #2563eb;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--fondo);
-  color: var(--azul-oscuro);
-  line-height: 1.6;
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-secondary: #6366f1;
+    --color-secondary-dark: #4f46e5;
+
+    --color-text-primary: #f3f4f6;
+    --color-text-secondary: #9ca3af;
+
+    --color-bg: #111827;
+    --color-bg-hover: #1f2937;
+    --color-card-bg: #1f2937;
+    --color-page-bg: #111827;
+
+    --color-border: #374151;
+    --color-border-hover: #4b5563;
+
+    --color-success: #10b981;
+    --color-error: #ef4444;
+    --color-warning: #f59e0b;
+    --color-info: #3b82f6;
+  }
+}
+
+html, body {
+  background-color: var(--color-page-bg);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Utilitarios */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
