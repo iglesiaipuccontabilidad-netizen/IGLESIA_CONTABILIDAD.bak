@@ -1,0 +1,56 @@
+@media (max-width: 1366px) {
+  .mainContainer {
+    padding: 1rem;
+  }
+
+  .panelsContainer {
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .cardHeader {
+    margin-bottom: 0.75rem;
+  }
+
+  .cardTitle {
+    font-size: 0.9rem;
+  }
+
+  .cardDescription {
+    font-size: 0.8rem;
+  }
+
+  .tableContainer {
+    font-size: 0.85rem;
+  }
+
+  .button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .mainContainer {
+    margin-left: 72px;
+  }
+
+  .panelsContainer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .mainContainer {
+    margin-left: 0;
+    padding: 0.75rem;
+  }
+
+  .tableContainer {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

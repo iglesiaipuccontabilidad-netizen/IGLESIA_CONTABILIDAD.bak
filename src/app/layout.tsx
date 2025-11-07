@@ -13,6 +13,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Sistema de Votos IPUC",
   description: "Sistema de gestión de votos y compromisos financieros para la IPUC",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  }
 };
 
 function LoadingFallback() {

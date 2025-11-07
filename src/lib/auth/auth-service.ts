@@ -38,10 +38,10 @@ export async function verifyAuth(
   try {
     const supabase = await createClient()
 
-    // Verificar la autenticación usando auth.getSession() ya que estamos en el servidor
-    const { data: { session }, error: authError } = await supabase.auth.getSession()
+    // Verificar la autenticación usando auth.getUser() que valida contra el servidor
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
 
-    if (authError || !session?.user) {
+    if (authError || !authUser) {
       console.error('Error de autenticación:', {
         error: authError,
         code: AuthErrorCodes.NOT_AUTHENTICATED
@@ -52,8 +52,6 @@ export async function verifyAuth(
       redirect(destination)
     }
 
-    const user = session.user
-
     // Obtener información adicional del usuario de la tabla usuarios
     let { data: userData, error: dbError } = await supabase
       .from('usuarios')
@@ -61,7 +59,7 @@ export async function verifyAuth(
         rol,
         estado
       `)
-      .eq('id', user.id)
+      .eq('id', authUser.id)
       .single() as {
         data: Pick<AuthUser, 'rol' | 'estado'> | null,
         error: any
@@ -73,7 +71,7 @@ export async function verifyAuth(
       if (dbError.code === '42703') {
         console.warn('Columnas rol/estado no encontradas, usando valores por defecto temporalmente:', {
           error: dbError,
-          userId: user.id,
+          userId: authUser.id,
           details: dbError.details
         })
         userData = {
@@ -83,7 +81,7 @@ export async function verifyAuth(
       } else {
         console.error('Error al obtener datos del usuario:', {
           error: dbError,
-          userId: user.id,
+          userId: authUser.id,
           details: dbError.details,
           code: AuthErrorCodes.DATABASE_ERROR
         })
@@ -93,7 +91,7 @@ export async function verifyAuth(
 
     if (!userData) {
       console.warn('Usuario no encontrado en la base de datos:', {
-        userId: user.id,
+        userId: authUser.id,
         code: AuthErrorCodes.USER_NOT_FOUND
       })
       redirect('/login?error=user-not-found')
@@ -101,7 +99,7 @@ export async function verifyAuth(
 
     if (userData.estado !== 'activo') {
       console.warn('Usuario inactivo:', {
-        userId: user.id,
+        userId: authUser.id,
         estado: userData.estado,
         code: AuthErrorCodes.USER_INACTIVE
       })
@@ -110,7 +108,7 @@ export async function verifyAuth(
 
     if (!requiredRoles.includes(userData.rol as AuthorizedRole)) {
       console.warn('Acceso denegado - Rol no permitido:', {
-        userId: user.id,
+        userId: authUser.id,
         rolActual: userData.rol,
         rolesPermitidos: requiredRoles,
         code: AuthErrorCodes.UNAUTHORIZED_ROLE
@@ -119,8 +117,8 @@ export async function verifyAuth(
     }
 
     return {
-      id: user.id,
-      email: user.email!,
+      id: authUser.id,
+      email: authUser.email!,
       rol: userData.rol,
       estado: userData.estado
     } as AuthUser
