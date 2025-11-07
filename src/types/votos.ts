@@ -2,7 +2,6 @@ import type { Database } from '@/lib/database.types'
 
 type Tables = Database['public']['Tables']
 type VotoRow = Tables['votos']['Row']
-type MiembroRow = Tables['miembros']['Row']
 type PagoRow = Tables['pagos']['Row']
 
 export type VotoBase = VotoRow & {

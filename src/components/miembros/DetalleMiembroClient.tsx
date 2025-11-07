@@ -1,60 +1,41 @@
-import { createClient } from '@/lib/supabase/server';
-import { DeleteConfirmation } from '@/components/miembros/DeleteConfirmation';
-import { eliminarMiembro } from '@/app/actions/miembros';
-import { EditarMiembroForm } from '@/components/miembros/EditarMiembroForm';
-import { toast } from 'react-hot-toast';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft, UserCircle } from 'lucide-react';
+'use client'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { DeleteConfirmation } from './DeleteConfirmation'
+import { eliminarMiembro } from '@/app/actions/miembros'
+import toast from 'react-hot-toast'
 
-export default async function DetalleMiembroPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
-}) {
-  const { id } = await params;
-  const supabase = await createClient();
+interface Voto {
+  id: string
+  proposito: string
+  monto_total: number
+  recaudado: number
+  estado: string
+  fecha_limite: string
+}
 
-  const { data: miembro, error } = await supabase
-    .from('miembros')
-    .select(`
-      *,
-      votos (
-        id,
-        proposito,
-        monto_total,
-        recaudado,
-        estado,
-        fecha_limite
-      )
-    `)
-    .eq('id', id)
-    .single();
+interface MiembroData {
+  id: string
+  nombres: string
+  apellidos: string
+  cedula: string
+  email: string | null
+  telefono: string | null
+  fecha_ingreso: string
+  estado: string
+  votos?: Voto[]
+}
 
-  if (error) {
-    console.error('Error al cargar el miembro:', error);
-    return (
-      <div className="p-4">
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-          Error al cargar los datos del miembro. Por favor, intenta de nuevo.
-        </div>
-      </div>
-    );
-  }
+interface DetalleMiembroClientProps {
+  miembro: MiembroData
+}
 
-  if (!miembro) {
-    return (
-      <div className="p-4">
-        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
-          No se encontró el miembro solicitado.
-        </div>
-      </div>
-    );
-  }
+export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientProps) {
+  const router = useRouter()
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -241,7 +222,7 @@ export default async function DetalleMiembroPage({
               {/* Botones de acción */}
               <div className="space-y-3">
                 <Link
-                  href={`/dashboard/miembros/${miembro.id}/editar`}
+                  href={`/dashboard/miembros/${miembro.id}/edit`}
                   className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Editar Información
@@ -304,5 +285,5 @@ export default async function DetalleMiembroPage({
         nombre={`${miembro.nombres} ${miembro.apellidos}`}
       />
     </div>
-  );
+  )
 }

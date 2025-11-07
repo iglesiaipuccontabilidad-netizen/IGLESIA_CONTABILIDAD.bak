@@ -38,10 +38,10 @@ export const dynamic = 'force-dynamic'
 export default async function VotoDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   // Validar el ID antes de usarlo
-  const { id } = await Promise.resolve(params)
+  const { id } = await params
   
   if (!id) {
     return notFound()

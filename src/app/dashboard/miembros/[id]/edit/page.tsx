@@ -4,19 +4,20 @@ import { notFound } from 'next/navigation';
 import type { Miembro } from '@/types/miembros';
 
 interface EditarMiembroPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function EditarMiembroPage({ params }: EditarMiembroPageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // Obtener los datos del miembro
   const { data: miembro, error } = await supabase
     .from('miembros')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single() as { data: Miembro | null, error: any };
 
   if (error || !miembro) {
