@@ -154,19 +154,19 @@ export default async function DashboardPage() {
     }))
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-blue-50 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-slate-50 to-cyan-50 relative overflow-hidden">
         {/* Decoraciones de fondo */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-cyan-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 right-1/4 w-80 h-80 bg-gradient-to-br from-indigo-400/20 to-violet-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary-400/20 to-blue-400/20 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 -left-40 w-96 h-96 bg-gradient-to-br from-cyan-400/20 to-primary-300/20 rounded-full blur-3xl"></div>
+          <div className="absolute -bottom-40 right-1/4 w-80 h-80 bg-gradient-to-br from-sky-400/20 to-cyan-400/20 rounded-full blur-3xl"></div>
         </div>
 
         <div className="container-custom py-8 space-y-8 animate-fade-in relative z-10">
           {/* Header del Dashboard */}
           <div className="page-header">
             <div>
-              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-500 to-cyan-500 bg-clip-text text-transparent">
                 Dashboard
               </h1>
               <p className="text-slate-600 mt-2 flex items-center space-x-2">
@@ -175,8 +175,8 @@ export default async function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-violet-200 shadow-sm">
-                <span className="text-xs text-violet-600 font-medium">
+              <div className="px-4 py-2 bg-white/80 backdrop-blur-sm rounded-xl border border-primary-200 shadow-sm">
+                <span className="text-xs text-primary-600 font-medium">
                   Última actualización: {new Date().toLocaleDateString('es-CO', { 
                     day: 'numeric', 
                     month: 'short', 

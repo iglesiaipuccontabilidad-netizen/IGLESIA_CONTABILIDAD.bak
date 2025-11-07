@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import { ExpandableCard } from '@/components/ui/expandable-card';
 import { AnimatedTooltip } from '@/components/ui/animated-tooltip';
 import { ActionMenu } from './ActionMenu';
 import { DeleteConfirmation } from './DeleteConfirmation';
@@ -22,11 +21,11 @@ interface MiembroCardProps {
 }
 
 export function MiembroCard({ miembro }: MiembroCardProps) {
-  const [expanded, setExpanded] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const router = useRouter();
 
-  const handleEdit = () => {
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
     router.push(`/dashboard/miembros/${miembro.id}/editar`);
   };
 
@@ -45,20 +44,16 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
 
   return (
     <>
-      <ExpandableCard
-        expanded={expanded}
-        onToggle={() => setExpanded(!expanded)}
-        className="p-4"
-      >
+      <div className="p-4">
         <div className="space-y-4">
           {/* Encabezado con nombre y estado */}
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                 {miembro.nombres} {miembro.apellidos}
               </h3>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
               <AnimatedTooltip content={`Estado: ${miembro.estado}`}>
                 <span className={`
                   px-2 py-1 text-sm rounded-full
@@ -89,8 +84,11 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
           {/* Votos activos */}
           <AnimatedTooltip content="Ver detalles de votos">
             <div 
-              onClick={() => router.push(`/dashboard/votos?miembro=${miembro.id}`)}
-              className="flex items-center justify-between mt-4 p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/dashboard/votos?miembro=${miembro.id}`);
+              }}
+              className="flex items-center justify-between mt-4 p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors relative z-10"
             >
               <span className="text-sm font-medium text-blue-900">Votos Activos</span>
               <span className="text-lg font-semibold text-blue-900">
@@ -99,7 +97,7 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
             </div>
           </AnimatedTooltip>
         </div>
-      </ExpandableCard>
+      </div>
 
       <DeleteConfirmation
         isOpen={isDeleteModalOpen}

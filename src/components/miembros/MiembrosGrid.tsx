@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
 import { SearchBar } from './SearchBar';
@@ -20,6 +21,7 @@ interface MiembrosGridProps {
 
 export function MiembrosGrid({ miembros }: MiembrosGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
 
   const miembrosFiltrados = useMemo(() => {
     if (!searchQuery.trim()) return miembros;
@@ -64,7 +66,10 @@ export function MiembrosGrid({ miembros }: MiembrosGridProps) {
           >
             <BentoGrid className="max-w-7xl mx-auto">
               {miembrosFiltrados.map((miembro) => (
-                <BentoGridItem key={miembro.id}>
+                <BentoGridItem 
+                  key={miembro.id} 
+                  onClick={() => router.push(`/dashboard/miembros/${miembro.id}`)}
+                >
                   <MiembroCard miembro={miembro} />
                 </BentoGridItem>
               ))}

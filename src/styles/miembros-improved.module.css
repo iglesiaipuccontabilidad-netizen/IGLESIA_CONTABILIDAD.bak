@@ -71,10 +71,10 @@
 }
 
 .btnPrimary {
-  background: var(--azul-oscuro);
-  color: var(--blanco);
+  background: var(--gradient-primary);
+  color: white;
   padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 0.75rem;
   font-weight: 600;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -83,13 +83,13 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
   margin-left: 1rem;
 }
 
 .btnPrimary:hover {
-  background: var(--azul-oscuro);
   transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.15);
 }
 
 .searchSection {
@@ -276,27 +276,57 @@
 
 /* Estados y roles */
 .activo {
-  color: var(--verde);
+  background-color: var(--emerald-50);
+  color: var(--emerald-500);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .inactivo {
-  color: var(--rojo);
+  background-color: var(--rose-50);
+  color: var(--rose-500);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .pendiente {
-  color: var(--naranja);
+  background-color: var(--amber-50);
+  color: var(--amber-500);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .miembro {
-  color: var(--azul-medio);
+  background-color: var(--primary-50);
+  color: var(--primary-600);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .admin {
-  color: var(--morado);
+  background-color: var(--cyan-50);
+  color: var(--cyan-600);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .tesorero {
-  color: var(--verde-oscuro);
+  background-color: var(--emerald-50);
+  color: var(--emerald-500);
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 /* Responsive adaptations */
@@ -351,22 +381,45 @@
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .memberCard {
-    background: var(--gris-oscuro);
-    border-color: var(--gris-medio);
+    background: rgba(15, 23, 42, 0.8);
+    border-color: var(--slate-700);
   }
 
   .memberInfo h3 {
-    color: var(--blanco);
+    color: white;
   }
 
   .memberDetailValue {
-    color: var(--blanco);
+    color: var(--slate-200);
+  }
+
+  .memberDetailLabel {
+    color: var(--slate-400);
   }
 
   .searchInput,
   .filterSelect {
-    background: var(--gris-oscuro);
-    border-color: var(--gris-medio);
-    color: var(--blanco);
+    background: rgba(15, 23, 42, 0.8);
+    border-color: var(--slate-700);
+    color: white;
+  }
+
+  .btnPrimary {
+    background: var(--gradient-primary);
+  }
+
+  .btnSecondary {
+    background-color: var(--slate-700);
+    color: white;
+  }
+
+  .btnOutline {
+    border-color: var(--primary-400);
+    color: var(--primary-400);
+  }
+
+  .btnOutline:hover {
+    background: var(--primary-400);
+    color: black;
   }
 }

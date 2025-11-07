@@ -160,11 +160,14 @@ export default function VotosPage() {
       <div className="container-custom relative z-10 space-y-8">
         {/* Header */}
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-          <div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
+          <div className="space-y-3">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary-200 bg-primary-50/90 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary-600 shadow-sm">
+              Panel de Votos
+            </span>
+            <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary-600 via-primary-500 to-cyan-500 bg-clip-text text-transparent">
               Gestión de Votos
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600">
+            <p className="max-w-2xl text-sm text-slate-600">
               Analiza el avance de los compromisos financieros de la congregación, controla su estado y registra nuevos pagos o votos desde un panel moderno y organizado.
             </p>
           </div>
@@ -195,7 +198,7 @@ export default function VotosPage() {
               title: 'Total recaudado',
               value: formatearMonto(estadisticas.totalRecaudado),
               helper: `${estadisticas.porcentajeGlobal.toFixed(1)}% del total`,
-              gradient: 'from-cyan-500 to-blue-500'
+              gradient: 'from-primary-500 to-cyan-500'
             },
             {
               title: 'Monto pendiente',
@@ -207,7 +210,7 @@ export default function VotosPage() {
               title: 'Votos activos',
               value: estadisticas.votosActivos,
               helper: `de ${votos.length} votos totales`,
-              gradient: 'from-emerald-500 to-teal-500'
+              gradient: 'from-emerald-500 to-cyan-500'
             }
           ].map((card, index) => (
             <div
@@ -237,7 +240,7 @@ export default function VotosPage() {
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
                     filtros.estado === filter.value
                       ? 'bg-primary-100 text-primary-700 border border-primary-200 shadow-md'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      : 'bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 border border-transparent'
                   }`}
                 >
                   {filter.label}
@@ -316,9 +319,6 @@ export default function VotosPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="font-medium text-slate-900">{voto.proposito}</span>
-                          {voto.descripcion && (
-                            <p className="text-xs text-slate-500">{voto.descripcion}</p>
-                          )}
                         </td>
                         <td className="px-6 py-4 text-right font-semibold text-slate-900">
                           {formatearMonto(Number(voto.monto_total))}
@@ -364,7 +364,7 @@ export default function VotosPage() {
                           <div className="flex items-center justify-end gap-2">
                             <Link
                               href={`/dashboard/votos/${voto.id}`}
-                              className="inline-flex items-center gap-1 rounded-full border border-transparent bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-primary-200 hover:bg-primary-50 hover:text-primary-600"
+                              className="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-600 transition hover:bg-primary-100"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -374,7 +374,7 @@ export default function VotosPage() {
                             </Link>
                             <Link
                               href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
-                              className="inline-flex items-center gap-1 rounded-full border border-transparent bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-200"
+                              className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.171-.879-1.172-2.303 0-3.182C10.536 7.719 11.768 7.5 12 7.5c1.45 0 2.9.549 4.003 1.657" />
