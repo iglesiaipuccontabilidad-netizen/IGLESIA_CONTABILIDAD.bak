@@ -36,7 +36,6 @@ export async function verifyAuth(
   redirectTo?: string
 ) {
   try {
-    const cookieStore = cookies()
     const supabase = await createClient()
 
     // Verificar la autenticación usando auth.getSession() ya que estamos en el servidor

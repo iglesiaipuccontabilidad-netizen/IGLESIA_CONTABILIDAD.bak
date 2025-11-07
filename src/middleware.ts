@@ -60,10 +60,19 @@ export async function middleware(request: NextRequest) {
 
   try {
     // 3. Verificar la sesión y el estado del usuario en cada petición
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    let session = sessionData?.session ?? null
+
     if (sessionError) {
-      throw new Error('Error al verificar la sesión')
+      const errorCode = (sessionError as { code?: string })?.code
+
+      if (errorCode === 'refresh_token_not_found' || sessionError.message?.includes('Refresh Token Not Found')) {
+        // El token de refresco es inválido o expiró: tratamos al usuario como no autenticado
+        session = null
+      } else {
+        console.error('Error al verificar la sesión:', sessionError)
+        session = null
+      }
     }
 
     // 4. Si es la ruta raíz, redirigir según autenticación
@@ -83,7 +92,11 @@ export async function middleware(request: NextRequest) {
 
       // Si hay error al obtener datos del usuario o no está activo, cerrar sesión
       if (userError || !userData || userData.estado !== 'activo') {
-        await supabase.auth.signOut()
+        try {
+          await supabase.auth.signOut()
+        } catch (signOutError) {
+          console.warn('Error al cerrar sesión desde middleware:', signOutError)
+        }
         return NextResponse.redirect(
           new URL('/login?error=usuario_inactivo', request.url)
         )

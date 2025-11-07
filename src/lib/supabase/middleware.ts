@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { Database } from '../database.types'
+import { Database } from '@/lib/database.types'
 import { getCookieValue } from './cookies'
 
 // Función auxiliar para crear redirecciones

@@ -4,8 +4,8 @@ import { cookies } from 'next/headers'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import type { Database } from '@/lib/database.types'
 
-function getSupabaseClient() {
-  const cookieStore = cookies()
+async function getSupabaseClient() {
+  const cookieStore = await cookies()
   
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,7 +27,7 @@ function getSupabaseClient() {
 }
 
 export async function getSession() {
-  const supabase = getSupabaseClient()
+  const supabase = await getSupabaseClient()
   try {
     const {
       data: { session },
@@ -40,7 +40,7 @@ export async function getSession() {
 }
 
 export async function signIn(formData: FormData) {
-  const supabase = getSupabaseClient()
+  const supabase = await getSupabaseClient()
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
@@ -57,7 +57,7 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = getSupabaseClient()
+  const supabase = await getSupabaseClient()
   await supabase.auth.signOut()
   return { success: true }
 }

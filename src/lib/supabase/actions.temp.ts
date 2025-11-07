@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { createServerClient } from '@supabase/ssr'
-import { Database } from '../database.types'
+import { Database } from '@/lib/database.types'
 import { getCookieValue } from './cookies'
 import { VotoConRelaciones, VotoBasico, InsertPago, VotoUpdate } from '@/types/supabase'
 import { typedFromTable } from './typed-client'
