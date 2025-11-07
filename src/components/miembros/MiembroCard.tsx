@@ -24,9 +24,8 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const router = useRouter();
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    router.push(`/dashboard/miembros/${miembro.id}/editar`);
+  const handleEdit = () => {
+    router.push(`/dashboard/miembros/${miembro.id}/edit`);
   };
 
   const handleDelete = async () => {
