@@ -10,8 +10,8 @@
   --primary-700: #1d4ed8;
   --primary-950: #152A55;
   
-  --secondary-500: #6366f1;
-  --secondary-600: #4f46e5;
+  --secondary-500: #60a5fa;
+  --secondary-600: #3b82f6;
   
   --accent-500: #F0D447;
   
@@ -101,7 +101,7 @@
   }
   
   .btn-secondary {
-    @apply bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500 shadow-md hover:shadow-lg;
+    @apply bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-400 shadow-md hover:shadow-lg;
   }
   
   .btn-success {
@@ -203,11 +203,11 @@
   }
   
   .gradient-secondary {
-    @apply bg-gradient-to-r from-secondary-600 to-secondary-700;
+    @apply bg-gradient-to-r from-primary-500 to-primary-700;
   }
   
   .gradient-accent {
-    @apply bg-gradient-to-r from-primary-600 to-secondary-600;
+    @apply bg-gradient-to-r from-primary-500 via-primary-600 to-cyan-500;
   }
 }
 
