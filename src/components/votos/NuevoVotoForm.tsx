@@ -1,13 +1,15 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 import { MiembroCombobox } from '@/components/miembros/MiembroCombobox'
+import { Plus, Target } from 'lucide-react'
 
 type TablaVotos = Database['public']['Tables']['votos']['Insert']
 type TablaMiembros = Database['public']['Tables']['miembros']['Row']
+type Proposito = Database['public']['Tables']['propositos']['Row']
 
 interface NuevoVotoFormProps {
   miembros: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos' | 'cedula'>[]
@@ -21,10 +23,29 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
     proposito: '',
     montoTotal: '',
     fechaLimite: '',
-    miembroId: '' as string | null
+    miembroId: '' as string | null,
+    propositoId: '' as string | null
   })
+  const [propositos, setPropositos] = useState<Proposito[]>([])
+  const [showNuevoPropositoModal, setShowNuevoPropositoModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Cargar propósitos activos
+  useEffect(() => {
+    async function loadPropositos() {
+      const { data } = await supabase
+        .from('propositos')
+        .select('*')
+        .eq('estado', 'activo')
+        .order('nombre')
+      
+      if (data) {
+        setPropositos(data as Proposito[])
+      }
+    }
+    loadPropositos()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,6 +61,7 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
 
       const nuevoVoto: TablaVotos = {
         proposito: formData.proposito,
+        proposito_id: formData.propositoId || null,
         monto_total: parseFloat(formData.montoTotal),
         fecha_limite: formData.fechaLimite,
         miembro_id: formData.miembroId,
@@ -89,10 +111,47 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Selector de Propósito (opcional) */}
+        <div className="space-y-2">
+          <label htmlFor="propositoId" className="block text-sm font-semibold text-gray-900">
+            Asociar a un Propósito (opcional)
+          </label>
+          <div className="flex gap-2">
+            <select
+              id="propositoId"
+              name="propositoId"
+              value={formData.propositoId || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, propositoId: e.target.value || null }))}
+              disabled={loading}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+              <option value="">Sin propósito asociado</option>
+              {propositos.map((prop) => (
+                <option key={prop.id} value={prop.id}>
+                  {prop.nombre}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/propositos/nuevo')}
+              className="inline-flex items-center gap-2 px-4 py-3 border border-blue-600 text-blue-600 font-medium rounded-xl hover:bg-blue-50 transition-colors"
+              disabled={loading}
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 flex items-center space-x-1">
+            <Target className="h-4 w-4" />
+            <span>Vincula este voto a una campaña o propósito existente</span>
+          </p>
+        </div>
+
         {/* Propósito */}
         <div className="space-y-2">
           <label htmlFor="proposito" className="block text-sm font-semibold text-gray-900">
-            Propósito del Voto <span className="text-red-500">*</span>
+            Descripción del Voto <span className="text-red-500">*</span>
           </label>
           <textarea
             id="proposito"

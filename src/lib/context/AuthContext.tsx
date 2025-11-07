@@ -5,10 +5,12 @@ import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 
+type MemberType = Database['public']['Tables']['usuarios']['Row']
+
 type AuthContextType = {
   user: User | null
   isLoading: boolean
-  member: { id: string; email: string; } | null
+  member: MemberType | null
 }
 
 const AuthContext = createContext<AuthContextType>({

@@ -8,12 +8,12 @@ export default function VotosTableFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
-  const [estadoFilter, setEstadoFilter] = useState(searchParams.get('estado') || '')
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '')
+  const [estadoFilter, setEstadoFilter] = useState(searchParams?.get('estado') || '')
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(searchParams.toString())
+      const params = new URLSearchParams(searchParams?.toString() || '')
       if (searchQuery) {
         params.set('q', searchQuery)
       } else {
@@ -42,7 +42,7 @@ export default function VotosTableFilters() {
     <div className={styles.filtersContainer}>
       <input
         type="text"
-        placeholder="Buscar por propósito, miembro o cédula..."
+        placeholder="Buscar por propï¿½sito, miembro o cï¿½dula..."
         value={searchQuery}
         onChange={handleSearchChange}
         className={styles.searchInput}

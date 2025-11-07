@@ -9,44 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      propositos: {
+        Row: {
+          creado_por: string | null
+          created_at: string | null
+          descripcion: string | null
+          estado: string
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          id: string
+          monto_objetivo: number | null
+          monto_recaudado: number
+          nombre: string
+          ultima_actualizacion_por: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          creado_por?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          estado?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          monto_objetivo?: number | null
+          monto_recaudado?: number
+          nombre: string
+          ultima_actualizacion_por?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          creado_por?: string | null
+          created_at?: string | null
+          descripcion?: string | null
+          estado?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          monto_objetivo?: number | null
+          monto_recaudado?: number
+          nombre?: string
+          ultima_actualizacion_por?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           id: string
-          email: string
-          created_at: string
-          updated_at: string
-          rol: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
-          estado: 'activo' | 'inactivo' | 'pendiente'
+          email: string | null
+          created_at: string | null
+          updated_at: string | null
+          rol: string | null
+          estado: Database['public']['Enums']['estado_usuario']
         }
         Insert: {
           id: string
-          email: string
-          created_at?: string
-          updated_at?: string
-          rol: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
-          estado: 'activo' | 'inactivo' | 'pendiente'
+          email?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          rol?: string | null
+          estado?: Database['public']['Enums']['estado_usuario']
         }
         Update: {
-          email?: string
-          rol?: 'admin' | 'usuario' | 'pendiente' | 'tesorero'
-          estado?: 'activo' | 'inactivo' | 'pendiente'
+          id?: string
+          email?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+          rol?: string | null
+          estado?: Database['public']['Enums']['estado_usuario']
         }
+        Relationships: []
       }
       miembros: {
         Row: {
           id: string
           nombres: string
           apellidos: string
-          cedula: string
+          cedula: string | null
           telefono: string | null
           email: string | null
           direccion: string | null
           created_at: string
           updated_at: string
-          fecha_ingreso: string
+          fecha_ingreso: string | null
           usuario_id: string | null
-          estado: 'activo' | 'inactivo'
-          rol: 'miembro' | 'admin' | 'tesorero'
+          estado: string
+          rol: string
         }
         Insert: {
           id?: string
@@ -81,35 +130,44 @@ export type Database = {
           id: string
           miembro_id: string
           proposito: string
+          proposito_id: string | null
           monto_total: number
           recaudado: number
           fecha_limite: string
-          estado: 'activo' | 'completado' | 'cancelado'
+          estado: string
           created_at: string
           updated_at: string
-          creado_por: string
-          ultima_actualizacion_por: string
+          creado_por: string | null
+          ultima_actualizacion_por: string | null
         }
         Insert: {
           id?: string
           miembro_id: string
           proposito: string
+          proposito_id?: string | null
           monto_total: number
           recaudado?: number
           fecha_limite: string
-          estado?: 'activo' | 'completado' | 'cancelado'
-          creado_por: string
-          ultima_actualizacion_por?: string
+          estado?: string
+          created_at?: string
+          updated_at?: string
+          creado_por?: string | null
+          ultima_actualizacion_por?: string | null
         }
         Update: {
           miembro_id?: string
           proposito?: string
+          proposito_id?: string | null
           monto_total?: number
           recaudado?: number
           fecha_limite?: string
-          estado?: 'activo' | 'completado' | 'cancelado'
-          ultima_actualizacion_por?: string
+          estado?: string
+          created_at?: string
+          updated_at?: string
+          creado_por?: string | null
+          ultima_actualizacion_por?: string | null
         }
+        Relationships: []
       }
       pagos: {
         Row: {
@@ -160,6 +218,9 @@ export type Database = {
       }
     }
     Enums: {
+      estado_usuario: 'activo' | 'inactivo' | 'pendiente' | 'suspendido'
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }

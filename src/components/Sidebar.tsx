@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft } from "lucide-react"
+import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target } from "lucide-react"
 import styles from "@/styles/sidebar.module.css"
 import { useAuth } from "@/lib/context/AuthContext"
 
@@ -41,6 +41,15 @@ export default function Sidebar() {
       title: "Gestión",
       items: [
         {
+          href: "/dashboard/propositos",
+          label: "Propósitos",
+          icon: Target,
+          description: "Campañas y objetivos financieros",
+          subItems: [
+            { href: "/dashboard/propositos/nuevo", label: "Nuevo propósito" }
+          ]
+        },
+        {
           href: "/dashboard/votos",
           label: "Votos",
           icon: ScrollText,
@@ -74,15 +83,16 @@ export default function Sidebar() {
   ], [])
 
   const initials = React.useMemo(() => {
-    if (!member?.nombres && !member?.apellidos) return "IP"
-    const first = member?.nombres?.[0] ?? ""
-    const last = member?.apellidos?.[0] ?? ""
-    return `${first}${last}`.toUpperCase()
+    if (!member?.email) return "IP"
+    // Usar el email como fallback si no hay nombres
+    const [emailPrefix] = member.email.split('@')
+    return emailPrefix.slice(0, 2).toUpperCase()
   }, [member])
 
   const handleToggle = () => setIsCollapsed((prev) => !prev)
 
   const isRouteActive = (href: string) => {
+    if (!pathname) return false
     if (href === "/dashboard") return pathname === href
     return pathname === href || pathname.startsWith(`${href}/`)
   }
@@ -168,7 +178,7 @@ export default function Sidebar() {
         </div>
         {!isCollapsed && (
           <div className={styles.profileInfo}>
-            <p className={styles.profileName}>{member?.nombres ?? "Usuario"}</p>
+            <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
               {member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Administrador"}
             </span>

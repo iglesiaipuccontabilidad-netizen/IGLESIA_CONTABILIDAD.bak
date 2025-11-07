@@ -6,7 +6,7 @@ interface DashboardCardsProps {
   totalComprometido: number
   totalRecaudado: number
   totalPendiente: number
-  votosActivos: number
+  propositosActivos: number
 }
 
 const formatCurrency = (amount: number) => {
@@ -22,17 +22,17 @@ export default function DashboardCards({
   totalComprometido,
   totalRecaudado,
   totalPendiente,
-  votosActivos
+  propositosActivos
 }: DashboardCardsProps) {
-  const porcentajeCompletado = totalComprometido > 0 
-    ? Math.round((totalRecaudado / totalComprometido) * 100) 
+  const porcentajeCompletado = totalComprometido > 0
+    ? Math.min(Math.round((totalRecaudado / totalComprometido) * 100), 100)
     : 0
 
   const cards = [
     {
       title: 'Total Comprometido',
       value: formatCurrency(totalComprometido),
-      subtitle: 'Monto total de votos activos',
+      subtitle: 'Meta global comprometida en campañas',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -60,7 +60,7 @@ export default function DashboardCards({
     {
       title: 'Total Pendiente',
       value: formatCurrency(totalPendiente),
-      subtitle: `${100 - porcentajeCompletado}% por recaudar`,
+      subtitle: `${Math.max(100 - porcentajeCompletado, 0)}% por recaudar`,
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -72,12 +72,12 @@ export default function DashboardCards({
       ringColor: 'ring-amber-500/50',
     },
     {
-      title: 'Votos Activos',
-      value: votosActivos.toString(),
-      subtitle: 'Compromisos en progreso',
+      title: 'Propósitos Activos',
+      value: propositosActivos.toString(),
+      subtitle: 'Campañas en curso',
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18.5l-3.09 1.63a1 1 0 01-1.45-1.05l.59-3.44-2.5-2.44a1 1 0 01.55-1.7l3.46-.5 1.55-3.15a1 1 0 011.8 0l1.55 3.15 3.46.5a1 1 0 01.55 1.7l-2.5 2.44.59 3.44a1 1 0 01-1.45 1.05L12 18.5z" />
         </svg>
       ),
       gradient: 'from-violet-500 via-purple-500 to-fuchsia-600',
