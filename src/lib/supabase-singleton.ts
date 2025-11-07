@@ -11,12 +11,7 @@ export function getSupabaseClient() {
   }
 
   if (!supabaseInstance) {
-    supabaseInstance = createClientComponentClient<Database>({
-      options: {
-        persistSession: true,
-        storageKey: 'app-session-key',
-      }
-    })
+    supabaseInstance = createClientComponentClient<Database>()
   }
 
   return supabaseInstance

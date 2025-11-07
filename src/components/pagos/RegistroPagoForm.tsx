@@ -20,8 +20,6 @@ interface RegistroPagoFormProps {
   montoTotal: number
 }
 
-type RegistrarPagoArgs = Database['public']['Functions']['registrar_pago']['Args']
-type RegistrarPagoResult = Database['public']['Functions']['registrar_pago']['Returns']
 type UsuarioPermisos = Pick<Database['public']['Tables']['usuarios']['Row'], 'rol' | 'estado'>
 
 export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }: RegistroPagoFormProps) {
@@ -69,7 +67,7 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
       }
 
       // 3. Registrar pago
-      const { data: result, error: txError } = await supabase.rpc<RegistrarPagoResult>(
+      const { data: result, error: txError } = await supabase.rpc(
         'registrar_pago',
         {
           p_voto_id: votoId,
@@ -79,11 +77,11 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
           p_nota: formData.nota || null,
           p_registrado_por: session.data.session.user.id,
           p_monto_total: montoTotal
-        } as RegistrarPagoArgs
+        } as any
       )
 
       if (txError) throw new Error(txError.message)
-      if (!result?.success) throw new Error('No se pudo registrar el pago')
+      if (!result || !(result as any).success) throw new Error('No se pudo registrar el pago')
 
       // 4. Éxito
       toast.success('Pago registrado con éxito', { id: toastId })
