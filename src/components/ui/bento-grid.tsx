@@ -37,9 +37,9 @@ export const BentoGridItem: React.FC<BentoGridItemProps> = ({
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={`
-        bg-white rounded-xl shadow-sm border border-gray-200
+        bg-white rounded-xl shadow-sm border border-slate-200
         overflow-hidden transition-all duration-200
-        hover:shadow-md hover:border-gray-300
+        hover:shadow-md hover:border-primary-500 hover:bg-primary-50/30
         ${className}
       `}
     >

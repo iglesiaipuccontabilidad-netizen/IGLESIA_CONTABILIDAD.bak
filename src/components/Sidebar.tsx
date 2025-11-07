@@ -1,22 +1,21 @@
-﻿"use client"
+"use client"
 
 import * as React from "react"
-import { usePathname } from "next/navigation"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft } from "lucide-react"
 import styles from "@/styles/sidebar.module.css"
 import { useAuth } from "@/lib/context/AuthContext"
 
-interface MenuItem {
+type MenuItem = {
   href: string
   label: string
-  icon: React.ReactNode
-  subItems?: {
-    href: string
-    label: string
-  }[]
+  icon: React.ComponentType<{ className?: string }>
+  description?: string
+  subItems?: { href: string; label: string }[]
 }
 
-interface MenuSection {
+type MenuSection = {
   title: string
   items: MenuItem[]
 }
@@ -26,19 +25,16 @@ export default function Sidebar() {
   const { member } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
-  const menuSections: MenuSection[] = [
+  const menuSections: MenuSection[] = React.useMemo(() => [
     {
       title: "Principal",
       items: [
         {
           href: "/dashboard",
           label: "Dashboard",
-          icon: (
-            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-          )
-        },
+          icon: LayoutDashboard,
+          description: "Resumen general y métricas clave"
+        }
       ]
     },
     {
@@ -47,31 +43,19 @@ export default function Sidebar() {
         {
           href: "/dashboard/votos",
           label: "Votos",
-          icon: (
-            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          ),
+          icon: ScrollText,
+          description: "Control de compromisos y pagos",
           subItems: [
-            {
-              href: "/dashboard/votos/nuevo",
-              label: "Nuevo Voto"
-            }
+            { href: "/dashboard/votos/nuevo", label: "Registrar voto" }
           ]
         },
         {
           href: "/dashboard/miembros",
           label: "Miembros",
-          icon: (
-            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          ),
+          icon: Users2,
+          description: "Gestión de la comunidad",
           subItems: [
-            {
-              href: "/dashboard/miembros/nuevo",
-              label: "Nuevo Miembro"
-            }
+            { href: "/dashboard/miembros/nuevo", label: "Nuevo miembro" }
           ]
         }
       ]
@@ -81,85 +65,116 @@ export default function Sidebar() {
       items: [
         {
           href: "/dashboard/admin/usuarios",
-          label: "Gestión de Usuarios",
-          icon: (
-            <svg className={styles.icon} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          )
+          label: "Usuarios",
+          icon: UserCog,
+          description: "Roles y permisos del equipo"
         }
       ]
     }
-  ]
+  ], [])
+
+  const initials = React.useMemo(() => {
+    if (!member?.nombres && !member?.apellidos) return "IP"
+    const first = member?.nombres?.[0] ?? ""
+    const last = member?.apellidos?.[0] ?? ""
+    return `${first}${last}`.toUpperCase()
+  }, [member])
+
+  const handleToggle = () => setIsCollapsed((prev) => !prev)
+
+  const isRouteActive = (href: string) => {
+    if (href === "/dashboard") return pathname === href
+    return pathname === href || pathname.startsWith(`${href}/`)
+  }
 
   return (
-    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ''}`}>
-      <div className={styles.logo}>
-        <span className={styles.logoText}>IPUC</span>
+    <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""}`}>
+      <div className={styles.brandRow}>
+        <div className={styles.brandMark}>IPUC</div>
+        {!isCollapsed && (
+          <div className={styles.brandCopy}>
+            <span className={styles.brandTitle}>Contabilidad</span>
+            <span className={styles.brandSubtitle}>Gestión integral de votos</span>
+          </div>
+        )}
+        <button
+          onClick={handleToggle}
+          className={styles.collapseButton}
+          aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
+        >
+          <ChevronLeft className={styles.collapseIcon} />
+        </button>
       </div>
 
-      <nav className={styles.navigation}>
-        {menuSections.map((section, idx) => (
-          <div key={idx}>
-            {!isCollapsed && (
-              <span className={styles.navSection}>
-                {section.title}
-              </span>
-            )}
-            <ul className={styles.navList}>
-              {section.items.map((item) => (
-                <li key={item.href} className={styles.navItem}>
-                  <Link
-                    href={item.href}
-                    className={`${styles.navLink} ${pathname === item.href ? styles.active : ""}`}
-                  >
-                    {item.icon}
-                    {!isCollapsed && <span>{item.label}</span>}
-                  </Link>
+      <nav className={styles.navigation} aria-label="Menú principal">
+        {menuSections.map((section) => (
+          <div key={section.title} className={styles.section}>
+            {!isCollapsed && <p className={styles.sectionTitle}>{section.title}</p>}
 
-                  {!isCollapsed && item.subItems && (
-                    <ul className={styles.subNavList}>
-                      {item.subItems.map((subItem) => (
-                        <li key={subItem.href}>
-                          <Link
-                            href={subItem.href}
-                            className={`${styles.subNavLink} ${
-                              pathname === subItem.href ? styles.active : ""
-                            }`}
-                          >
-                            {subItem.label}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
+            <ul className={styles.navList}>
+              {section.items.map((item) => {
+                const Icon = item.icon
+                const active = isRouteActive(item.href)
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
+                    >
+                      <span className={styles.iconWrapper}>
+                        <Icon className={styles.icon} />
+                      </span>
+                      {!isCollapsed && (
+                        <span className={styles.linkContent}>
+                          <span className={styles.linkLabel}>{item.label}</span>
+                          {item.description && (
+                            <span className={styles.linkDescription}>{item.description}</span>
+                          )}
+                        </span>
+                      )}
+                    </Link>
+
+                    {!isCollapsed && item.subItems && (
+                      <ul className={styles.subNavList}>
+                        {item.subItems.map((subItem) => {
+                          const subActive = pathname === subItem.href
+
+                          return (
+                            <li key={subItem.href}>
+                              <Link
+                                href={subItem.href}
+                                className={`${styles.subNavLink} ${subActive ? styles.subNavLinkActive : ""}`}
+                              >
+                                <span className={styles.subBullet} aria-hidden="true" />
+                                {subItem.label}
+                              </Link>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ))}
       </nav>
 
-      <button 
-        onClick={() => setIsCollapsed(!isCollapsed)} 
-        className={styles.toggleButton}
-        title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ transform: isCollapsed ? 'rotate(180deg)' : 'none' }}
-        >
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </button>
+      <div className={styles.profileCard}>
+        <div className={styles.avatar} aria-hidden="true">
+          {initials}
+        </div>
+        {!isCollapsed && (
+          <div className={styles.profileInfo}>
+            <p className={styles.profileName}>{member?.nombres ?? "Usuario"}</p>
+            <span className={styles.profileRole}>
+              {member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Administrador"}
+            </span>
+          </div>
+        )}
+      </div>
     </aside>
   )
 }

@@ -19,22 +19,22 @@ export function SearchBar({ onSearch, placeholder = 'Buscar...' }: SearchBarProp
           relative flex items-center w-full h-12 rounded-lg
           border transition-all duration-200 bg-white
           ${isFocused 
-            ? 'border-blue-500 shadow-sm' 
-            : 'border-gray-200 hover:border-gray-300'
+            ? 'border-primary-500 ring-2 ring-primary-100' 
+            : 'border-slate-200 hover:border-slate-300'
           }
         `}
       >
         <div className="grid place-items-center h-full w-12">
           <Search 
-            className={`w-5 h-5 ${isFocused ? 'text-blue-500' : 'text-gray-400'}`} 
+            className={`w-5 h-5 ${isFocused ? 'text-primary-500' : 'text-slate-400'}`} 
           />
         </div>
 
         <input
           type="text"
           className="
-            w-full h-full pr-4 text-sm text-gray-700 outline-none
-            placeholder:text-gray-500 disabled:bg-gray-50
+            w-full h-full pr-4 text-sm text-slate-900 outline-none
+            placeholder:text-slate-500 disabled:bg-slate-50
           "
           placeholder={placeholder}
           onChange={(e) => onSearch(e.target.value)}

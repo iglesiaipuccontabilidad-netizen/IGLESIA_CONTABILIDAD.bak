@@ -43,7 +43,7 @@ export default async function MiembrosPage() {
     console.error('Error al cargar miembros:', error);
     return (
       <div className="p-4">
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+        <div className="bg-rose-50 text-rose-500 p-4 rounded-lg border border-rose-100">
           Error al cargar los miembros. Por favor, intenta de nuevo.
         </div>
       </div>
@@ -74,17 +74,17 @@ export default async function MiembrosPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-900">
             Miembros ({miembrosFormateados.length})
           </h1>
-          <p className="text-gray-500 mt-1">
+          <p className="text-slate-500 mt-1">
             Gestiona los miembros de la iglesia y sus votos
           </p>
         </div>
         
         <Link
           href="/dashboard/miembros/nuevo"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-gradient-to-r from-primary-500 via-primary-600 to-cyan-500 text-white px-6 py-2.5 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
         >
           + Nuevo Miembro
         </Link>

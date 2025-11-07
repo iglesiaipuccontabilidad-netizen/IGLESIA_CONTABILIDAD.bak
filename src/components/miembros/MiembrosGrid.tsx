@@ -54,7 +54,7 @@ export function MiembrosGrid({ miembros }: MiembrosGridProps) {
             exit={{ opacity: 0, y: -10 }}
             className="text-center py-8"
           >
-            <p className="text-gray-500">
+            <p className="text-slate-500">
               No se encontraron miembros que coincidan con tu búsqueda
             </p>
           </motion.div>

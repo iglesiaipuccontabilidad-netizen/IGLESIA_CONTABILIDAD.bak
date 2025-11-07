@@ -43,12 +43,12 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
 
   return (
     <>
-      <div className="p-4">
+      <div className="p-4 bg-white rounded-xl border border-slate-200 hover:border-primary-500 transition-all duration-200 group">
         <div className="space-y-4">
           {/* Encabezado con nombre y estado */}
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+              <h3 className="text-lg font-semibold text-slate-900 group-hover:text-primary-600 transition-colors">
                 {miembro.nombres} {miembro.apellidos}
               </h3>
             </div>
@@ -57,8 +57,8 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
                 <span className={`
                   px-2 py-1 text-sm rounded-full
                   ${miembro.estado === 'activo' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-800'}
+                    ? 'bg-emerald-50 text-emerald-500' 
+                    : 'bg-slate-100 text-slate-600'}
                 `}>
                   {miembro.estado}
                 </span>
@@ -72,11 +72,11 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
 
           {/* Información de contacto */}
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Email:</span> {miembro.email}
+            <p className="text-sm text-slate-600">
+              <span className="font-medium text-slate-700">Email:</span> {miembro.email}
             </p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Teléfono:</span> {miembro.telefono}
+            <p className="text-sm text-slate-600">
+              <span className="font-medium text-slate-700">Teléfono:</span> {miembro.telefono}
             </p>
           </div>
 
@@ -87,10 +87,10 @@ export function MiembroCard({ miembro }: MiembroCardProps) {
                 e.stopPropagation();
                 router.push(`/dashboard/votos?miembro=${miembro.id}`);
               }}
-              className="flex items-center justify-between mt-4 p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors relative z-10"
+              className="flex items-center justify-between mt-4 p-3 bg-primary-50 rounded-lg cursor-pointer hover:bg-primary-100 transition-colors relative z-10"
             >
-              <span className="text-sm font-medium text-blue-900">Votos Activos</span>
-              <span className="text-lg font-semibold text-blue-900">
+              <span className="text-sm font-medium text-primary-700">Votos Activos</span>
+              <span className="text-lg font-semibold text-primary-700">
                 {miembro.votos_count}
               </span>
             </div>
