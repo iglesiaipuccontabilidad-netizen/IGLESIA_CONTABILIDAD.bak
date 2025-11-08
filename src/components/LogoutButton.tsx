@@ -10,14 +10,14 @@ interface LogoutButtonProps {
 
 export default function LogoutButton({ collapsed }: LogoutButtonProps) {
   return (
-    <form action={logout}>
+    <form action={logout} className={styles.logoutForm}>
       <button
         type="submit"
-        className={styles.logoutButton}
+        className={`${styles.logoutButton} ${collapsed ? styles.collapsed : ''}`}
         title="Cerrar Sesión"
       >
-        <LogOut className="w-5 h-5" />
-        {!collapsed && <span>Cerrar Sesión</span>}
+        <LogOut className={styles.icon} />
+        {!collapsed && <span className={styles.text}>Cerrar Sesión</span>}
       </button>
     </form>
   )

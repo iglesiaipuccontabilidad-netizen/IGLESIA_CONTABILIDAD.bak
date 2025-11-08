@@ -1,40 +1,88 @@
-.userSection {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #ffffff;
-  padding: 1rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: auto;
+/* Form container */
+.logoutForm {
+  width: 100%;
 }
 
-.userInfo {
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  background-color: #f3f4f6;
-}
-
+/* Botón de cerrar sesión - Diseño profesional y minimalista */
 .logoutButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  width: 100%;
-  color: #dc2626;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  width: auto;
+  
+  /* Tipografía */
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s;
+  line-height: 1.5;
+  
+  /* Colores - Diseño minimalista */
+  color: #64748b;
+  background-color: transparent;
+  border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
-  background-color: #fee2e2;
-  border: 1px solid #fecaca;
+  
+  /* Transiciones suaves */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Cursor */
+  cursor: pointer;
+  
+  /* Eliminar estilos por defecto */
+  outline: none;
+  text-decoration: none;
 }
 
+/* Hover state - Sutil y elegante */
 .logoutButton:hover {
-  background-color: #fecaca;
-  border-color: #fca5a5;
+  color: #ef4444;
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+
+/* Active/pressed state */
+.logoutButton:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Focus state - Accesibilidad */
+.logoutButton:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 2px;
+}
+
+/* Icono */
+.icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logoutButton:hover .icon {
+  transform: translateX(-2px);
+}
+
+/* Texto */
+.text {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* Estado colapsado (solo icono) */
+.logoutButton.collapsed {
+  padding: 0.625rem;
+  width: auto;
+  aspect-ratio: 1;
+}
+
+/* Responsive - Mobile */
+@media (max-width: 640px) {
+  .logoutButton {
+    width: 100%;
+    justify-content: center;
+  }
 }
