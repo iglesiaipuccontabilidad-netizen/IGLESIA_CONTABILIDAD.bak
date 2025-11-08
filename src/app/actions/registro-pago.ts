@@ -3,6 +3,7 @@
 import { registrarPago } from './pagos'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { withRetry } from '@/lib/utils/sessionHelper'
 
 export interface ActionResponse {
   error: string | null
@@ -46,13 +47,17 @@ export async function procesarPago(
     // Procesar la nota (opcional)
     const nota = formData.get('nota')?.toString() || ''
 
-    // Registrar el pago
-    const result = await registrarPago({
-      id,
-      monto,
-      fecha,
-      nota
-    })
+    // Registrar el pago con retry automático
+    const result = await withRetry(
+      () => registrarPago({
+        id,
+        monto,
+        fecha,
+        nota
+      }),
+      3, // 3 intentos
+      1000 // 1 segundo entre intentos
+    )
 
     if (!result.success) {
       return {

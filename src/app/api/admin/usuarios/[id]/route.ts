@@ -4,12 +4,12 @@ import { NextResponse } from 'next/server'
 // PUT - Actualizar usuario
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
     const { email, rol, estado } = await request.json()
-    const userId = params.id
+    const { id: userId } = await context.params
 
     // Validar datos
     if (!email || !rol || !estado) {
@@ -110,11 +110,11 @@ export async function PUT(
 // DELETE - Eliminar usuario
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const userId = params.id
+    const { id: userId } = await context.params
     const { searchParams } = new URL(request.url)
     const soft = searchParams.get('soft') === 'true'
 

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 // Función para generar contraseña aleatoria segura
 function generateSecurePassword(length: number = 12): string {
@@ -28,12 +28,12 @@ function generateSecurePassword(length: number = 12): string {
 }
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const userId = params.id
+    const { id: userId } = await context.params
 
     // Verificar que el usuario existe
     const { data: existingUser, error: fetchError } = await (supabase as any)

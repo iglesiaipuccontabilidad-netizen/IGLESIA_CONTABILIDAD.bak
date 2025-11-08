@@ -11,6 +11,7 @@ import type {
   VotoDetalle,
   VotoBase
 } from '@/types/votos'
+import { withRetry } from '@/lib/utils/sessionHelper'
 
 type Tables = Database['public']['Tables']
 type VotoSchema = Tables['votos']
@@ -25,34 +26,36 @@ export async function createVoto(data: VotoInput): Promise<{
   success: boolean;
   error: any | null;
 }> {
-  const supabase = await createClient()
-  
-  try {
-    // Prepare the voto data
-    const votoData = {
-      ...data,
-      recaudado: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as any
+  return withRetry(async () => {
+    const supabase = await createClient()
+    
+    try {
+      // Prepare the voto data
+      const votoData = {
+        ...data,
+        recaudado: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as any
 
-    const { error } = await (supabase as any)
-      .from('votos')
-      .insert([votoData])
+      const { error } = await (supabase as any)
+        .from('votos')
+        .insert([votoData])
 
-    if (error) throw error
+      if (error) throw error
 
-    // Revalidar datos
-    revalidatePath('/dashboard/votos')
-    revalidatePath('/dashboard')
-    revalidateTag('votos')
-    revalidateTag(`miembro-votos-${data.miembro_id}`)
+      // Revalidar datos
+      revalidatePath('/dashboard/votos')
+      revalidatePath('/dashboard')
+      revalidateTag('votos')
+      revalidateTag(`miembro-votos-${data.miembro_id}`)
 
-    return { success: true, error: null }
-  } catch (error) {
-    console.error('Error al crear voto:', error)
-    return { success: false, error }
-  }
+      return { success: true, error: null }
+    } catch (error) {
+      console.error('Error al crear voto:', error)
+      return { success: false, error }
+    }
+  }, 3, 1000)
 }
 
 export async function updateVoto(
@@ -62,34 +65,36 @@ export async function updateVoto(
   success: boolean;
   error: any | null;
 }> {
-  const supabase = await createClient()
-  
-  try {
-    const { error } = await (supabase as any)
-      .from('votos')
-      .update({
-        ...data,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', id)
-
-    if (error) throw error
-
-    // Revalidar datos
-    revalidatePath('/dashboard/votos')
-    revalidatePath('/dashboard')
-    revalidateTag('votos')
-    revalidateTag(`voto-${id}`)
+  return withRetry(async () => {
+    const supabase = await createClient()
     
-    if (data.miembro_id) {
-      revalidateTag(`miembro-votos-${data.miembro_id}`)
-    }
+    try {
+      const { error } = await (supabase as any)
+        .from('votos')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
 
-    return { success: true, error: null }
-  } catch (error) {
-    console.error('Error al actualizar voto:', error)
-    return { success: false, error }
-  }
+      if (error) throw error
+
+      // Revalidar datos
+      revalidatePath('/dashboard/votos')
+      revalidatePath('/dashboard')
+      revalidateTag('votos')
+      revalidateTag(`voto-${id}`)
+    
+      if (data.miembro_id) {
+        revalidateTag(`miembro-votos-${data.miembro_id}`)
+      }
+
+      return { success: true, error: null }
+    } catch (error) {
+      console.error('Error al actualizar voto:', error)
+      return { success: false, error }
+    }
+  }, 3, 1000)
 }
 
 export async function registerPago(

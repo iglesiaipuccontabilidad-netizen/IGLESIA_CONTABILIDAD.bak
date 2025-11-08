@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { MiembroFormData } from '@/types/miembros'
 import { revalidatePath } from 'next/cache'
+import { withRetry } from '@/lib/utils/sessionHelper'
 import type { Database } from '@/lib/database.types'
 
 type Tables = Database['public']['Tables']
@@ -14,76 +15,80 @@ type MiembroInsert = SupabaseTable<'miembros'>['Insert']
 type MiembroUpdate = SupabaseTable<'miembros'>['Update']
 
 export async function createMiembro(formData: MiembroFormData) {
-  try {
-    const supabase = await createClient()
-    
-    const nuevoMiembro: MiembroInsert = {
-      nombres: formData.nombres,
-      apellidos: formData.apellidos, 
-      cedula: formData.cedula,
-      telefono: formData.telefono || null,
-      email: formData.email || null,
-      direccion: formData.direccion || null,
-      fecha_ingreso: formData.fecha_ingreso,
-      estado: formData.estado || 'activo',
-      rol: formData.rol || 'miembro'
-    }
+  return withRetry(async () => {
+    try {
+      const supabase = await createClient()
+      
+      const nuevoMiembro: MiembroInsert = {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos, 
+        cedula: formData.cedula,
+        telefono: formData.telefono || null,
+        email: formData.email || null,
+        direccion: formData.direccion || null,
+        fecha_ingreso: formData.fecha_ingreso,
+        estado: formData.estado || 'activo',
+        rol: formData.rol || 'miembro'
+      }
 
-    const { data, error } = await supabase
-      .from('miembros')
-      .insert(nuevoMiembro as any)
-      .select()
-      .single()
+      const { data, error } = await supabase
+        .from('miembros')
+        .insert(nuevoMiembro as any)
+        .select()
+        .single()
 
-    if (error) {
-      console.error('Error al crear miembro:', error)
+      if (error) {
+        console.error('Error al crear miembro:', error)
+        throw error
+      }
+
+      revalidatePath('/dashboard/miembros')
+      return data as MiembroRow
+
+    } catch (error) {
+      console.error('Error en createMiembro:', error)
       throw error
     }
-
-    revalidatePath('/dashboard/miembros')
-    return data as MiembroRow
-
-  } catch (error) {
-    console.error('Error en createMiembro:', error)
-    throw error
-  }
+  }, 3, 1000)
 }
 
 export async function updateMiembro(id: string, formData: MiembroFormData) {
-  try {
-    const supabase = await createClient()
+  return withRetry(async () => {
+    try {
+      const supabase = await createClient()
 
-    const actualizacion: MiembroUpdate = {
-      nombres: formData.nombres,
-      apellidos: formData.apellidos,
-      cedula: formData.cedula,
-      telefono: formData.telefono || null,
-      email: formData.email || null,
-      direccion: formData.direccion || null,
-      fecha_ingreso: formData.fecha_ingreso,
-      estado: formData.estado || 'activo',
-      rol: formData.rol || 'miembro'
-    }
+      const actualizacion: MiembroUpdate = {
+        nombres: formData.nombres,
+        apellidos: formData.apellidos,
+        cedula: formData.cedula,
+        telefono: formData.telefono || null,
+        email: formData.email || null,
+        direccion: formData.direccion || null,
+        fecha_ingreso: formData.fecha_ingreso,
+        estado: formData.estado || 'activo',
+        rol: formData.rol || 'miembro'
+      }
 
-    const { data, error } = await supabase
-      .from('miembros')
-      .update(actualizacion as never)
-      .eq('id', id)
-      .select()
-      .single()
+      const { data, error } = await supabase
+        .from('miembros')
+        .update(actualizacion as never)
+        .eq('id', id)
+        .select()
+        .single()
 
-    if (error) {
-      console.error('Error al actualizar miembro:', error)
+      if (error) {
+        console.error('Error al actualizar miembro:', error)
+        throw error
+      }
+
+      revalidatePath('/dashboard/miembros')
+      return data as MiembroRow
+
+    } catch (error) {
+      console.error('Error en updateMiembro:', error)
       throw error
     }
-
-    revalidatePath('/dashboard/miembros')
-    return data as MiembroRow
-
-  } catch (error) {
-    console.error('Error en updateMiembro:', error)
-    throw error
-  }
+  }, 3, 1000)
 }
 
 export async function eliminarMiembro(id: string) {

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target, FileText } from "lucide-react"
 import styles from "@/styles/sidebar.module.css"
@@ -161,20 +162,29 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
         />
       )}
       <aside className={`${styles.sidebar} ${isCollapsed ? styles.collapsed : ""} ${isMobileMenuVisible ? styles.mobileVisible : ""}`}>
-      <div className={styles.brandRow}>
-            <div className={styles.brandMark}>IPUC</div>
+        {/* Logo y título */}
+        <div className={styles.brandRow}>
+          <div className={styles.brandMark}>
+            <Image 
+              src="/icons/icon-192x192.png"
+              alt="Logo IPUC"
+              width={32}
+              height={32}
+              className={styles.logo}
+            />
             {!isCollapsed && (
-            <div className={styles.brandCopy}>
-              <span className={styles.brandTitle}>Contabilidad</span>
-              <span className={styles.brandSubtitle}>Gestión integral de votos</span>
-            </div>
-          )}
+              <div className={styles.brandCopy}>
+                <span className={styles.brandTitle}>CONTABILIDAD</span>
+                <span className={styles.brandSubtitle}>Gestión integral de votos</span>
+              </div>
+            )}
+          </div>
           <button
-            onClick={handleToggle}
+            onClick={() => setIsCollapsed(!isCollapsed)}
             className={styles.collapseButton}
-            aria-label={isCollapsed ? "Expandir menú" : "Colapsar menú"}
+            title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
           >
-            <ChevronLeft className={styles.collapseIcon} />
+            <ChevronLeft className={`${styles.collapseIcon} ${isCollapsed ? 'rotate-180' : ''}`} />
           </button>
         </div>
 

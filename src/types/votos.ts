@@ -23,7 +23,7 @@ export type VotoInput = {
   proposito: string
   monto_total: number
   fecha_limite: string
-  estado?: 'activo' | 'completado' | 'cancelado'
+  estado?: 'activo' | 'completado' | 'cancelado' | 'vencido'
   creado_por: string
   ultima_actualizacion_por?: string
 }

@@ -5,8 +5,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import DashboardCards from '@/components/dashboard/DashboardCards'
 import VotosActivosTable from '@/components/dashboard/VotosActivosTable'
 import { Database } from '@/lib/database.types'
-import { ArrowUpRight, Calendar, Target, TrendingUp } from 'lucide-react'
+import { ArrowUpRight, Calendar, Target, TrendingUp, LogOut } from 'lucide-react'
 import { getVotosActivos } from '@/app/actions/dashboard'
+import LogoutButton from '@/components/LogoutButton'
 
 interface DashboardStats {
   total_comprometido: number
@@ -166,6 +167,8 @@ export default async function DashboardPage() {
                   })}
                 </span>
               </div>
+              {/* Botón de cerrar sesión */}
+              <LogoutButton collapsed={false} />
             </div>
           </div>
 
