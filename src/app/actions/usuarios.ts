@@ -51,3 +51,53 @@ export async function rechazarUsuario(userId: string): Promise<{ success: boolea
     return { success: false }
   }
 }
+
+export async function editarUsuario(
+  userId: string, 
+  data: { email: string; rol: string; estado: string }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/admin/usuarios/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      return { success: false, error: result.error }
+    }
+
+    revalidatePath('/dashboard/admin/usuarios')
+    return { success: true }
+  } catch (error) {
+    console.error('Error al editar usuario:', error)
+    return { success: false, error: 'Error al editar el usuario' }
+  }
+}
+
+export async function eliminarUsuario(
+  userId: string, 
+  soft: boolean = true
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/admin/usuarios/${userId}?soft=${soft}`, {
+      method: 'DELETE',
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      return { success: false, error: result.error }
+    }
+
+    revalidatePath('/dashboard/admin/usuarios')
+    return { success: true }
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error)
+    return { success: false, error: 'Error al eliminar el usuario' }
+  }
+}

@@ -3,11 +3,16 @@
 import { useEffect, useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase-browser'
 import { useAuth } from '@/lib/context/AuthContext'
-import { aprobarUsuario, rechazarUsuario } from '@/app/actions/usuarios'
+import { aprobarUsuario, rechazarUsuario, eliminarUsuario } from '@/app/actions/usuarios'
 import { Database } from '@/lib/database.types'
 import { ErrorBoundary } from 'react-error-boundary'
 import { useRouter } from 'next/navigation'
-import { IconUserCircle, IconRefresh, IconUserCheck, IconUserX } from "@tabler/icons-react"
+import { IconUserCircle, IconRefresh, IconUserCheck, IconUserX, IconEdit, IconTrash, IconKey } from "@tabler/icons-react"
+import EditarUsuarioModal from '@/components/admin/EditarUsuarioModal'
+import ResetPasswordModal from '@/components/admin/ResetPasswordModal'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
+import { ToastContainer } from '@/components/ui/Toast'
+import { useToast } from '@/lib/hooks/useToast'
 
 // Helper para los iconos de Tabler
 const Icon = ({ icon: IconComponent, size = 24, className = '' }: { icon: React.ComponentType<{ size?: number; className?: string }>; size?: number; className?: string }) => {
@@ -24,6 +29,16 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(true)
   const { user, member } = useAuth()
   const router = useRouter()
+  
+  // Estados para modales
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false)
+  const [selectedUsuario, setSelectedUsuario] = useState<Usuario | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  // Toast notifications
+  const toast = useToast()
 
   // Obtener el rol del usuario actual desde el contexto
   const getAdminStatus = () => {
@@ -47,19 +62,23 @@ export default function Page() {
 
   const cargarUsuarios = async () => {
     try {
+      console.log('📥 Cargando usuarios...')
       const { data: usuarios, error } = await supabase
         .from('usuarios')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Error al cargar usuarios:', error)
+        console.error('❌ Error al cargar usuarios:', error)
+        toast.error('Error al cargar usuarios: ' + error.message)
         return
       }
 
+      console.log('✅ Usuarios cargados:', usuarios?.length || 0, usuarios)
       setUsuarios(usuarios || [])
     } catch (error) {
-      console.error('Error al cargar datos:', error)
+      console.error('❌ Error al cargar datos:', error)
+      toast.error('Error al cargar los datos')
     }
   }
 
@@ -100,6 +119,53 @@ export default function Page() {
   const handleUserCreated = () => {
     // Recargar la lista de usuarios
     cargarUsuarios()
+    toast.success('Usuario creado exitosamente')
+  }
+
+  const handleEditClick = (usuario: Usuario) => {
+    setSelectedUsuario(usuario)
+    setEditModalOpen(true)
+  }
+
+  const handleEditSuccess = () => {
+    cargarUsuarios()
+    toast.success('Usuario actualizado exitosamente')
+  }
+
+  const handleDeleteClick = (usuario: Usuario) => {
+    setSelectedUsuario(usuario)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleResetPasswordClick = (usuario: Usuario) => {
+    setSelectedUsuario(usuario)
+    setResetPasswordModalOpen(true)
+  }
+
+  const handleResetPasswordSuccess = () => {
+    toast.success('Contraseña reseteada exitosamente')
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedUsuario) return
+
+    setIsDeleting(true)
+    try {
+      const result = await eliminarUsuario(selectedUsuario.id, true) // soft delete
+      
+      if (result.success) {
+        await cargarUsuarios()
+        toast.success('Usuario eliminado exitosamente')
+        setDeleteDialogOpen(false)
+        setSelectedUsuario(null)
+      } else {
+        toast.error(result.error || 'Error al eliminar el usuario')
+      }
+    } catch (error) {
+      toast.error('Error al eliminar el usuario')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   useEffect(() => {
@@ -252,60 +318,96 @@ export default function Page() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {usuario.rol === 'pendiente' && (
-                      <div className="flex justify-end gap-2">
-                        <button 
+                    <div className="flex justify-end gap-2">
+                      {/* Botones principales siempre visibles */}
+                      <button
+                        onClick={() => handleEditClick(usuario)}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-colors duration-150"
+                        title="Editar usuario"
+                      >
+                        <IconEdit size={16} style={{ marginRight: '0.375rem' }} />
+                        Editar
+                      </button>
+                      
+                      <button
+                        onClick={() => handleResetPasswordClick(usuario)}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 hover:border-purple-300 transition-colors duration-150"
+                        title="Resetear contraseña"
+                      >
+                        <IconKey size={16} style={{ marginRight: '0.375rem' }} />
+                        Reset
+                      </button>
+                      
+                      {usuario.id !== user?.id && (
+                        <button
+                          onClick={() => handleDeleteClick(usuario)}
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors duration-150"
+                          title="Eliminar usuario"
+                        >
+                          <IconTrash size={16} style={{ marginRight: '0.375rem' }} />
+                          Eliminar
+                        </button>
+                      )}
+
+                      {/* Botones específicos por estado */}
+                      {usuario.rol === 'pendiente' && (
+                        <>
+                          <button 
+                            onClick={async () => {
+                              try {
+                                const result = await aprobarUsuario(usuario.id)
+                                if (result.success) {
+                                  await cargarUsuarios()
+                                  toast.success('Usuario aprobado')
+                                }
+                              } catch (error) {
+                                toast.error('Error al aprobar usuario')
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors duration-150"
+                          >
+                            <IconUserCheck size={16} style={{ marginRight: '0.375rem' }} />
+                            Aprobar
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const result = await rechazarUsuario(usuario.id)
+                                if (result.success) {
+                                  await cargarUsuarios()
+                                  toast.success('Usuario rechazado')
+                                }
+                              } catch (error) {
+                                toast.error('Error al rechazar usuario')
+                              }
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors duration-150"
+                          >
+                            <IconUserX size={16} style={{ marginRight: '0.375rem' }} />
+                            Rechazar
+                          </button>
+                        </>
+                      )}
+                      {usuario.estado === 'inactivo' && usuario.rol !== 'pendiente' && (
+                        <button
                           onClick={async () => {
                             try {
                               const result = await aprobarUsuario(usuario.id)
                               if (result.success) {
                                 await cargarUsuarios()
+                                toast.success('Usuario reactivado')
                               }
                             } catch (error) {
-                              console.error('Error al aprobar usuario:', error)
+                              toast.error('Error al reactivar usuario')
                             }
                           }}
                           className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors duration-150"
                         >
-                          <IconUserCheck size={16} style={{ marginRight: '0.375rem' }} />
-                          Aprobar
+                          <IconRefresh size={16} style={{ marginRight: '0.375rem' }} />
+                          Reactivar
                         </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const result = await rechazarUsuario(usuario.id)
-                              if (result.success) {
-                                await cargarUsuarios()
-                              }
-                            } catch (error) {
-                              console.error('Error al rechazar usuario:', error)
-                            }
-                          }}
-                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 hover:border-red-300 transition-colors duration-150"
-                        >
-                          <IconUserX size={16} style={{ marginRight: '0.375rem' }} />
-                          Rechazar
-                        </button>
-                      </div>
-                    )}
-                    {usuario.estado === 'inactivo' && (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const result = await aprobarUsuario(usuario.id)
-                            if (result.success) {
-                              await cargarUsuarios()
-                            }
-                          } catch (error) {
-                            console.error('Error al reactivar usuario:', error)
-                          }
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 hover:border-green-300 transition-colors duration-150"
-                      >
-                        <IconRefresh size={16} style={{ marginRight: '0.375rem' }} />
-                        Reactivar
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -361,60 +463,93 @@ export default function Page() {
                       </div>
 
                       {/* Acciones */}
-                      {usuario.rol === 'pendiente' && (
-                        <div className="flex gap-2">
-                          <button 
+                      <div className="flex flex-col gap-2">
+                        {/* Botones principales */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => handleEditClick(usuario)}
+                            className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 active:bg-blue-200 transition-colors"
+                          >
+                            <IconEdit size={16} className="mr-1.5" />
+                            Editar
+                          </button>
+                          <button
+                            onClick={() => handleResetPasswordClick(usuario)}
+                            className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-purple-700 bg-purple-50 border border-purple-200 hover:bg-purple-100 active:bg-purple-200 transition-colors"
+                          >
+                            <IconKey size={16} className="mr-1.5" />
+                            Reset
+                          </button>
+                          {usuario.id !== user?.id && (
+                            <button
+                              onClick={() => handleDeleteClick(usuario)}
+                              className="col-span-2 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 active:bg-red-200 transition-colors"
+                            >
+                              <IconTrash size={16} className="mr-1.5" />
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Botones específicos por estado */}
+                        {usuario.rol === 'pendiente' && (
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={async () => {
+                                try {
+                                  const result = await aprobarUsuario(usuario.id)
+                                  if (result.success) {
+                                    await cargarUsuarios()
+                                    toast.success('Usuario aprobado')
+                                  }
+                                } catch (error) {
+                                  toast.error('Error al aprobar usuario')
+                                }
+                              }}
+                              className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-200 transition-colors"
+                            >
+                              <IconUserCheck size={16} className="mr-1.5" />
+                              Aprobar
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const result = await rechazarUsuario(usuario.id)
+                                  if (result.success) {
+                                    await cargarUsuarios()
+                                    toast.success('Usuario rechazado')
+                                  }
+                                } catch (error) {
+                                  toast.error('Error al rechazar usuario')
+                                }
+                              }}
+                              className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 active:bg-red-200 transition-colors"
+                            >
+                              <IconUserX size={16} className="mr-1.5" />
+                              Rechazar
+                            </button>
+                          </div>
+                        )}
+                        {usuario.estado === 'inactivo' && usuario.rol !== 'pendiente' && (
+                          <button
                             onClick={async () => {
                               try {
                                 const result = await aprobarUsuario(usuario.id)
                                 if (result.success) {
                                   await cargarUsuarios()
+                                  toast.success('Usuario reactivado')
                                 }
                               } catch (error) {
-                                console.error('Error al aprobar usuario:', error)
+                                toast.error('Error al reactivar usuario')
                               }
                             }}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-200 transition-colors"
+                            className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-200 transition-colors"
                           >
-                            <IconUserCheck size={16} className="mr-1.5" />
-                            Aprobar
+                            <IconRefresh size={16} className="mr-1.5" />
+                            Reactivar
                           </button>
-                          <button
-                            onClick={async () => {
-                              try {
-                                const result = await rechazarUsuario(usuario.id)
-                                if (result.success) {
-                                  await cargarUsuarios()
-                                }
-                              } catch (error) {
-                                console.error('Error al rechazar usuario:', error)
-                              }
-                            }}
-                            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 active:bg-red-200 transition-colors"
-                          >
-                            <IconUserX size={16} className="mr-1.5" />
-                            Rechazar
-                          </button>
-                        </div>
-                      )}
-                      {usuario.estado === 'inactivo' && (
-                        <button
-                          onClick={async () => {
-                            try {
-                              const result = await aprobarUsuario(usuario.id)
-                              if (result.success) {
-                                await cargarUsuarios()
-                              }
-                            } catch (error) {
-                              console.error('Error al reactivar usuario:', error)
-                            }
-                          }}
-                          className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-200 transition-colors"
-                        >
-                          <IconRefresh size={16} className="mr-1.5" />
-                          Reactivar
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -423,6 +558,46 @@ export default function Page() {
           </Suspense>
         </div>
       </div>
+
+      {/* Modales */}
+      <EditarUsuarioModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false)
+          setSelectedUsuario(null)
+        }}
+        usuario={selectedUsuario}
+        onSuccess={handleEditSuccess}
+      />
+
+      <ResetPasswordModal
+        isOpen={resetPasswordModalOpen}
+        onClose={() => {
+          setResetPasswordModalOpen(false)
+          setSelectedUsuario(null)
+        }}
+        userEmail={selectedUsuario?.email || ''}
+        userId={selectedUsuario?.id || ''}
+        onSuccess={handleResetPasswordSuccess}
+      />
+
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        title="Confirmar Eliminación"
+        message={`¿Estás seguro de que deseas eliminar al usuario ${selectedUsuario?.email}? Esta acción desactivará la cuenta.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => {
+          setDeleteDialogOpen(false)
+          setSelectedUsuario(null)
+        }}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
     </div>
   )
 }
