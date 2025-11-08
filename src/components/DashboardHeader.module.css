@@ -2,11 +2,7 @@
   width: 100%;
   background-color: white;
   border-bottom: 1px solid #e5e7eb;
-  padding: 0.75rem 1.25rem;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  padding: 1rem;
 }
 
 .headerContent {
@@ -23,22 +19,16 @@
   gap: 1rem;
 }
 
-.ipucLogo {
-  width: auto;
-  height: 2.5rem;
-  object-fit: contain;
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1a56db;
 }
 
 .headerTitle {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: #1e40af;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  display: none;
-  @media (min-width: 768px) {
-    display: block;
-  }
+  color: #111827;
 }
 
 .userMenu {

@@ -3,14 +3,11 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/lib/database.types';
 
 export default function LoginForm() {
+  const supabase = createClientComponentClient<Database>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,19 +20,56 @@ export default function LoginForm() {
     setError(null);
 
     try {
+      // 1. Intentar login con Supabase Auth
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        console.error('Error de login:', signInError);
+        if (signInError.message.includes('Invalid login credentials')) {
+          throw new Error('Credenciales inválidas. Por favor verifica tu email y contraseña.');
+        }
+        if (signInError.message.includes('Email not confirmed')) {
+          throw new Error('Email no confirmado. Por favor revisa tu bandeja de entrada.');
+        }
+        throw new Error('Error al iniciar sesión. Por favor intenta de nuevo.');
+      }
 
-      window.location.href = '/dashboard';
-    } catch (err) {
-      setError('Error al iniciar sesión');
+      if (!user) {
+        throw new Error('No se pudo autenticar el usuario.');
+      }
+
+      // 2. Verificar el estado y rol del usuario
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', user.id)
+        .single();
+
+      if (userError) {
+        console.error('Error al obtener datos del usuario:', userError);
+        throw new Error('Error al verificar el estado del usuario.');
+      }
+
+      // 3. Validar el estado del usuario
+      if (!userData) {
+        throw new Error('No se encontró el registro del usuario.');
+      }
+
+      if (userData.estado !== 'activo') {
+        await supabase.auth.signOut(); // Cerrar sesión si el usuario no está activo
+        throw new Error('Tu cuenta no está activa. Por favor contacta al administrador.');
+      }
+
+      router.push('/dashboard');
+    } catch (err: any) {
+      console.error('Error detallado:', err);
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
-    }
+    };
   };
 
   return (
@@ -46,7 +80,7 @@ export default function LoginForm() {
             <div className='relative group'>
               <div className='absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-1000'></div>
               <Image
-                src='/logo-ipuc.png'
+                src='/LogoIpuc.png'
                 alt='IPUC Logo'
                 width={130}
                 height={130}

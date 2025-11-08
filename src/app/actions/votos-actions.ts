@@ -260,3 +260,38 @@ export async function getVotosWithDetails(): Promise<{
     return { data: null, error }
   }
 }
+
+export async function deleteVoto(id: string): Promise<{
+  success: boolean;
+  error: any | null;
+}> {
+  const supabase = await createClient()
+  
+  try {
+    // Primero eliminar los pagos asociados
+    const { error: pagosError } = await (supabase as any)
+      .from('pagos')
+      .delete()
+      .eq('voto_id', id)
+
+    if (pagosError) throw pagosError
+
+    // Luego eliminar el voto
+    const { error } = await (supabase as any)
+      .from('votos')
+      .delete()
+      .eq('id', id)
+
+    if (error) throw error
+
+    // Revalidar datos
+    revalidatePath('/dashboard/votos')
+    revalidatePath('/dashboard')
+    revalidateTag('votos')
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('Error al eliminar voto:', error)
+    return { success: false, error }
+  }
+}

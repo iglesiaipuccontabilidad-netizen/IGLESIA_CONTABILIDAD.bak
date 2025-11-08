@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target } from "lucide-react"
+import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target, FileText } from "lucide-react"
 import styles from "@/styles/sidebar.module.css"
 import { useAuth } from "@/lib/context/AuthContext"
 
@@ -42,62 +42,82 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
     }
   }, [isMobileMenuVisible])
 
-  const menuSections: MenuSection[] = React.useMemo(() => [
-    {
-      title: "Principal",
-      items: [
-        {
-          href: "/dashboard",
-          label: "Dashboard",
-          icon: LayoutDashboard,
-          description: "Resumen general y métricas clave"
-        }
-      ]
-    },
-    {
-      title: "Gestión",
-      items: [
-        {
-          href: "/dashboard/propositos",
-          label: "Propósitos",
-          icon: Target,
-          description: "Campañas y objetivos financieros",
-          subItems: [
-            { href: "/dashboard/propositos/nuevo", label: "Nuevo propósito" }
-          ]
-        },
-        {
-          href: "/dashboard/votos",
-          label: "Votos",
-          icon: ScrollText,
-          description: "Control de compromisos y pagos",
-          subItems: [
-            { href: "/dashboard/votos/nuevo", label: "Registrar voto" }
-          ]
-        },
-        {
-          href: "/dashboard/miembros",
-          label: "Miembros",
-          icon: Users2,
-          description: "Gestión de la comunidad",
-          subItems: [
-            { href: "/dashboard/miembros/nuevo", label: "Nuevo miembro" }
-          ]
-        }
-      ]
-    },
-    {
-      title: "Administración",
-      items: [
-        {
-          href: "/dashboard/admin/usuarios",
-          label: "Usuarios",
-          icon: UserCog,
-          description: "Roles y permisos del equipo"
-        }
-      ]
+  const menuSections: MenuSection[] = React.useMemo(() => {
+    // Debug: verificar el rol del usuario
+    console.log('🔍 Sidebar - Rol del usuario:', member?.rol, 'Email:', member?.email)
+    
+    const sections: MenuSection[] = [
+      {
+        title: "Principal",
+        items: [
+          {
+            href: "/dashboard",
+            label: "Dashboard",
+            icon: LayoutDashboard,
+            description: "Resumen general y métricas clave"
+          }
+        ]
+      },
+      {
+        title: "Gestión",
+        items: [
+          {
+            href: "/dashboard/propositos",
+            label: "Propósitos",
+            icon: Target,
+            description: "Campañas y objetivos financieros",
+            subItems: [
+              { href: "/dashboard/propositos/nuevo", label: "Nuevo propósito" }
+            ]
+          },
+          {
+            href: "/dashboard/votos",
+            label: "Votos",
+            icon: ScrollText,
+            description: "Control de compromisos y pagos",
+            subItems: [
+              { href: "/dashboard/votos/nuevo", label: "Registrar voto" }
+            ]
+          },
+          {
+            href: "/dashboard/miembros",
+            label: "Miembros",
+            icon: Users2,
+            description: "Gestión de la comunidad",
+            subItems: [
+              { href: "/dashboard/miembros/nuevo", label: "Nuevo miembro" }
+            ]
+          },
+          {
+            href: "/dashboard/reportes",
+            label: "Reportes",
+            icon: FileText,
+            description: "Informes y exportaciones"
+          }
+        ]
+      }
+    ]
+
+    // Solo mostrar la sección de Administración si el usuario es admin
+    if (member?.rol === 'admin') {
+      console.log('✅ Agregando sección de Administración')
+      sections.push({
+        title: "Administración",
+        items: [
+          {
+            href: "/dashboard/admin/usuarios",
+            label: "Usuarios",
+            icon: UserCog,
+            description: "Roles y permisos del equipo"
+          }
+        ]
+      })
+    } else {
+      console.log('❌ No se agrega Administración - Rol actual:', member?.rol)
     }
-  ], [])
+
+    return sections
+  }, [member?.rol, member?.email])
 
   const initials = React.useMemo(() => {
     if (!member?.email) return "IP"
@@ -109,12 +129,27 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const handleToggle = () => setIsCollapsed((prev) => !prev)
 
   const isRouteActive = (href: string) => {
-    if (!pathname) return false
-    if (href === "/dashboard") return pathname === href
-    return pathname === href || pathname.startsWith(`${href}/`)
+    if (href === '/dashboard') {
+      return pathname === href
+    }
+    return pathname?.startsWith(href)
   }
 
-    // Eliminada función toggleMobileMenu no utilizada
+  // Información del usuario
+  const userInfo = React.useMemo(() => {
+    if (!member) return null
+    return {
+      name: member.email?.split('@')[0] || 'Usuario',
+      role: member.rol || 'Miembro'
+    }
+  }, [member])
+
+  const isActive = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === href
+    }
+    return pathname?.startsWith(href)
+  }
 
   return (
     <>
@@ -158,6 +193,11 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                     <Link
                       href={item.href}
                       className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
+                      onClick={() => {
+                        if (isMobileMenuVisible && onMobileMenuClose) {
+                          onMobileMenuClose()
+                        }
+                      }}
                     >
                       <span className={styles.iconWrapper}>
                         <Icon className={styles.icon} />
@@ -182,6 +222,11 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                               <Link
                                 href={subItem.href}
                                 className={`${styles.subNavLink} ${subActive ? styles.subNavLinkActive : ""}`}
+                                onClick={() => {
+                                  if (isMobileMenuVisible && onMobileMenuClose) {
+                                    onMobileMenuClose()
+                                  }
+                                }}
                               >
                                 <span className={styles.subBullet} aria-hidden="true" />
                                 {subItem.label}
@@ -207,7 +252,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           <div className={styles.profileInfo}>
             <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
-              {member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Administrador"}
+              {member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Cargando..."}
             </span>
           </div>
         )}

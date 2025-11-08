@@ -22,40 +22,27 @@ export default function Page() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, member } = useAuth()
   const router = useRouter()
 
-  // Obtener el rol del usuario actual
-  const getAdminStatus = async () => {
-    if (!user?.id) {
+  // Obtener el rol del usuario actual desde el contexto
+  const getAdminStatus = () => {
+    console.log('🔍 Verificando permisos desde contexto')
+    console.log('User:', user?.id, user?.email)
+    console.log('Member:', member?.id, member?.email, member?.rol, member?.estado)
+
+    if (!user?.id || !member) {
+      console.log('❌ No hay user o member en el contexto')
       setIsAuthorized(false)
+      setIsLoading(false)
       return false
     }
 
-    try {
-      const { data: userProfile, error } = await supabase
-        .from('usuarios')
-        .select('rol')
-        .eq('id', user.id)
-        .single<Pick<Usuario, 'rol'>>()
-      
-      if (error) {
-        console.error('Error al verificar permisos:', error)
-        setIsAuthorized(false)
-        return false
-      }
-      
-      const isAdmin = userProfile?.rol === 'admin'
-      setIsAuthorized(isAdmin)
-      return isAdmin
-      
-    } catch (error) {
-      console.error('Error al verificar permisos:', error)
-      setIsAuthorized(false)
-      return false
-    } finally {
-      setIsLoading(false)
-    }
+    const isAdmin = member.rol === 'admin' && member.estado === 'activo'
+    console.log('🔐 Es admin?', isAdmin, '(rol:', member.rol, ', estado:', member.estado, ')')
+    setIsAuthorized(isAdmin)
+    setIsLoading(false)
+    return isAdmin
   }
 
   const cargarUsuarios = async () => {
@@ -77,13 +64,14 @@ export default function Page() {
   }
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !member) {
+      console.log('⏳ Esperando user y member...')
       return
     }
 
     const loadData = async () => {
       try {
-        const isAdmin = await getAdminStatus()
+        const isAdmin = getAdminStatus()
         if (isAdmin) {
           await cargarUsuarios()
         }
@@ -93,7 +81,7 @@ export default function Page() {
     }
 
     loadData()
-  }, [user])
+  }, [user, member])
 
   const getEstadoBadgeVariant = (rol: string, estado: string) => {
     if (estado === 'inactivo') return 'destructive'
@@ -139,48 +127,64 @@ export default function Page() {
   }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>
-          <IconUserCircle size={32} />
-          Gestión de Usuarios
-        </h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-6 md:mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-blue-500 rounded-lg">
+            <IconUserCircle size={28} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Gestión de Usuarios</h1>
+            <p className="text-sm text-gray-600">Administra roles y permisos del equipo</p>
+          </div>
+        </div>
       </div>
 
-      <div className={styles.content}>
-        <div className={styles.formSection}>
-          <Suspense fallback={<div>Cargando formulario...</div>}>
+      {/* Layout responsivo */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Formulario de creación */}
+        <div className="lg:col-span-1">
+          <Suspense fallback={<div className="animate-pulse bg-white rounded-xl h-64"></div>}>
             <CrearUsuarioForm onSuccess={handleUserCreated} />
           </Suspense>
         </div>
 
-        <div className={styles.listSection}>
-          <Suspense fallback={<div>Cargando lista de usuarios...</div>}>
+        {/* Lista de usuarios */}
+        <div className="lg:col-span-2">
+          <Suspense fallback={
+            <div className="grid grid-cols-1 gap-4">
+              {[1,2,3].map(i => <div key={i} className="animate-pulse bg-white rounded-xl h-32"></div>)}
+            </div>
+          }>
             <ErrorBoundary
-        fallback={
-          <div className="rounded-lg bg-red-50 p-4 border border-red-200 animate-pulse">
-            <div className="text-sm text-red-700 flex items-center gap-2">
-              <IconRefresh size={20} className="animate-spin" />
-              Ha ocurrido un error al cargar los usuarios
-            </div>
-          </div>
-        }
-      >
-        <div className="bg-white shadow-lg rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">Lista de Usuarios</h2>
-              <div className="flex gap-2">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Activos: {usuarios.filter(u => u.estado !== 'inactivo').length}
-                </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Pendientes: {usuarios.filter(u => u.rol === 'pendiente').length}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
+              fallback={
+                <div className="rounded-xl bg-red-50 p-4 border border-red-200">
+                  <div className="text-sm text-red-700 flex items-center gap-2">
+                    <IconRefresh size={20} className="animate-spin" />
+                    Ha ocurrido un error al cargar los usuarios
+                  </div>
+                </div>
+              }
+            >
+              <div className="bg-white shadow-lg rounded-xl border border-gray-200 overflow-hidden">
+                {/* Header con estadísticas */}
+                <div className="p-4 md:p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-900">Lista de Usuarios</h2>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                        Activos: {usuarios.filter(u => u.estado !== 'inactivo').length}
+                      </span>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                        Pendientes: {usuarios.filter(u => u.rol === 'pendiente').length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vista de tabla para desktop */}
+                <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
             <thead>
               <tr className="bg-gradient-to-r from-gray-50 to-white">
@@ -307,9 +311,115 @@ export default function Page() {
               ))}
             </tbody>
           </table>
-          </div>
-        </div>
-      </ErrorBoundary>
+                </div>
+
+                {/* Vista de tarjetas para móvil */}
+                <div className="md:hidden divide-y divide-gray-200">
+                  {usuarios.map((usuario) => (
+                    <div key={usuario.id} className="p-4 hover:bg-gray-50 transition-colors">
+                      {/* Header de la tarjeta */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-shrink-0">
+                            {getEstadoIcon(usuario.rol || '', usuario.estado || '')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{usuario.email}</p>
+                            <p className="text-xs text-gray-500 truncate">{usuario.id}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Estado */}
+                      <div className="mb-3">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                          usuario.estado === 'inactivo'
+                            ? 'bg-red-100 text-red-800 border border-red-200'
+                            : usuario.rol === 'admin'
+                            ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                            : usuario.rol === 'pendiente'
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                            : 'bg-green-100 text-green-800 border border-green-200'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-2 ${
+                            usuario.estado === 'inactivo'
+                              ? 'bg-red-400'
+                              : usuario.rol === 'admin'
+                              ? 'bg-purple-400'
+                              : usuario.rol === 'pendiente'
+                              ? 'bg-yellow-400'
+                              : 'bg-green-400'
+                          }`}></span>
+                          {usuario.estado === 'inactivo'
+                            ? 'Inactivo'
+                            : usuario.rol === 'admin'
+                            ? 'Administrador'
+                            : usuario.rol === 'pendiente'
+                            ? 'Pendiente'
+                            : 'Usuario'}
+                        </span>
+                      </div>
+
+                      {/* Acciones */}
+                      {usuario.rol === 'pendiente' && (
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={async () => {
+                              try {
+                                const result = await aprobarUsuario(usuario.id)
+                                if (result.success) {
+                                  await cargarUsuarios()
+                                }
+                              } catch (error) {
+                                console.error('Error al aprobar usuario:', error)
+                              }
+                            }}
+                            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-200 transition-colors"
+                          >
+                            <IconUserCheck size={16} className="mr-1.5" />
+                            Aprobar
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const result = await rechazarUsuario(usuario.id)
+                                if (result.success) {
+                                  await cargarUsuarios()
+                                }
+                              } catch (error) {
+                                console.error('Error al rechazar usuario:', error)
+                              }
+                            }}
+                            className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 active:bg-red-200 transition-colors"
+                          >
+                            <IconUserX size={16} className="mr-1.5" />
+                            Rechazar
+                          </button>
+                        </div>
+                      )}
+                      {usuario.estado === 'inactivo' && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              const result = await aprobarUsuario(usuario.id)
+                              if (result.success) {
+                                await cargarUsuarios()
+                              }
+                            } catch (error) {
+                              console.error('Error al reactivar usuario:', error)
+                            }
+                          }}
+                          className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 active:bg-green-200 transition-colors"
+                        >
+                          <IconRefresh size={16} className="mr-1.5" />
+                          Reactivar
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ErrorBoundary>
           </Suspense>
         </div>
       </div>

@@ -37,19 +37,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           if (session?.user) {
             setUser(session.user)
-            const { data: memberData } = await supabase
+            console.log('🔍 AuthContext - Cargando datos del usuario:', session.user.id)
+            
+            const { data: memberData, error: memberError } = await supabase
               .from('usuarios')
               .select('*')
               .eq('id', session.user.id)
-              .single()
-            setMember(memberData)
+              .maybeSingle() as { data: MemberType | null, error: any }
+            
+            if (memberError) {
+              console.error('❌ Error al cargar datos del usuario:', memberError)
+            } else if (memberData) {
+                            // Vamos a loggear solo el ID del usuario para evitar problemas con tipos
+                            console.log('✅ Datos del usuario cargados:', memberData.id)
+              setMember(memberData)
+            } else {
+              console.warn('⚠️ Usuario autenticado pero no encontrado en tabla usuarios:', session.user.id)
+            }
           } else {
             setUser(null)
             setMember(null)
           }
         }
       } catch (error) {
-        console.error('Error loading user:', error)
+        console.error('❌ Error loading user:', error)
         if (mounted) {
           setUser(null)
           setMember(null)
@@ -76,12 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           setUser(session.user)
-          const { data: memberData } = await supabase
+          const { data: memberData, error: memberError } = await supabase
             .from('usuarios')
             .select('*')
             .eq('id', session.user.id)
-            .single()
-          setMember(memberData)
+            .maybeSingle()
+          
+          if (memberError) {
+            console.error('❌ Error al cargar datos del usuario (onAuthStateChange):', memberError)
+          } else if (memberData) {
+            setMember(memberData)
+          }
         }
         setIsLoading(false)
       }

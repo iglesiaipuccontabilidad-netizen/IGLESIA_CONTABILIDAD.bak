@@ -142,6 +142,10 @@ export async function login(formData: FormData) {
 
     // Verificar si el usuario existe en la tabla usuarios y está activo
     type UsuarioRow = Database['public']['Tables']['usuarios']['Row']
+    
+    // Esperar un momento para que la sesión se establezca completamente
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
     const { data: userData, error: userError } = await supabase
       .from('usuarios')
       .select('id, email, rol, estado')
@@ -151,18 +155,33 @@ export async function login(formData: FormData) {
         error: any 
       }
 
-    console.log('Resultado de verificación de usuario:', { userData, userError })
+    console.log('Resultado de verificación de usuario:', { 
+      userId: data.user.id,
+      userData, 
+      userError,
+      errorDetails: userError ? {
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint,
+        code: userError.code
+      } : null
+    })
 
     if (userError) {
-      console.error('Error al verificar usuario:', userError)
+      console.error('Error al verificar usuario:', {
+        message: userError.message,
+        code: userError.code,
+        details: userError.details,
+        hint: userError.hint
+      })
       await supabase.auth.signOut()
       return { 
-        error: 'Error al verificar usuario. Por favor intenta nuevamente.' 
+        error: `Error de base de datos: ${userError.message || 'No se pudo verificar el usuario'}` 
       }
     }
 
     if (!userData) {
-      console.error('Usuario no encontrado en la tabla usuarios')
+      console.error('Usuario no encontrado en la tabla usuarios para ID:', data.user.id)
       await supabase.auth.signOut()
       return { 
         error: 'Usuario no encontrado en el sistema. Por favor contacta al administrador.' 

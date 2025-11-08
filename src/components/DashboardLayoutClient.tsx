@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from 'react'
 import Sidebar from '@/components/Sidebar'
-import DashboardHeader from '@/components/DashboardHeader'
+import MobileHeader from '@/components/MobileHeader'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/context/AuthContext'
 import styles from '@/app/dashboard/layout.module.css'
@@ -66,17 +66,22 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   }
 
   return (
-    <div className={styles.dashboardLayout}>
-      <Sidebar 
-        isMobileMenuVisible={isMobileMenuVisible} 
-        onMobileMenuClose={() => setIsMobileMenuVisible(false)} 
+    <div className={styles.dashboard}>
+      <MobileHeader 
+        onMenuToggle={handleMobileMenuToggle}
+        isMenuOpen={isMobileMenuVisible}
       />
-      <div className={styles.mainContent}>
-        <DashboardHeader onMobileMenuClick={handleMobileMenuToggle} />
-        <main className={styles.contentWrapper}>
-          {children}
-        </main>
-      </div>
+      <Sidebar
+        isMobileMenuVisible={isMobileMenuVisible}
+        onMobileMenuClose={() => setIsMobileMenuVisible(false)}
+      />
+      <main className={styles.main}>
+        <div className={styles.content}>
+          <Suspense fallback={<LoadingFallback />}>
+            {children}
+          </Suspense>
+        </div>
+      </main>
     </div>
   )
 }

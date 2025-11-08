@@ -58,39 +58,78 @@ export const supabaseAdmin = createClient<Database>(
 export async function verifyUserAccess() {
   const supabase = await getSupabaseServerClient()
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError) throw userError
+    // 1. Verificar la sesión actual del usuario
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) throw sessionError
 
-    if (!user) {
+    if (!session) {
       return {
         isAuthenticated: false,
         role: null,
         status: null,
-        user: null
+        user: null,
+        error: 'No hay sesión activa'
       }
     }
 
+    // 2. Obtener datos del usuario y su rol
     const { data: userData, error: roleError } = await supabase
       .from('usuarios')
       .select('rol, estado')
-      .eq('id', user.id)
+      .eq('id', session.user.id)
       .single() as { data: UsuarioRow | null, error: any }
 
-    if (roleError) throw roleError
+    if (roleError) {
+      console.error('Error al obtener rol del usuario:', roleError)
+      return {
+        isAuthenticated: false,
+        role: null,
+        status: null,
+        user: null,
+        error: 'Error al verificar rol del usuario'
+      }
+    }
 
+    if (!userData) {
+      return {
+        isAuthenticated: false,
+        role: null,
+        status: null,
+        user: null,
+        error: 'Usuario no encontrado en la base de datos'
+      }
+    }
+
+    // 3. Verificar estado del usuario
+    if (userData.estado !== 'activo') {
+      // Cerrar la sesión si el usuario no está activo
+      await supabase.auth.signOut()
+      return {
+        isAuthenticated: false,
+        role: null,
+        status: userData.estado,
+        user: null,
+        error: 'Usuario no activo'
+      }
+    }
+
+    // 4. Retornar información completa
     return {
       isAuthenticated: true,
-      role: userData?.rol || null,
-      status: userData?.estado || null,
-      user
+      role: userData.rol,
+      status: userData.estado,
+      user: session.user,
+      error: null
     }
+
   } catch (error) {
     console.error('Error verificando acceso del usuario:', error)
     return {
       isAuthenticated: false,
       role: null,
       status: null,
-      user: null
+      user: null,
+      error: 'Error en la verificación de acceso'
     }
   }
 }
