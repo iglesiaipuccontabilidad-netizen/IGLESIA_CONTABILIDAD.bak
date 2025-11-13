@@ -93,7 +93,7 @@ export default function DashboardCards({
         <div
           key={index}
           className="group relative bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-medium transition-all duration-300 overflow-hidden animate-slide-up"
-          style={{ animationDelay: `${index * 50}ms` }}
+          style={{ animationDelay: `${index * 33}ms` }}
         >
           {/* Gradiente de fondo decorativo */}
           <div className={`absolute inset-0 bg-gradient-to-br ${card.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>

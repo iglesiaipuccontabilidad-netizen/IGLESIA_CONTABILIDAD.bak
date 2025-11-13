@@ -5,7 +5,12 @@ import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 
-type MemberType = Database['public']['Tables']['usuarios']['Row']
+type MemberType = {
+  id: string
+  email: string | null
+  rol: string | null
+  estado: Database['public']['Enums']['estado_usuario']
+}
 
 type AuthContextType = {
   user: User | null
@@ -22,7 +27,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [member, setMember] = useState<Database['public']['Tables']['usuarios']['Row'] | null>(null)
+  const [member, setMember] = useState<MemberType | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -43,12 +48,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .from('usuarios')
               .select('id, email, rol, estado')
               .eq('id', session.user.id)
-              .maybeSingle() as { data: MemberType | null, error: any }
+              .maybeSingle()
             
             if (memberError) {
               console.error('❌ Error al cargar datos del usuario:', memberError)
             } else if (memberData) {
               setMember(memberData)
+            } else {
+              setMember(null)
             }
           } else {
             setUser(null)
@@ -93,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('❌ Error al cargar datos del usuario (onAuthStateChange):', memberError)
           } else if (memberData) {
             setMember(memberData)
+          } else {
+            setMember(null)
           }
         }
         setIsLoading(false)
