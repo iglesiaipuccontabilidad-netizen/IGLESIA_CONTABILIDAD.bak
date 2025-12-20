@@ -88,55 +88,58 @@ export default function DashboardCards({
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       {cards.map((card, index) => (
         <div
           key={index}
-          className="group relative bg-white rounded-2xl border border-slate-200 shadow-soft hover:shadow-medium transition-all duration-300 overflow-hidden animate-slide-up"
+          className="group relative bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-slate-300 transition-all duration-300 overflow-hidden animate-slide-up"
           style={{ animationDelay: `${index * 33}ms` }}
         >
-          {/* Gradiente de fondo decorativo */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${card.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+          {/* Gradiente decorativo de fondo */}
+          <div className={`absolute inset-0 bg-gradient-to-br ${card.bgGradient} opacity-0 group-hover:opacity-50 transition-opacity duration-300`}></div>
           
           {/* Contenido */}
-          <div className="relative p-6">
+          <div className="relative p-6 space-y-4">
             {/* Header con icono */}
-            <div className="flex items-start justify-between mb-4">
-              <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${card.iconBg} text-white shadow-lg ring-4 ${card.ringColor} transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+            <div className="flex items-center justify-between">
+              <div className={`flex items-center justify-center w-14 h-14 rounded-2xl ${card.iconBg} text-white shadow-md ring-4 ${card.ringColor} transform group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300`}>
                 {card.icon}
               </div>
+              {/* Barra decorativa */}
+              <div className={`h-1 w-8 rounded-full bg-gradient-to-r ${card.gradient} opacity-0 group-hover:opacity-100 transition-opacity`}></div>
             </div>
 
             {/* Título */}
-            <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wide mb-2">
+            <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">
               {card.title}
             </h3>
 
             {/* Valor principal */}
-            <p className={`text-3xl font-bold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent mb-2`}>
+            <p className={`text-3xl font-bold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
               {card.value}
             </p>
 
             {/* Subtítulo */}
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600 leading-relaxed">
               {card.subtitle}
             </p>
 
             {/* Barra de progreso para recaudado */}
             {index === 1 && totalComprometido > 0 && (
-              <div className="mt-4">
-                <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+              <div className="pt-2">
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden ring-1 ring-slate-200">
                   <div
-                    className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-500 shadow-sm"
                     style={{ width: `${porcentajeCompletado}%` }}
                   ></div>
                 </div>
+                <span className="text-xs text-slate-600 mt-2 block font-semibold">{porcentajeCompletado}% completado</span>
               </div>
             )}
           </div>
 
-          {/* Decoración inferior */}
-          <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient}`}></div>
+          {/* Línea decorativa inferior */}
+          <div className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient} opacity-100`}></div>
         </div>
       ))}
     </div>

@@ -211,4 +211,3 @@ export async function login(formData: FormData) {
     return { error: error.message || 'Ha ocurrido un error al iniciar sesión' }
   }
 }
-}

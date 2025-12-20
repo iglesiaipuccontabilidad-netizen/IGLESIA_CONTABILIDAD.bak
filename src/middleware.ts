@@ -60,34 +60,35 @@ export async function middleware(request: NextRequest) {
 
   try {
     // 3. Verificar la sesión y el estado del usuario en cada petición
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-    let session = sessionData?.session ?? null
+    // Usar getUser() en lugar de getSession() para mayor seguridad
+    const { data: userData, error: userError } = await supabase.auth.getUser()
+    let user = userData?.user ?? null
 
-    if (sessionError) {
-      const errorCode = (sessionError as { code?: string })?.code
+    if (userError) {
+      const errorCode = (userError as { code?: string })?.code
 
-      if (errorCode === 'refresh_token_not_found' || sessionError.message?.includes('Refresh Token Not Found')) {
+      if (errorCode === 'invalid_grant' || userError.message?.includes('Invalid Refresh Token')) {
         // El token de refresco es inválido o expiró: tratamos al usuario como no autenticado
-        session = null
+        user = null
       } else {
-        console.error('Error al verificar la sesión:', sessionError)
-        session = null
+        console.error('Error al verificar el usuario:', userError)
+        user = null
       }
     }
 
     // 4. Si es la ruta raíz, redirigir según autenticación
     if (pathname === '/') {
       return NextResponse.redirect(
-        new URL(session ? '/dashboard' : '/login', request.url)
+        new URL(user ? '/dashboard' : '/login', request.url)
       )
     }
 
     // 5. Obtener datos del usuario si está autenticado
-    if (session?.user?.id) {
+    if (user?.id) {
       const { data: userData, error: userError } = await supabase
         .from('usuarios')
         .select('estado, rol')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single()
 
       // Si hay error al obtener datos del usuario o no está activo, cerrar sesión
