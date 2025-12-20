@@ -1,0 +1,120 @@
+name: Actualizar Votos Vencidos
+
+# ============================================================================
+# Workflow: Actualización Automática de Votos Vencidos
+# Propósito: Ejecutar diariamente la Edge Function que actualiza votos vencidos
+# Frecuencia: Diario a las 00:05 COT (05:05 UTC)
+# ============================================================================
+
+on:
+  schedule:
+    # Ejecutar a las 00:05 hora Colombia (UTC-5) = 05:05 UTC
+    - cron: '5 5 * * *'
+  
+  workflow_dispatch: # Permite ejecución manual desde GitHub UI
+
+jobs:
+  actualizar-votos:
+    name: Actualizar Votos Vencidos
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📅 Log de inicio
+        run: |
+          echo "🚀 Iniciando actualización de votos vencidos"
+          echo "📅 Fecha/Hora: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "🌍 Hora Colombia: $(TZ='America/Bogota' date +"%Y-%m-%d %H:%M:%S COT")"
+      
+      - name: 🔄 Ejecutar Edge Function
+        id: edge-function
+        run: |
+          echo "📡 Llamando a Edge Function..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/actualizar-votos-vencidos)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          echo "📊 Código de respuesta: $HTTP_CODE"
+          echo "📋 Respuesta:"
+          echo "$BODY" | jq '.' || echo "$BODY"
+          
+          # Guardar respuesta para el siguiente step
+          echo "$BODY" > response.json
+          echo "http_code=$HTTP_CODE" >> $GITHUB_OUTPUT
+          
+          # Verificar si fue exitoso
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Error: La función retornó código $HTTP_CODE"
+            exit 1
+          fi
+      
+      - name: 📊 Analizar resultados
+        if: success()
+        run: |
+          VOTOS_ACTUALIZADOS=$(cat response.json | jq -r '.votos_actualizados')
+          MESSAGE=$(cat response.json | jq -r '.message')
+          DURATION=$(cat response.json | jq -r '.duration_ms')
+          
+          echo "✅ Ejecución exitosa"
+          echo "📈 Votos actualizados: $VOTOS_ACTUALIZADOS"
+          echo "⏱️  Duración: ${DURATION}ms"
+          echo "💬 Mensaje: $MESSAGE"
+          
+          if [ "$VOTOS_ACTUALIZADOS" -gt 0 ]; then
+            echo "🎉 Se actualizaron $VOTOS_ACTUALIZADOS voto(s)"
+            echo "📋 IDs:"
+            cat response.json | jq -r '.votos_ids[]' | while read id; do
+              echo "   • $id"
+            done
+          else
+            echo "ℹ️  No había votos para actualizar"
+          fi
+      
+      - name: ❌ Reportar error
+        if: failure()
+        run: |
+          echo "💥 Error al ejecutar la actualización"
+          echo "📋 Detalles del error:"
+          cat response.json 2>/dev/null || echo "No se pudo obtener respuesta"
+          
+          # Aquí puedes agregar notificaciones (Slack, Email, etc.)
+          echo "⚠️  Revisar logs de Supabase Edge Functions"
+          echo "🔗 Dashboard: https://app.supabase.com/project/${{ secrets.SUPABASE_PROJECT_REF }}/functions"
+      
+      - name: 📝 Resumen final
+        if: always()
+        run: |
+          echo "============================================"
+          echo "📊 RESUMEN DE EJECUCIÓN"
+          echo "============================================"
+          echo "🕐 Fecha: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "🌍 Colombia: $(TZ='America/Bogota' date +"%Y-%m-%d %H:%M:%S COT")"
+          echo "📡 Workflow: ${{ github.workflow }}"
+          echo "🔄 Run ID: ${{ github.run_id }}"
+          echo "✅ Estado: ${{ job.status }}"
+          echo "============================================"
+
+# ============================================================================
+# Configuración de Secrets Requeridos (GitHub Repository Settings)
+# ============================================================================
+# 
+# 1. CRON_SECRET
+#    - Descripción: Token de autenticación para la Edge Function
+#    - Valor: [El mismo usado en Supabase secrets]
+#    - Generación: openssl rand -base64 32
+#
+# 2. SUPABASE_PROJECT_REF
+#    - Descripción: ID del proyecto de Supabase
+#    - Valor: [El ID visible en la URL del dashboard]
+#    - Ejemplo: abcdefghijklmnop
+#
+# ============================================================================
+# Para configurar en GitHub:
+# 1. Ve a: Settings > Secrets and variables > Actions
+# 2. Click en "New repository secret"
+# 3. Agrega ambos secrets
+# ============================================================================

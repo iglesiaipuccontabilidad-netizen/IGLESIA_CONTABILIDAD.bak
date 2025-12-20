@@ -34,8 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true
     let timeoutId: NodeJS.Timeout
 
-    async function loadMemberData(userId: string) {
+    async function loadMemberData(userId: string, retryCount = 0) {
+      const MAX_RETRIES = 2
+      const RETRY_DELAY = 500 // ms
+      
       try {
+        console.log('🔍 Cargando datos del usuario:', userId, retryCount > 0 ? `(intento ${retryCount + 1}/${MAX_RETRIES + 1})` : '')
+        
         const { data: memberData, error: memberError } = await supabase
           .from('usuarios')
           .select('id, email, rol, estado')
@@ -43,16 +48,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle()
         
         if (memberError) {
-          console.error('❌ Error al cargar datos del usuario:', memberError)
+          console.error('❌ Error al cargar datos del usuario:', {
+            message: memberError.message,
+            details: memberError.details,
+            hint: memberError.hint,
+            code: memberError.code,
+            fullError: JSON.stringify(memberError),
+          })
+          if (mounted) setMember(null)
         } else if (memberData) {
-          console.log('✅ Datos del usuario cargados')
+          console.log('✅ Datos del usuario cargados:', {
+            id: memberData.id,
+            email: memberData.email,
+            rol: memberData.rol,
+            estado: memberData.estado,
+          })
           if (mounted) setMember(memberData)
         } else {
-          console.warn('⚠️ No se encontraron datos de usuario')
+          console.warn('⚠️ No se encontraron datos de usuario en la tabla usuarios')
+          
+          // Si no encontramos datos y no hemos agotado los reintentos, intentar de nuevo
+          // Esto ayuda cuando el trigger aún no ha ejecutado
+          if (retryCount < MAX_RETRIES && mounted) {
+            console.log(`🔄 Reintentando en ${RETRY_DELAY}ms...`)
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+            return loadMemberData(userId, retryCount + 1)
+          }
+          
+          console.warn('⚠️ No se encontró registro después de reintentos, el trigger puede estar pendiente')
           if (mounted) setMember(null)
         }
       } catch (error) {
-        console.error('❌ Error al cargar member data:', error)
+        console.error('❌ Excepción al cargar member data:', {
+          error,
+          type: typeof error,
+          isErrorObject: error instanceof Error,
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        })
         if (mounted) setMember(null)
       }
     }
