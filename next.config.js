@@ -23,30 +23,6 @@ const nextConfig = {
       },
     ]
   },
-  webpack: (config, { dev, isServer }) => {
-    config.cache = false;
-    if (isServer) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'deterministic',
-        chunkIds: 'deterministic',
-      }
-      config.output = {
-        ...config.output,
-        strictModuleExceptionHandling: true,
-      }
-    }
-
-    config.optimization = {
-      ...config.optimization,
-      runtimeChunk: isServer ? false : 'single',
-      minimize: !dev,
-      moduleIds: 'deterministic',
-      chunkIds: 'deterministic',
-    }
-
-    return config
-  },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   }
