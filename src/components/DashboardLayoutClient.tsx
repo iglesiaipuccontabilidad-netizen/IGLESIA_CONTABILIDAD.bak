@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar'
 import DashboardHeader from '@/components/DashboardHeader'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/context/AuthContext'
+import { useRefreshAuth } from '@/hooks/useRefreshAuth'
 import styles from '@/app/dashboard/layout.module.css'
 
 interface DashboardLayoutClientProps {
@@ -30,6 +31,10 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   const router = useRouter()
   const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+
+  // Forzar refetch de la sesión si es necesario
+  useRefreshAuth()
 
   const handleMobileMenuToggle = () => {
     setIsMobileMenuVisible(prev => !prev)
@@ -41,9 +46,19 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
 
   useEffect(() => {
     if (mounted && !isLoading && !user) {
-      router.replace('/login')
+      // Si después de cargar no hay usuario y ya hemos reintetentado varias veces, redirigir
+      if (retryCount >= 2) {
+        router.replace('/login')
+      } else {
+        // Si no hay usuario pero isLoading es false, podría ser un timing issue
+        // Esperar un bit y reintentar
+        const timer = setTimeout(() => {
+          setRetryCount(prev => prev + 1)
+        }, 500)
+        return () => clearTimeout(timer)
+      }
     }
-  }, [user, isLoading, router, mounted])
+  }, [user, isLoading, router, mounted, retryCount])
 
   // No renderizar nada hasta que el componente esté montado en el cliente
   if (!mounted) {

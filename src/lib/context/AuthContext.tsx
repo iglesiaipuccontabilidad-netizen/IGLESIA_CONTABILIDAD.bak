@@ -35,19 +35,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function initialize() {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // Usar getUser() en lugar de getSession() para mayor seguridad
+        const { data: userData, error } = await supabase.auth.getUser()
         
         if (error) throw error
 
         if (mounted) {
-          if (session?.user) {
-            setUser(session.user)
+          if (userData?.user) {
+            setUser(userData.user)
             
             // Cargar datos del usuario de forma optimizada
             const { data: memberData, error: memberError } = await supabase
               .from('usuarios')
               .select('id, email, rol, estado')
-              .eq('id', session.user.id)
+              .eq('id', userData.user.id)
               .maybeSingle()
             
             if (memberError) {
@@ -81,6 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mounted) return
 
+        console.log('Auth state changed:', event, session?.user?.email)
+
         if (event === 'SIGNED_OUT') {
           setUser(null)
           setMember(null)
@@ -88,23 +91,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return
         }
 
-        if (session?.user) {
-          setUser(session.user)
-          const { data: memberData, error: memberError } = await supabase
-            .from('usuarios')
-            .select('id, email, rol, estado')
-            .eq('id', session.user.id)
-            .maybeSingle()
-          
-          if (memberError) {
-            console.error('❌ Error al cargar datos del usuario (onAuthStateChange):', memberError)
-          } else if (memberData) {
-            setMember(memberData)
-          } else {
-            setMember(null)
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || session?.user) {
+          if (session?.user) {
+            console.log('User authenticated:', session.user.email)
+            setUser(session.user)
+            const { data: memberData, error: memberError } = await supabase
+              .from('usuarios')
+              .select('id, email, rol, estado')
+              .eq('id', session.user.id)
+              .maybeSingle()
+            
+            if (memberError) {
+              console.error('❌ Error al cargar datos del usuario (onAuthStateChange):', memberError)
+            } else if (memberData) {
+              console.log('Member data loaded:', memberData)
+              setMember(memberData)
+            } else {
+              setMember(null)
+            }
           }
+          setIsLoading(false)
         }
-        setIsLoading(false)
       }
     )
 
