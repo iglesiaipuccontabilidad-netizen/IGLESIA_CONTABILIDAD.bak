@@ -23,10 +23,10 @@ export function useReportesMiembros(filtros: FiltrosMiembros = {}) {
   const [data, setData] = useState<MiembroReporte[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     const fetchMiembros = async () => {
+      const supabase = createClient()
       try {
         setLoading(true)
         setError(null)

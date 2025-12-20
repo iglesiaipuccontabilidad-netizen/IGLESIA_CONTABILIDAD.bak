@@ -21,10 +21,10 @@ export function useReporteFinanciero(filtros: FiltrosFinanciero = {}) {
   const [data, setData] = useState<ReporteFinanciero | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     const fetchReporteFinanciero = async () => {
+      const supabase = createClient()
       try {
         setLoading(true)
         setError(null)

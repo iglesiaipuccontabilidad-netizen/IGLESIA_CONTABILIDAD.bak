@@ -24,10 +24,10 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
   const [data, setData] = useState<PagoReporte[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const supabase = createClient()
 
   useEffect(() => {
     const fetchPagos = async () => {
+      const supabase = createClient()
       try {
         setLoading(true)
         setError(null)

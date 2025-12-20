@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target, FileText } from "lucide-react"
 import styles from "@/styles/sidebar.module.css"
 import { useAuth } from "@/lib/context/AuthContext"
+import LogoutButton from "./LogoutButton"
 
 type MenuItem = {
   href: string
@@ -24,6 +25,23 @@ type MenuSection = {
 interface SidebarProps {
   isMobileMenuVisible?: boolean;
   onMobileMenuClose?: () => void;
+}
+
+// Componente UserSection para la información del usuario y cerrar sesión
+function UserSection({ isCollapsed }: { isCollapsed: boolean }) {
+  const { member } = useAuth()
+  
+  return (
+    <div className={styles.userSection}>
+      {!isCollapsed && (
+        <div className={styles.userInfo}>
+          <div className="text-sm font-medium text-gray-900">{member?.email}</div>
+          <div className="text-xs text-gray-500">{member?.rol}</div>
+        </div>
+      )}
+      <LogoutButton collapsed={isCollapsed} />
+    </div>
+  )
 }
 
 export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose }: SidebarProps) {
@@ -173,9 +191,9 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
               className={styles.logo}
             />
             {!isCollapsed && (
-              <div className={styles.brandCopy}>
-                <span className={styles.brandTitle}>CONTABILIDAD</span>
-                <span className={styles.brandSubtitle}>Gestión integral de votos</span>
+              <div className={styles.brandText}>
+                <span className={styles.brandName}>CONTABILIDAD</span>
+                <span className={styles.brandDescription}>Gestión integral de votos</span>
               </div>
             )}
           </div>
@@ -188,7 +206,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           </button>
         </div>
 
-      <nav className={styles.navigation} aria-label="Menú principal">
+        {/* Información del usuario y botón de cerrar sesión */}
+        <UserSection isCollapsed={isCollapsed} />      <nav className={styles.navigation} aria-label="Menú principal">
         {menuSections.map((section) => (
           <div key={section.title} className={styles.section}>
             {!isCollapsed && <p className={styles.sectionTitle}>{section.title}</p>}

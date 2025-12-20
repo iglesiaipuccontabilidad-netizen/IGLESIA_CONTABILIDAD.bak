@@ -3,9 +3,6 @@
   background-color: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 1rem;
-  position: sticky;
-  top: 0;
-  z-index: 40;
 }
 
 .headerContent {
@@ -14,20 +11,12 @@
   align-items: center;
   max-width: 1280px;
   margin: 0 auto;
-  gap: 1rem;
 }
 
-.leftSection {
+.logoSection {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-.rightSection {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-left: auto;
 }
 
 .logo {

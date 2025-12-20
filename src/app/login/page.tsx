@@ -20,12 +20,11 @@ function LoadingState() {
         <div className="flex flex-col items-center text-center">
           <div className="inline-flex items-center justify-center rounded-2xl bg-blue-500/10 p-3">
             <Image
-              src="/icons/icon-192x192.png"
+              src="/LogoIpuc.png"
               alt="Logo IPUC"
               width={72}
               height={72}
               priority
-              className="rounded-lg"
             />
           </div>
           <h2 className="mt-6 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
@@ -99,12 +98,11 @@ function LoginForm({ mensaje }: LoginFormProps) {
           <div className="flex flex-col items-center text-center">
             <div className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-3 ring-4 ring-blue-400/30">
               <Image
-                src="/icons/icon-192x192.png"
+                src="/LogoIpuc.png"
                 alt="Logo IPUC"
                 width={72}
                 height={72}
                 priority
-                className="rounded-lg"
               />
             </div>
             <h2 className="mt-6 text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 bg-clip-text text-transparent">

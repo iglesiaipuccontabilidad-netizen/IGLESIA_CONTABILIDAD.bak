@@ -9,7 +9,7 @@ import type { VotoDetalle } from '@/types/votos'
 export default function EditarVotoPage() {
   const router = useRouter()
   const params = useParams()
-  const votoId = params?.id as string // Usando optional chaining para manejar el caso nulo
+  const votoId = params.id as string
 
   const [voto, setVoto] = useState<VotoDetalle | null>(null)
   const [loading, setLoading] = useState(true)
@@ -68,7 +68,7 @@ export default function EditarVotoPage() {
         proposito: formData.proposito,
         monto_total: parseFloat(formData.monto_total),
         fecha_limite: formData.fecha_limite,
-        estado: formData.estado as 'activo' | 'completado' | 'cancelado'
+        estado: formData.estado as 'activo' | 'completado' | 'vencido'
       })
 
       if (!resultado.success) {
