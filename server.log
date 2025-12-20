@@ -1,0 +1,16 @@
+
+> ipuc-contabilidad@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use by an unknown process, using available port 3002 instead.
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3002
+   - Network:      http://10.255.255.254:3002
+   - Environments: .env.local, .env
+   - Experiments (use with caution):
+     · serverActions
+     ✓ webpackBuildWorker
+     · optimizePackageImports
+
+ ✓ Starting...
+ ✓ Ready in 7.1s

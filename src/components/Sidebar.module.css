@@ -1,11 +1,11 @@
 ﻿/* Sidebar Container */
 .sidebar {
-  @apply w-72 h-screen bg-gradient-to-b from-slate-50 to-white fixed left-0 top-0 flex flex-col shadow-lg z-50 overflow-y-auto;
+  @apply w-72 h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-slate-900 fixed left-0 top-0 flex flex-col shadow-2xl z-50 overflow-y-auto;
 }
 
 /* Brand/Logo Area */
 .brandRow {
-  @apply flex items-center justify-between p-5 border-b border-slate-200 gap-3;
+  @apply flex items-center justify-between p-5 border-b border-slate-700 gap-3;
 }
 
 .brandMark {
@@ -21,20 +21,20 @@
 }
 
 .brandName {
-  @apply text-sm font-bold text-slate-900 whitespace-nowrap;
+  @apply text-sm font-bold text-white whitespace-nowrap;
 }
 
 .brandDescription {
-  @apply text-xs text-slate-600 whitespace-nowrap;
+  @apply text-xs text-slate-400 whitespace-nowrap;
 }
 
 /* Collapse Button */
 .collapseButton {
-  @apply p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0;
+  @apply p-2 hover:bg-slate-700 rounded-lg transition-colors flex-shrink-0;
 }
 
 .collapseIcon {
-  @apply w-4 h-4 text-slate-600;
+  @apply w-4 h-4 text-slate-400;
 }
 
 /* Navigation */
@@ -47,7 +47,7 @@
 }
 
 .sectionTitle {
-  @apply text-xs font-bold text-slate-500 uppercase tracking-wider px-4 mb-3;
+  @apply text-xs font-bold text-slate-400 uppercase tracking-wider px-4 mb-3;
 }
 
 .navList {
@@ -59,19 +59,19 @@
 }
 
 .navLink {
-  @apply flex items-center gap-3 px-4 py-3 text-slate-700 text-sm font-medium rounded-lg transition-all no-underline cursor-pointer border-l-4 border-transparent hover:bg-slate-100 hover:text-blue-600;
+  @apply flex items-center gap-3 px-4 py-3 text-slate-300 text-sm font-medium rounded-lg transition-all no-underline cursor-pointer border-l-4 border-transparent hover:bg-slate-700 hover:text-white;
 }
 
 .navLink:hover {
-  @apply border-l-4 border-blue-500 text-blue-600;
+  @apply border-l-4 border-blue-500 text-white;
 }
 
 .navLinkActive {
-  @apply bg-blue-50 text-blue-600 border-l-4 border-blue-500 font-semibold;
+  @apply bg-blue-600 text-white border-l-4 border-blue-400 font-semibold;
 }
 
 .navLinkActive:hover {
-  @apply bg-blue-100 text-blue-700;
+  @apply bg-blue-700 text-white;
 }
 
 .iconWrapper {
@@ -87,11 +87,11 @@
 }
 
 .linkLabel {
-  @apply text-sm font-semibold text-slate-900;
+  @apply text-sm font-semibold text-slate-100;
 }
 
 .linkDescription {
-  @apply text-xs text-slate-500;
+  @apply text-xs text-slate-400;
 }
 
 /* Submenu */
@@ -104,24 +104,24 @@
 }
 
 .subBullet {
-  @apply inline-block w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0;
+  @apply inline-block w-1.5 h-1.5 rounded-full bg-slate-600 flex-shrink-0;
 }
 
 .subNavLink {
-  @apply flex items-center gap-3 px-4 py-2 pl-12 text-slate-600 text-xs font-medium rounded-lg no-underline transition-all hover:bg-slate-100 hover:text-blue-600;
+  @apply flex items-center gap-3 px-4 py-2 pl-12 text-slate-400 text-xs font-medium rounded-lg no-underline transition-all hover:bg-slate-700 hover:text-slate-100;
 }
 
 .subNavLink:hover {
-  @apply bg-slate-100 text-blue-600;
+  @apply bg-slate-700 text-slate-100;
 }
 
 .subNavLinkActive {
-  @apply bg-blue-50 text-blue-600 font-semibold;
+  @apply bg-slate-700 text-blue-400 font-semibold;
 }
 
 /* Profile Card / User Section */
 .profileCard {
-  @apply flex items-center justify-between gap-3 p-4 border-t border-slate-200 mt-auto;
+  @apply flex items-center justify-between gap-3 p-4 border-t border-slate-700 mt-auto;
 }
 
 .avatar {
@@ -133,16 +133,16 @@
 }
 
 .profileName {
-  @apply text-sm font-semibold text-slate-900 truncate m-0;
+  @apply text-sm font-semibold text-white truncate m-0;
 }
 
 .profileRole {
-  @apply text-xs text-slate-500 block truncate;
+  @apply text-xs text-slate-400 block truncate;
 }
 
 /* User Section (alternate) */
 .userSection {
-  @apply p-4 border-b border-slate-200 flex items-center justify-between gap-3;
+  @apply p-4 border-b border-slate-700 flex items-center justify-between gap-3;
 }
 
 .userInfo {
@@ -150,11 +150,11 @@
 }
 
 .userName {
-  @apply text-sm font-semibold text-slate-900 truncate;
+  @apply text-sm font-semibold text-white truncate;
 }
 
 .userEmail {
-  @apply text-xs text-slate-500 truncate;
+  @apply text-xs text-slate-400 truncate;
 }
 
 /* Mobile Menu States */

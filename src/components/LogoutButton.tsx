@@ -1,7 +1,7 @@
 'use client'
 
 import { logout } from '@/app/login/actions'
-import styles from '@/styles/sidebar.module.css'
+import styles from '@/components/Sidebar.module.css'
 
 interface LogoutButtonProps {
   collapsed?: boolean

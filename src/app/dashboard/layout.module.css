@@ -11,13 +11,14 @@
   flex-direction: column;
   background-color: var(--fondo);
   min-height: 100vh;
-  margin-left: 250px;
+  margin-left: 288px;
   transition: margin-left 0.3s ease;
   min-width: 0;
 }
 
 .contentWrapper {
   flex: 1;
+  padding: 2rem 1.5rem;
   overflow-y: auto;
   overflow-x: hidden;
   min-width: 0;
@@ -25,8 +26,12 @@
 }
 
 @media (max-width: 1024px) {
+  .mainContent {
+    margin-left: 288px;
+  }
+
   .contentWrapper {
-    padding: 0;
+    padding: 1.5rem 1rem;
   }
 }
 
@@ -36,6 +41,6 @@
   }
 
   .contentWrapper {
-    padding: 0;
+    padding: 1rem;
   }
 }
