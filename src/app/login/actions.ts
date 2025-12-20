@@ -111,15 +111,15 @@ export async function signup(formData: FormData) {
 }
 
 export async function login(formData: FormData) {
+  const email = formData.get('email') as string
+  const password = formData.get('password') as string
+  const redirectTo = formData.get('redirect_to') as string
+
+  if (!email || !password) {
+    return { error: 'Por favor ingresa tu correo y contraseña' }
+  }
+
   try {
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const redirectTo = formData.get('redirect_to') as string
-
-    if (!email || !password) {
-      return { error: 'Por favor ingresa tu correo y contraseña' }
-    }
-
     const supabase = await createClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -144,7 +144,7 @@ export async function login(formData: FormData) {
     type UsuarioRow = Database['public']['Tables']['usuarios']['Row']
     
     // Esperar un momento para que la sesión se establezca completamente
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const { data: userData, error: userError } = await supabase
       .from('usuarios')
@@ -196,13 +196,19 @@ export async function login(formData: FormData) {
       }
     }
 
+    // Revalidar todo el layout para forzar la recarga del estado de autenticación
     revalidatePath('/', 'layout')
+    revalidatePath('/dashboard', 'layout')
+    
+    // Retornar la URL de redirección al cliente en lugar de hacer redirect desde el servidor
+    const finalRedirect = redirectTo ? decodeURIComponent(redirectTo) : '/dashboard'
     return { 
-      success: true, 
-      redirect: redirectTo || '/dashboard' 
+      success: true,
+      redirect: finalRedirect
     }
   } catch (error: any) {
     console.error('Error en login:', error)
     return { error: error.message || 'Ha ocurrido un error al iniciar sesión' }
   }
+}
 }

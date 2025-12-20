@@ -68,11 +68,14 @@ function LoginForm({ mensaje }: LoginFormProps) {
     
     startTransition(async () => {
       try {
+        // Ejecutar la acción de servidor
         const result = await login(formData)
         
-        if (result.error) {
+        if (result && result.error) {
           setError(result.error)
-        } else if (result.success && result.redirect) {
+        } else if (result && result.success && result.redirect) {
+          // Usar router.push para la navegación del cliente
+          // Esto permite que el contexto de autenticación se actualice correctamente
           router.push(result.redirect)
         }
       } catch (e: any) {
