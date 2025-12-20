@@ -22,7 +22,7 @@ function isApiPath(path: string) {
   return path.startsWith('/api')
 }
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   const currentUrl = `${pathname}${search}`
 

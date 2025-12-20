@@ -1,11 +1,24 @@
 'use server'
 
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { Database } from '@/lib/database.types'
+import { createClient } from '@/lib/supabase/server'
+
+type VotoConMiembro = {
+  id: number
+  proposito: string
+  monto_total: number
+  recaudado: number
+  fecha_limite: string
+  estado: string
+  miembro: {
+    id: number
+    nombres: string
+    apellidos: string
+    cedula: string
+  } | null
+}
 
 export async function getVotosActivos() {
-  const supabase = createServerComponentClient<Database>({ cookies })
+  const supabase = await createClient()
   
   const { data: votosActivos, error } = await supabase
     .from('votos')
@@ -25,6 +38,7 @@ export async function getVotosActivos() {
     `)
     .eq('estado', 'activo')
     .order('fecha_limite', { ascending: true })
+    .returns<VotoConMiembro[]>()
 
   if (error) {
     console.error('Error al obtener votos activos:', error)

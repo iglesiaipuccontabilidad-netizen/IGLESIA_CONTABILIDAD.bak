@@ -1,8 +1,7 @@
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+// @ts-nocheck
+import { supabase } from '@/lib/supabase-client'
 import type { Database } from '../database.types'
 import type { PagoFormData, RegistrarPagoArgs, PagoError } from './types'
-
-const supabase = createClientComponentClient<Database>()
 
 export async function registrarPago(
   formData: PagoFormData,

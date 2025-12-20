@@ -1,8 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { revalidatePath, revalidateTag } from 'next/cache'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
 import type { 
   VotoInput, 
@@ -19,8 +18,6 @@ type VotoRow = VotoSchema['Row']
 type VotoInsert = VotoSchema['Insert']
 type VotoUpdate = VotoSchema['Update']
 type PagoRow = Tables['pagos']['Row']
-
-const client = createClientComponentClient<Database>()
 
 export async function createVoto(data: VotoInput): Promise<{
   success: boolean;
@@ -47,8 +44,6 @@ export async function createVoto(data: VotoInput): Promise<{
       // Revalidar datos
       revalidatePath('/dashboard/votos')
       revalidatePath('/dashboard')
-      revalidateTag('votos')
-      revalidateTag(`miembro-votos-${data.miembro_id}`)
 
       return { success: true, error: null }
     } catch (error) {
@@ -82,12 +77,7 @@ export async function updateVoto(
       // Revalidar datos
       revalidatePath('/dashboard/votos')
       revalidatePath('/dashboard')
-      revalidateTag('votos')
-      revalidateTag(`voto-${id}`)
-    
-      if (data.miembro_id) {
-        revalidateTag(`miembro-votos-${data.miembro_id}`)
-      }
+      revalidatePath(`/dashboard/votos/${id}`)
 
       return { success: true, error: null }
     } catch (error) {
@@ -154,9 +144,7 @@ export async function registerPago(
     // Revalidar datos
     revalidatePath('/dashboard/votos')
     revalidatePath('/dashboard')
-    revalidateTag('votos')
-    revalidateTag(`voto-${votoId}`)
-    revalidateTag(`miembro-votos-${voto.miembro_id}`)
+    revalidatePath(`/dashboard/votos/${votoId}`)
 
     return { success: true, error: null }
   } catch (error) {
@@ -292,7 +280,6 @@ export async function deleteVoto(id: string): Promise<{
     // Revalidar datos
     revalidatePath('/dashboard/votos')
     revalidatePath('/dashboard')
-    revalidateTag('votos')
 
     return { success: true, error: null }
   } catch (error) {
