@@ -1,26 +1,57 @@
-﻿.sidebar {
-  @apply w-72 h-screen bg-white fixed left-0 top-0 flex flex-col shadow-lg z-50;
+﻿/* Sidebar Container */
+.sidebar {
+  @apply w-72 h-screen bg-gradient-to-b from-slate-50 to-white fixed left-0 top-0 flex flex-col shadow-lg z-50 overflow-y-auto;
+}
+
+/* Brand/Logo Area */
+.brandRow {
+  @apply flex items-center justify-between p-5 border-b border-slate-200 gap-3;
+}
+
+.brandMark {
+  @apply flex items-center gap-3 flex-1 min-w-0;
 }
 
 .logo {
-  @apply flex items-center p-6 border-b border-gray-200;
+  @apply flex-shrink-0 rounded-lg w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg;
 }
 
-.logoText {
-  @apply text-2xl font-bold text-azul-oscuro ml-2;
+.brandText {
+  @apply flex flex-col gap-0.5 flex-1 min-w-0;
 }
 
+.brandName {
+  @apply text-sm font-bold text-slate-900 whitespace-nowrap;
+}
+
+.brandDescription {
+  @apply text-xs text-slate-600 whitespace-nowrap;
+}
+
+/* Collapse Button */
+.collapseButton {
+  @apply p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0;
+}
+
+.collapseIcon {
+  @apply w-4 h-4 text-slate-600;
+}
+
+/* Navigation */
 .navigation {
   @apply flex-1 overflow-y-auto py-4;
 }
 
-.navList {
-  @apply space-y-2 px-4;
+.section {
+  @apply mb-6;
 }
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+
+.sectionTitle {
+  @apply text-xs font-bold text-slate-500 uppercase tracking-wider px-4 mb-3;
+}
+
+.navList {
+  @apply space-y-2 px-4 list-none m-0 p-0;
 }
 
 .navItem {
@@ -28,62 +59,128 @@
 }
 
 .navLink {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  color: #4b5563;
-  text-decoration: none;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
+  @apply flex items-center gap-3 px-4 py-3 text-slate-700 text-sm font-medium rounded-lg transition-all no-underline cursor-pointer border-l-4 border-transparent hover:bg-slate-100 hover:text-blue-600;
 }
 
 .navLink:hover {
-  background-color: #f3f4f6;
-  color: #1a56db;
+  @apply border-l-4 border-blue-500 text-blue-600;
 }
 
-.active {
-  background-color: #1a56db;
-  color: white;
+.navLinkActive {
+  @apply bg-blue-50 text-blue-600 border-l-4 border-blue-500 font-semibold;
 }
 
-.active:hover {
-  background-color: #1e40af;
-  color: white;
+.navLinkActive:hover {
+  @apply bg-blue-100 text-blue-700;
+}
+
+.iconWrapper {
+  @apply flex items-center justify-center flex-shrink-0;
 }
 
 .icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  @apply w-5 h-5;
 }
 
+.linkContent {
+  @apply flex-1 min-w-0 flex flex-col gap-0.5;
+}
+
+.linkLabel {
+  @apply text-sm font-semibold text-slate-900;
+}
+
+.linkDescription {
+  @apply text-xs text-slate-500;
+}
+
+/* Submenu */
 .subNavList {
-  list-style: none;
-  padding-left: 2.75rem;
-  margin-top: 0.25rem;
+  @apply list-none py-2 pl-0 m-0;
 }
 
 .subNavItem {
-  margin-top: 0.25rem;
+  @apply mt-1;
+}
+
+.subBullet {
+  @apply inline-block w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0;
 }
 
 .subNavLink {
-  display: block;
-  padding: 0.5rem 1rem;
-  color: #6b7280;
-  text-decoration: none;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: all 0.2s;
+  @apply flex items-center gap-3 px-4 py-2 pl-12 text-slate-600 text-xs font-medium rounded-lg no-underline transition-all hover:bg-slate-100 hover:text-blue-600;
 }
 
 .subNavLink:hover {
-  background-color: #f3f4f6;
-  color: #1a56db;
+  @apply bg-slate-100 text-blue-600;
 }
 
-.subNavLink.active {
-  background-color: #e5e7eb;
-  color: #1a56db;
+.subNavLinkActive {
+  @apply bg-blue-50 text-blue-600 font-semibold;
+}
+
+/* Profile Card / User Section */
+.profileCard {
+  @apply flex items-center justify-between gap-3 p-4 border-t border-slate-200 mt-auto;
+}
+
+.avatar {
+  @apply w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0;
+}
+
+.profileInfo {
+  @apply flex-1 min-w-0;
+}
+
+.profileName {
+  @apply text-sm font-semibold text-slate-900 truncate m-0;
+}
+
+.profileRole {
+  @apply text-xs text-slate-500 block truncate;
+}
+
+/* User Section (alternate) */
+.userSection {
+  @apply p-4 border-b border-slate-200 flex items-center justify-between gap-3;
+}
+
+.userInfo {
+  @apply flex-1 min-w-0;
+}
+
+.userName {
+  @apply text-sm font-semibold text-slate-900 truncate;
+}
+
+.userEmail {
+  @apply text-xs text-slate-500 truncate;
+}
+
+/* Mobile Menu States */
+.mobileOverlay {
+  @apply hidden;
+}
+
+.mobileOverlay.visible {
+  @apply block fixed inset-0 bg-black bg-opacity-50 z-40;
+}
+
+.sidebar.collapsed {
+  @apply w-20;
+}
+
+.sidebar.mobileVisible {
+  @apply translate-x-0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar {
+    @apply transform -translate-x-full transition-transform duration-300;
+  }
+
+  .sidebar.mobileVisible {
+    @apply translate-x-0;
+  }
 }

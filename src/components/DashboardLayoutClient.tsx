@@ -31,7 +31,6 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   const router = useRouter()
   const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [retryCount, setRetryCount] = useState(0)
 
   // Forzar refetch de la sesión si es necesario
   useRefreshAuth()
@@ -44,21 +43,34 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
     setMounted(true)
   }, [])
 
+  // Redirigir a login si no hay usuario después de que termine de cargar
   useEffect(() => {
     if (mounted && !isLoading && !user) {
-      // Si después de cargar no hay usuario y ya hemos reintetentado varias veces, redirigir
-      if (retryCount >= 2) {
-        router.replace('/login')
-      } else {
-        // Si no hay usuario pero isLoading es false, podría ser un timing issue
-        // Esperar un bit y reintentar
-        const timer = setTimeout(() => {
-          setRetryCount(prev => prev + 1)
-        }, 500)
-        return () => clearTimeout(timer)
-      }
+      console.log('❌ No hay usuario autenticado, redirigiendo a login')
+      router.replace('/login')
     }
-  }, [user, isLoading, router, mounted, retryCount])
+  }, [user, isLoading, router, mounted])
+
+  // No renderizar nada hasta que el componente esté montado en el cliente
+  if (!mounted) {
+    return null
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="p-4 rounded-lg bg-gray-50 flex items-center gap-3">
+          <div className="animate-spin h-5 w-5 text-blue-500 border-2 border-blue-500 rounded-full border-t-transparent" />
+          <span className="text-sm text-gray-600">Cargando...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    console.log('⚠️ Usuario no autenticado después de cargar')
+    return null
+  }
 
   // No renderizar nada hasta que el componente esté montado en el cliente
   if (!mounted) {

@@ -144,14 +144,14 @@ export default async function DashboardPage() {
           <div className="absolute -bottom-32 right-1/3 w-72 h-72 bg-gradient-to-br from-emerald-400/15 to-cyan-400/15 rounded-full blur-3xl"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fade-in relative z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-10 animate-fade-in relative z-10">
           {/* Header del Dashboard - Mejorado */}
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
             <div className="flex-1">
-              <h1 className="text-5xl lg:text-6xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-500 to-cyan-500 bg-clip-text text-transparent mb-3 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-primary-600 via-primary-500 to-cyan-500 bg-clip-text text-transparent mb-3 leading-tight">
                 Dashboard
               </h1>
-              <p className="text-slate-600 text-lg flex items-center space-x-3">
+              <p className="text-slate-600 text-base md:text-lg flex items-center space-x-3">
                 <span className="inline-block w-3 h-3 bg-green-500 rounded-full animate-pulse flex-shrink-0"></span>
                 <span>Resumen general de propósitos y compromisos financieros</span>
               </p>

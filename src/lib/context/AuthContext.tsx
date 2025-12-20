@@ -32,99 +32,107 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true
+    let timeoutId: NodeJS.Timeout
 
-    async function initialize() {
+    async function loadMemberData(userId: string) {
       try {
-        // Usar getUser() en lugar de getSession() para mayor seguridad
-        const { data: userData, error } = await supabase.auth.getUser()
+        const { data: memberData, error: memberError } = await supabase
+          .from('usuarios')
+          .select('id, email, rol, estado')
+          .eq('id', userId)
+          .maybeSingle()
         
-        if (error) throw error
-
-        if (mounted) {
-          if (userData?.user) {
-            setUser(userData.user)
-            
-            // Cargar datos del usuario de forma optimizada
-            const { data: memberData, error: memberError } = await supabase
-              .from('usuarios')
-              .select('id, email, rol, estado')
-              .eq('id', userData.user.id)
-              .maybeSingle()
-            
-            if (memberError) {
-              console.error('❌ Error al cargar datos del usuario:', memberError)
-            } else if (memberData) {
-              setMember(memberData)
-            } else {
-              setMember(null)
-            }
-          } else {
-            setUser(null)
-            setMember(null)
-          }
+        if (memberError) {
+          console.error('❌ Error al cargar datos del usuario:', memberError)
+        } else if (memberData) {
+          console.log('✅ Datos del usuario cargados')
+          if (mounted) setMember(memberData)
+        } else {
+          console.warn('⚠️ No se encontraron datos de usuario')
+          if (mounted) setMember(null)
         }
       } catch (error) {
-        console.error('❌ Error loading user:', error)
-        if (mounted) {
-          setUser(null)
-          setMember(null)
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false)
-        }
+        console.error('❌ Error al cargar member data:', error)
+        if (mounted) setMember(null)
       }
     }
 
-    initialize()
-
+    // Escuchar cambios de autenticación primero
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
 
-        console.log('Auth state changed:', event, session?.user?.email)
+        console.log('🔄 Auth state changed:', event, session?.user?.email)
 
         if (event === 'SIGNED_OUT') {
+          console.log('👋 Usuario desconectado')
           setUser(null)
           setMember(null)
           setIsLoading(false)
           return
         }
 
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || session?.user) {
-          if (session?.user) {
-            console.log('User authenticated:', session.user.email)
-            setUser(session.user)
-            const { data: memberData, error: memberError } = await supabase
-              .from('usuarios')
-              .select('id, email, rol, estado')
-              .eq('id', session.user.id)
-              .maybeSingle()
-            
-            if (memberError) {
-              console.error('❌ Error al cargar datos del usuario (onAuthStateChange):', memberError)
-            } else if (memberData) {
-              console.log('Member data loaded:', memberData)
-              setMember(memberData)
-            } else {
-              setMember(null)
-            }
-          }
+        if (session?.user) {
+          console.log('✅ Usuario autenticado en onAuthStateChange:', session.user.email)
+          setUser(session.user)
           setIsLoading(false)
+          
+          // Cargar datos del usuario
+          await loadMemberData(session.user.id)
         }
       }
     )
 
+    // Como fallback, también intentar getUser() después de un pequeño delay
+    // Esto ayuda en caso de que las cookies no se hayan propagado a tiempo
+    const initialize = async () => {
+      try {
+        // Delay mínimo de 50ms para permitir que las cookies se establezcan
+        await new Promise(resolve => setTimeout(resolve, 50))
+        
+        if (!mounted) return
+        
+        console.log('🔍 Verificando usuario con getUser()...')
+        const { data: { user: authUser }, error } = await supabase.auth.getUser()
+        
+        console.log('👤 getUser() result:', { user: authUser?.email, error: error?.message })
+        
+        if (!error && authUser && mounted) {
+          console.log('✅ Usuario encontrado en getUser():', authUser.email)
+          if (!user) {
+            // Solo actualizar si aún no tenemos usuario del listener
+            setUser(authUser)
+            setIsLoading(false)
+            await loadMemberData(authUser.id)
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error en getUser():', error)
+      }
+    }
+
+    // Ejecutar inicialización fallback
+    initialize()
+
+    // Timeout de seguridad: si después de 3 segundos aún estamos cargando, detener
+    timeoutId = setTimeout(() => {
+      if (mounted && isLoading) {
+        console.warn('⚠️ Timeout en inicialización de auth (3s), deteniendo carga')
+        setIsLoading(false)
+      }
+    }, 3000)
+
     return () => {
       mounted = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [supabase])
+  }, [supabase, user])
 
   const value = {
     user,
     isLoading,
-    member,
+    member: member || (user ? { id: user.id, email: user.email || null, rol: null, estado: 'activo' as const } : null),
   }
 
   return (

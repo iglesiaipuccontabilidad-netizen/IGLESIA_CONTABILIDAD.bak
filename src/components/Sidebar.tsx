@@ -29,14 +29,16 @@ interface SidebarProps {
 
 // Componente UserSection para la información del usuario y cerrar sesión
 function UserSection({ isCollapsed }: { isCollapsed: boolean }) {
-  const { member } = useAuth()
+  const { member, isLoading } = useAuth()
   
   return (
     <div className={styles.userSection}>
       {!isCollapsed && (
         <div className={styles.userInfo}>
-          <div className="text-sm font-medium text-gray-900">{member?.email}</div>
-          <div className="text-xs text-gray-500">{member?.rol}</div>
+          <div className="text-sm font-medium text-gray-900">{member?.email || "Usuario"}</div>
+          <div className="text-xs text-gray-500">
+            {isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Sin rol")}
+          </div>
         </div>
       )}
       <LogoutButton collapsed={isCollapsed} />
@@ -46,7 +48,7 @@ function UserSection({ isCollapsed }: { isCollapsed: boolean }) {
 
 export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose }: SidebarProps) {
   const pathname = usePathname()
-  const { member } = useAuth()
+  const { member, isLoading } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
   // Efecto para manejar el scroll del body cuando el menú móvil está abierto
@@ -192,8 +194,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
             />
             {!isCollapsed && (
               <div className={styles.brandText}>
-                <span className={styles.brandName}>CONTABILIDAD</span>
-                <span className={styles.brandDescription}>Gestión integral de votos</span>
+                <span className={styles.brandName}>IPUC</span>
+                <span className={styles.brandDescription}>Sistema de votos</span>
               </div>
             )}
           </div>
@@ -207,7 +209,9 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
         </div>
 
         {/* Información del usuario y botón de cerrar sesión */}
-        <UserSection isCollapsed={isCollapsed} />      <nav className={styles.navigation} aria-label="Menú principal">
+        <UserSection isCollapsed={isCollapsed} />
+
+        <nav className={styles.navigation} aria-label="Menú principal">
         {menuSections.map((section) => (
           <div key={section.title} className={styles.section}>
             {!isCollapsed && <p className={styles.sectionTitle}>{section.title}</p>}
@@ -281,7 +285,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           <div className={styles.profileInfo}>
             <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
-              {member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Cargando..."}
+              {isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Sin rol")}
             </span>
           </div>
         )}
