@@ -2,10 +2,14 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  serverExternalPackages: ['@supabase/supabase-js'],
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+    serverActions: {
+      allowedOrigins: ['localhost:3000'],
+    },
+    optimizePackageImports: ['@/components', '@/lib'],
+    webpackBuildWorker: true
   },
-  // Configuración específica para el Service Worker
   headers: async () => {
     return [
       {
@@ -20,7 +24,6 @@ const nextConfig = {
     ]
   },
   webpack: (config, { dev, isServer }) => {
-    // Desactivar la caché de webpack temporalmente para resolver problemas de compilación
     config.cache = false;
     if (isServer) {
       config.optimization = {
@@ -28,15 +31,12 @@ const nextConfig = {
         moduleIds: 'deterministic',
         chunkIds: 'deterministic',
       }
-      
-      // Asegurar que los módulos del servidor tengan IDs consistentes
       config.output = {
         ...config.output,
         strictModuleExceptionHandling: true,
       }
     }
 
-    // Optimizaciones generales de webpack
     config.optimization = {
       ...config.optimization,
       runtimeChunk: isServer ? false : 'single',
@@ -47,17 +47,7 @@ const nextConfig = {
 
     return config
   },
-  experimental: {
-    // Habilitar características experimentales de manera más específica
-    serverActions: {
-      allowedOrigins: ['localhost:3000'],
-    },
-    // Mejorar el manejo de módulos
-    optimizePackageImports: ['@/components', '@/lib'],
-    webpackBuildWorker: true
-  },
   compiler: {
-    // Remover console.logs en producción
     removeConsole: process.env.NODE_ENV === 'production',
   }
 }
