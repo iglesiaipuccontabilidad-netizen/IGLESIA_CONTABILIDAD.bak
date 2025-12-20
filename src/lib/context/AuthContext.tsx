@@ -56,12 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             fullError: JSON.stringify(memberError),
           })
           if (mounted) setMember(null)
-        } else if (memberData) {
+        } else if (memberData && typeof memberData === 'object') {
           console.log('✅ Datos del usuario cargados:', {
-            id: memberData.id,
-            email: memberData.email,
-            rol: memberData.rol,
-            estado: memberData.estado,
+            id: (memberData as any).id,
+            email: (memberData as any).email,
+            rol: (memberData as any).rol,
+            estado: (memberData as any).estado,
           })
           if (mounted) setMember(memberData)
         } else {
