@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true
     let memberLoaded = false // Bandera para evitar cargas múltiples
+    let realtimeSubscription: any = null // Para el listener en tiempo real
 
     async function loadMemberData(userId: string, retryCount = 0) {
       if (memberLoaded) {
@@ -114,6 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setMember(memberData)
           memberLoaded = true // Marcar como cargado
           console.log('✅ Member actualizado en el estado de React')
+          
+          // Configurar realtime subscription para cambios en este usuario
+          setupRealtimeSubscription(userId)
         } else {
           console.warn('⚠️ No se encontraron datos de usuario en la tabla usuarios')
           
@@ -145,6 +149,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Configurar suscripción en tiempo real para cambios en el usuario
+    function setupRealtimeSubscription(userId: string) {
+      console.log('🔔 Configurando realtime subscription para usuario:', userId)
+      
+      realtimeSubscription = supabase
+        .channel(`usuarios:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // Todos los eventos: INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'usuarios',
+            filter: `id=eq.${userId}`
+          },
+          (payload: any) => {
+            console.log('🔄 Cambio detectado en usuario:', payload)
+            
+            if (payload.new && mounted) {
+              console.log('📢 Actualizando member con cambios:', payload.new)
+              setMember({
+                id: payload.new.id,
+                email: payload.new.email,
+                rol: payload.new.rol,
+                estado: payload.new.estado
+              })
+            }
+          }
+        )
+        .subscribe((status: string) => {
+          console.log('📡 Realtime subscription status:', status)
+        })
+    }
+
     // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -159,6 +196,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setMember(null)
           setIsLoading(false)
           memberLoaded = false
+          
+          // Limpiar suscripción realtime
+          if (realtimeSubscription) {
+            realtimeSubscription.unsubscribe()
+            realtimeSubscription = null
+          }
           return
         }
 
@@ -219,6 +262,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       memberLoaded = false
       clearTimeout(timeoutId)
       subscription.unsubscribe()
+      
+      // Limpiar suscripción realtime
+      if (realtimeSubscription) {
+        realtimeSubscription.unsubscribe()
+      }
     }
   }, [supabase])
 
