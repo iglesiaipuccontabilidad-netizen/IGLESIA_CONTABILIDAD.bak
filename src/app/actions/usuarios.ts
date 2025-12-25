@@ -22,12 +22,12 @@ export async function aprobarUsuario(userId: string): Promise<{ success: boolean
       .eq('id', currentUser.id)
       .single()
 
-    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+    if (!currentUserData || (currentUserData as any).rol !== 'admin' || (currentUserData as any).estado !== 'activo') {
       return { success: false, error: 'No tienes permisos para aprobar usuarios' }
     }
 
     // Actualizar el usuario
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('usuarios')
       .update({
         rol: 'usuario',
@@ -67,12 +67,12 @@ export async function rechazarUsuario(userId: string): Promise<{ success: boolea
       .eq('id', currentUser.id)
       .single()
 
-    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+    if (!currentUserData || (currentUserData as any).rol !== 'admin' || (currentUserData as any).estado !== 'activo') {
       return { success: false, error: 'No tienes permisos para rechazar usuarios' }
     }
 
     // Actualizar el usuario
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('usuarios')
       .update({ 
         rol: 'pendiente',
@@ -115,7 +115,7 @@ export async function editarUsuario(
       .eq('id', currentUser.id)
       .single()
 
-    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+    if (!currentUserData || (currentUserData as any).rol !== 'admin' || (currentUserData as any).estado !== 'activo') {
       return { success: false, error: 'No tienes permisos para editar usuarios' }
     }
 
@@ -153,8 +153,8 @@ export async function editarUsuario(
     }
 
     // Verificar si el email ya está en uso por otro usuario
-    if (data.email !== existingUser.email) {
-      const { data: emailCheck } = await supabase
+    if (data.email !== (existingUser as any).email) {
+      const { data: emailCheck } = await (supabase as any)
         .from('usuarios')
         .select('id')
         .eq('email', data.email)
@@ -178,7 +178,7 @@ export async function editarUsuario(
     }
 
     // Actualizar en la tabla usuarios
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from('usuarios')
       .update({
         email: data.email,
@@ -222,7 +222,7 @@ export async function eliminarUsuario(
       .eq('id', currentUser.id)
       .single()
 
-    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+    if (!currentUserData || (currentUserData as any).rol !== 'admin' || (currentUserData as any).estado !== 'activo') {
       return { success: false, error: 'No tienes permisos para eliminar usuarios' }
     }
 
@@ -250,13 +250,13 @@ export async function eliminarUsuario(
       .eq('estado', 'activo')
 
     // Si es el último admin, no permitir eliminación
-    if (userToDelete.rol === 'admin' && userToDelete.estado === 'activo' && adminCount === 1) {
+    if ((userToDelete as any).rol === 'admin' && (userToDelete as any).estado === 'activo' && adminCount === 1) {
       return { success: false, error: 'No se puede eliminar el último administrador activo' }
     }
 
     if (soft) {
       // Soft delete: solo cambiar estado
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('usuarios')
         .update({
           estado: 'inactivo',

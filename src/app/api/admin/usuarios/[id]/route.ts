@@ -28,7 +28,7 @@ export async function PUT(
       .eq('id', currentUser.id)
       .single()
 
-    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+    if (!currentUserData || (currentUserData as any).rol !== 'admin' || (currentUserData as any).estado !== 'activo') {
       return NextResponse.json(
         { error: 'No tienes permisos para editar usuarios' },
         { status: 403 }
@@ -84,8 +84,8 @@ export async function PUT(
     }
 
     // Verificar si el email ya está en uso por otro usuario
-    if (email !== existingUser.email) {
-      const { data: emailCheck } = await supabase
+    if (email !== (existingUser as any).email) {
+      const { data: emailCheck } = await (supabase as any)
         .from('usuarios')
         .select('id')
         .eq('email', email)
@@ -115,7 +115,7 @@ export async function PUT(
     }
 
     // Actualizar en la tabla usuarios
-    const { data: updatedUser, error: updateError } = await supabase
+    const { data: updatedUser, error: updateError } = await (supabase as any)
       .from('usuarios')
       .update({
         email,
@@ -177,7 +177,7 @@ export async function DELETE(
       .eq('id', currentUser.id)
       .single()
 
-    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+    if (!currentUserData || (currentUserData as any).rol !== 'admin' || (currentUserData as any).estado !== 'activo') {
       return NextResponse.json(
         { error: 'No tienes permisos para eliminar usuarios' },
         { status: 403 }
@@ -214,7 +214,7 @@ export async function DELETE(
       .eq('estado', 'activo')
 
     // Si es el último admin, no permitir eliminación
-    if (userToDelete.rol === 'admin' && userToDelete.estado === 'activo' && adminCount === 1) {
+    if ((userToDelete as any).rol === 'admin' && (userToDelete as any).estado === 'activo' && adminCount === 1) {
       return NextResponse.json(
         { error: 'No se puede eliminar el último administrador activo' },
         { status: 400 }
@@ -223,7 +223,7 @@ export async function DELETE(
 
     if (soft) {
       // Soft delete: solo cambiar estado
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('usuarios')
         .update({
           estado: 'inactivo',

@@ -83,7 +83,7 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
       })
 
       // 2. Registrar pago usando RPC
-      const { data: result, error: txError } = await supabase.rpc('registrar_pago', {
+      const { data: result, error: txError } = await (supabase as any).rpc('registrar_pago', {
         p_voto_id: votoId,
         p_monto: monto,
         p_fecha_pago: formData.fecha_pago,

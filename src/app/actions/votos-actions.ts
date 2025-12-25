@@ -39,12 +39,12 @@ export async function createVoto(data: VotoInput): Promise<{
         .eq('id', user.id)
         .single()
 
-      if (!userData || userData.estado !== 'activo') {
+      if (!userData || (userData as any).estado !== 'activo') {
         throw new Error('Usuario no autorizado')
       }
 
       // Solo admin y tesorero pueden crear votos
-      if (!['admin', 'tesorero'].includes(userData.rol)) {
+      if (!['admin', 'tesorero'].includes((userData as any).rol)) {
         throw new Error('No tienes permisos para crear votos')
       }
 
@@ -97,12 +97,12 @@ export async function updateVoto(
         .eq('id', user.id)
         .single()
 
-      if (!userData || userData.estado !== 'activo') {
+      if (!userData || (userData as any).estado !== 'activo') {
         throw new Error('Usuario no autorizado')
       }
 
       // Solo admin y tesorero pueden editar votos
-      if (!['admin', 'tesorero'].includes(userData.rol)) {
+      if (!['admin', 'tesorero'].includes((userData as any).rol)) {
         throw new Error('No tienes permisos para editar votos')
       }
 
@@ -315,12 +315,12 @@ export async function deleteVoto(id: string): Promise<{
       .eq('id', user.id)
       .single()
 
-    if (!userData || userData.estado !== 'activo') {
+    if (!userData || (userData as any).estado !== 'activo') {
       throw new Error('Usuario no autorizado')
     }
 
     // Solo admin puede eliminar votos
-    if (userData.rol !== 'admin') {
+    if ((userData as any).rol !== 'admin') {
       throw new Error('No tienes permisos para eliminar votos')
     }
 

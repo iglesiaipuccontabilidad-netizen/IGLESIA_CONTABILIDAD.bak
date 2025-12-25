@@ -31,12 +31,12 @@ export async function createMiembro(formData: MiembroFormData) {
         .eq('id', user.id)
         .single()
 
-      if (!userData || userData.estado !== 'activo') {
+      if (!userData || (userData as any).estado !== 'activo') {
         throw new Error('Usuario no autorizado')
       }
 
       // Solo admin y tesorero pueden crear miembros
-      if (!['admin', 'tesorero'].includes(userData.rol)) {
+      if (!['admin', 'tesorero'].includes((userData as any).rol)) {
         throw new Error('No tienes permisos para crear miembros')
       }
       
@@ -90,12 +90,12 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
         .eq('id', user.id)
         .single()
 
-      if (!userData || userData.estado !== 'activo') {
+      if (!userData || (userData as any).estado !== 'activo') {
         throw new Error('Usuario no autorizado')
       }
 
       // Solo admin y tesorero pueden editar miembros
-      if (!['admin', 'tesorero'].includes(userData.rol)) {
+      if (!['admin', 'tesorero'].includes((userData as any).rol)) {
         throw new Error('No tienes permisos para editar miembros')
       }
 
@@ -149,12 +149,12 @@ export async function eliminarMiembro(id: string) {
       .eq('id', user.id)
       .single()
 
-    if (!userData || userData.estado !== 'activo') {
+    if (!userData || (userData as any).estado !== 'activo') {
       return { error: 'Usuario no autorizado' }
     }
 
     // Solo admin puede eliminar miembros
-    if (userData.rol !== 'admin') {
+    if ((userData as any).rol !== 'admin') {
       return { error: 'No tienes permisos para eliminar miembros' }
     }
 

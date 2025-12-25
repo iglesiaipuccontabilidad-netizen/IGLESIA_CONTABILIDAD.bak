@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       .from('usuarios')
       .select('rol, estado')
       .eq('id', currentUser.id)
-      .single()
+      .single<{ rol: string; estado: string }>()
 
     if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
       return NextResponse.json({ error: 'No tienes permisos' }, { status: 403 })
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       .from('usuarios')
       .select('id, estado')
       .eq('email', email)
-      .maybeSingle()
+      .maybeSingle<{ id: string; estado: string }>()
 
     if (existingUser && existingUser.estado === 'inactivo') {
       const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Error al reactivar' }, { status: 500 })
       }
 
-      const { error: updateError } = await supabaseAdmin
+      const { error: updateError } = await (supabaseAdmin as any)
         .from('usuarios')
         .update({ 
           rol: rol as 'admin' | 'tesorero' | 'usuario' | 'pendiente',
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     if (rol !== 'pendiente') {
       await new Promise(resolve => setTimeout(resolve, 500))
       
-      await supabaseAdmin
+      await (supabaseAdmin as any)
         .from('usuarios')
         .update({ 
           rol: rol as 'admin' | 'tesorero' | 'usuario' | 'pendiente',

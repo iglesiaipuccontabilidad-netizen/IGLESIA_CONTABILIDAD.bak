@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .from('usuarios')
           .select('id, email, rol, estado')
           .eq('id', userId)
-          .maybeSingle()
+          .maybeSingle() as { data: MemberType | null, error: any }
         
         console.log('📦 Respuesta de Supabase:')
         console.log('   Data:', memberData)
