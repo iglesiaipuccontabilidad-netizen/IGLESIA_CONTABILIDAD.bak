@@ -66,6 +66,7 @@ export default function Page() {
       const { data: usuarios, error } = await supabase
         .from('usuarios')
         .select('*')
+        .neq('estado', 'inactivo') // Excluir usuarios eliminados (soft delete)
         .order('created_at', { ascending: false })
 
       if (error) {

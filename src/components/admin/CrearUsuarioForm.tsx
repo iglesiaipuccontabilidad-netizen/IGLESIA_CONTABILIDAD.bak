@@ -60,6 +60,17 @@ const CrearUsuarioForm: React.FC<CrearUsuarioFormProps> = ({ onSuccess }) => {
         body: JSON.stringify({ email, password, rol }),
       })
 
+      // Verificar el content-type de la respuesta
+      const contentType = response.headers.get('content-type')
+      console.log('Content-Type de respuesta:', contentType)
+      console.log('Status de respuesta:', response.status)
+
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text()
+        console.error('Respuesta no-JSON recibida:', textResponse.substring(0, 500))
+        throw new Error('Error del servidor. Por favor, revisa la consola del navegador.')
+      }
+
       const data = await response.json()
       
       if (!response.ok) {
@@ -68,12 +79,22 @@ const CrearUsuarioForm: React.FC<CrearUsuarioFormProps> = ({ onSuccess }) => {
       }
 
       console.log('Usuario creado exitosamente:', data)
-      onSuccess?.()
+      
+      // Resetear el formulario antes de llamar onSuccess
       e.currentTarget.reset()
+      
+      // Mostrar mensaje especial si fue reactivado
+      if (data.message) {
+        setError(data.message)
+        setTimeout(() => setError(null), 3000)
+      }
+      
+      onSuccess?.()
       
       // Mostrar mensaje de éxito
       setError(null)
     } catch (error) {
+      console.error('Error completo:', error)
       setError(error instanceof Error ? error.message : 'Error al crear el usuario')
     } finally {
       setIsLoading(false)
@@ -139,7 +160,9 @@ const CrearUsuarioForm: React.FC<CrearUsuarioFormProps> = ({ onSuccess }) => {
         >
           <option value="" disabled>Selecciona un rol</option>
           <option value="usuario">Usuario</option>
+          <option value="tesorero">Tesorero</option>
           <option value="admin">Administrador</option>
+          <option value="pendiente">Pendiente</option>
         </select>
       </div>
 

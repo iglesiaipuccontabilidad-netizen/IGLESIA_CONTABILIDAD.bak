@@ -4,21 +4,12 @@ import { notFound } from 'next/navigation'
 import { Database } from '@/lib/database.types'
 import { formatCurrency, formatDate, getProgressStatus } from '@/utils/format'
 import styles from '@/styles/components/VotoDetalle.module.css'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { CookieOptions } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/server'
 import { ArrowLeft, DollarSign, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle, CreditCard } from 'lucide-react'
 
 type TablaVotos = Database['public']['Tables']['votos']['Row']
 type TablaMiembros = Database['public']['Tables']['miembros']['Row']
 type TablaPagos = Database['public']['Tables']['pagos']['Row']
-
-const cookieOptions: CookieOptions = {
-  path: '/',
-  secure: process.env.NODE_ENV === 'production',
-  httpOnly: true,
-  sameSite: 'lax'
-}
 
 interface VotoConDetalles extends TablaVotos {
   miembro: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos' | 'cedula'>
@@ -48,37 +39,7 @@ export default async function VotoDetailPage({
     return notFound()
   }
 
-  const votoId = id
-  const cookieStore = await cookies()
-
-  const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          const cookie = cookieStore.get(name)
-          return cookie?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookieStore.set(name, value, options)
-          } catch (error) {
-            // Handle errors gracefully
-            console.error('Error setting cookie:', error)
-          }
-        },
-        remove(name: string) {
-          try {
-            cookieStore.set(name, '', { ...cookieOptions, maxAge: 0 })
-          } catch (error) {
-            // Handle errors gracefully
-            console.error('Error removing cookie:', error)
-          }
-        }
-      }
-    }
-  )
+  const supabase = await createClient()
 
   const { data: voto, error } = await supabase
     .from('votos')
@@ -101,7 +62,7 @@ export default async function VotoDetailPage({
         metodo_pago
       )
     `)
-    .eq('id', votoId)
+    .eq('id', id)
     .single() as { data: VotoConDetalles | null, error: any }
 
   if (error) {
@@ -244,7 +205,7 @@ export default async function VotoDetailPage({
           </ul>
           
           <Link
-            href={`/dashboard/pagos/nuevo?voto=${votoId}`}
+            href={`/dashboard/pagos/nuevo?voto=${id}`}
             className={`block w-full text-center px-6 py-3 rounded-lg font-semibold transition-all ${
               montoPendiente === 0 
                 ? 'bg-gray-400 cursor-not-allowed' 
@@ -453,7 +414,7 @@ export default async function VotoDetailPage({
             </div>
             <p className="text-gray-600 mb-4">Aún no se han registrado pagos para este voto.</p>
             <Link
-              href={`/dashboard/pagos/nuevo?voto=${votoId}`}
+              href={`/dashboard/pagos/nuevo?voto=${id}`}
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
             >
               <DollarSign className="h-5 w-5" />

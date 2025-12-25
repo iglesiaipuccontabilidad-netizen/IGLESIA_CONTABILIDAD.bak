@@ -1,9 +1,12 @@
 'use server'
 
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
+
+type VotoRow = Database['public']['Tables']['votos']['Row']
+type PagoInsert = Database['public']['Tables']['pagos']['Insert']
+type VotoUpdate = Database['public']['Tables']['votos']['Update']
 
 export interface PagoInput {
   id: string
@@ -13,24 +16,7 @@ export interface PagoInput {
 }
 
 export async function registrarPago(data: PagoInput) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name: string, options: any) {
-          cookieStore.delete(name)
-        },
-      },
-    }
-  )
+  const supabase = await createClient() as any
 
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -38,42 +24,46 @@ export async function registrarPago(data: PagoInput) {
       throw new Error('No se pudo verificar el usuario')
     }
 
-    const voto = await supabase
+    const { data: votoData, error: votoError } = await supabase
       .from('votos')
       .select('monto_total, recaudado')
       .eq('id', data.id)
       .single()
 
-    if (voto.error || !voto.data) {
+    if (votoError || !votoData) {
       throw new Error('No se pudo obtener la información del voto')
     }
 
-    const montoPendiente = Number(voto.data.monto_total) - Number(voto.data.recaudado)
+    const montoPendiente = Number(votoData.monto_total) - Number(votoData.recaudado)
     if (data.monto > montoPendiente) {
       throw new Error(`El monto máximo que puede abonar es ${montoPendiente}`)
     }
 
+    const pagoData: PagoInsert = {
+      voto_id: data.id,
+      monto: data.monto,
+      fecha_pago: data.fecha,
+      nota: data.nota || null,
+      registrado_por: user.id
+    }
+
     const pago = await supabase
       .from('pagos')
-      .insert({
-        voto_id: data.id,
-        monto: data.monto,
-        fecha_pago: data.fecha,
-        nota: data.nota,
-        registrado_por: user.id
-      })
+      .insert(pagoData)
 
     if (pago.error) {
       throw new Error('Error al registrar el pago')
     }
 
+    const updateData: VotoUpdate = {
+      recaudado: Number(votoData.recaudado) + data.monto,
+      updated_at: new Date().toISOString(),
+      ultima_actualizacion_por: user.id
+    }
+
     const actualizacion = await supabase
       .from('votos')
-      .update({
-        recaudado: Number(voto.data.recaudado) + data.monto,
-        updated_at: new Date().toISOString(),
-        ultima_actualizacion_por: user.id
-      })
+      .update(updateData)
       .eq('id', data.id)
 
     if (actualizacion.error) {

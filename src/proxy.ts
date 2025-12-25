@@ -31,7 +31,12 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 2. Crear el cliente de Supabase para verificar la sesión
+  // 2. Permitir rutas de API sin verificación del middleware
+  if (isApiPath(pathname)) {
+    return NextResponse.next()
+  }
+
+  // 3. Crear el cliente de Supabase para verificar la sesión
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
@@ -28,18 +28,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [member, setMember] = useState<MemberType | null>(null)
-  const supabase = createClient()
+  
+  // Crear el cliente fuera del efecto para evitar recreaciones
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     let mounted = true
-    let timeoutId: NodeJS.Timeout
+    let memberLoaded = false // Bandera para evitar cargas múltiples
 
     async function loadMemberData(userId: string, retryCount = 0) {
-      const MAX_RETRIES = 2
-      const RETRY_DELAY = 500 // ms
+      if (memberLoaded) {
+        console.log('⚠️ Member ya fue cargado, saltando...')
+        return
+      }
+      
+      const MAX_RETRIES = 3
+      const RETRY_DELAY = 800 // ms
       
       try {
-        console.log('🔍 Cargando datos del usuario:', userId, retryCount > 0 ? `(intento ${retryCount + 1}/${MAX_RETRIES + 1})` : '')
+        console.log('════════════════════════════════════════')
+        console.log('🔍 INICIANDO loadMemberData')
+        console.log('   User ID:', userId)
+        console.log('   Intento:', retryCount + 1, '/', MAX_RETRIES + 1)
+        console.log('════════════════════════════════════════')
+        
+        // Verificar que tenemos un supabase client válido
+        if (!supabase) {
+          console.error('❌ No hay cliente de Supabase disponible')
+          if (mounted) setMember(null)
+          return
+        }
+        
+        // Verificar la sesión actual primero
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        console.log('🔐 Verificación de sesión:')
+        console.log('   Session exists?:', !!session)
+        console.log('   Session user ID:', session?.user?.id)
+        console.log('   Session error:', sessionError)
+        
+        if (!session) {
+          console.error('❌ No hay sesión activa al intentar cargar member')
+          if (retryCount < MAX_RETRIES && mounted) {
+            console.log(`🔄 Reintentando por falta de sesión en ${RETRY_DELAY}ms...`)
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+            return loadMemberData(userId, retryCount + 1)
+          }
+          if (mounted) setMember(null)
+          return
+        }
+        
+        console.log('🔍 Ejecutando query a tabla usuarios...')
         
         const { data: memberData, error: memberError } = await supabase
           .from('usuarios')
@@ -47,125 +86,146 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .eq('id', userId)
           .maybeSingle()
         
+        console.log('📦 Respuesta de Supabase:')
+        console.log('   Data:', memberData)
+        console.log('   Error:', memberError)
+        console.log('   Has data?:', !!memberData)
+        console.log('   Has error?:', !!memberError)
+        
         if (memberError) {
-          console.error('❌ Error al cargar datos del usuario:', {
-            message: memberError.message,
-            details: memberError.details,
-            hint: memberError.hint,
-            code: memberError.code,
-            fullError: JSON.stringify(memberError),
-          })
+          console.error('❌ Error al cargar datos del usuario:', memberError)
+          
+          if (retryCount < MAX_RETRIES && mounted) {
+            console.log(`🔄 Reintentando por error en ${RETRY_DELAY}ms...`)
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+            return loadMemberData(userId, retryCount + 1)
+          }
+          
           if (mounted) setMember(null)
         } else if (memberData && typeof memberData === 'object') {
-          console.log('✅ Datos del usuario cargados:', {
-            id: (memberData as any).id,
-            email: (memberData as any).email,
-            rol: (memberData as any).rol,
-            estado: (memberData as any).estado,
-          })
-          if (mounted) setMember(memberData)
+          console.log('✅✅✅ DATOS CARGADOS EXITOSAMENTE:')
+          console.log('   ID:', memberData.id)
+          console.log('   Email:', memberData.email)
+          console.log('   Rol:', memberData.rol)
+          console.log('   Estado:', memberData.estado)
+          
+          // ACTUALIZAR ESTADO INMEDIATAMENTE, sin chequear mounted
+          // Si el componente se desmonta, React ignorará la actualización de forma segura
+          setMember(memberData)
+          memberLoaded = true // Marcar como cargado
+          console.log('✅ Member actualizado en el estado de React')
         } else {
           console.warn('⚠️ No se encontraron datos de usuario en la tabla usuarios')
           
-          // Si no encontramos datos y no hemos agotado los reintentos, intentar de nuevo
-          // Esto ayuda cuando el trigger aún no ha ejecutado
           if (retryCount < MAX_RETRIES && mounted) {
             console.log(`🔄 Reintentando en ${RETRY_DELAY}ms...`)
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
             return loadMemberData(userId, retryCount + 1)
           }
           
-          console.warn('⚠️ No se encontró registro después de reintentos, el trigger puede estar pendiente')
           if (mounted) setMember(null)
         }
       } catch (error) {
-        console.error('❌ Excepción al cargar member data:', {
+        console.error('❌❌❌ EXCEPCIÓN al cargar member data:', {
           error,
           type: typeof error,
           isErrorObject: error instanceof Error,
           message: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
         })
+        
+        // Intentar de nuevo si hay reintentos disponibles
+        if (retryCount < MAX_RETRIES && mounted) {
+          console.log(`🔄 Reintentando por excepción en ${RETRY_DELAY}ms...`)
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+          return loadMemberData(userId, retryCount + 1)
+        }
+        
         if (mounted) setMember(null)
       }
     }
 
-    // Escuchar cambios de autenticación primero
+    // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
 
         console.log('🔄 Auth state changed:', event, session?.user?.email)
 
+        // Solo procesar eventos significativos, ignorar INITIAL_SESSION múltiples
         if (event === 'SIGNED_OUT') {
           console.log('👋 Usuario desconectado')
           setUser(null)
           setMember(null)
           setIsLoading(false)
+          memberLoaded = false
           return
         }
 
-        if (session?.user) {
-          console.log('✅ Usuario autenticado en onAuthStateChange:', session.user.email)
-          setUser(session.user)
-          setIsLoading(false)
-          
-          // Cargar datos del usuario
-          await loadMemberData(session.user.id)
+        if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && !memberLoaded)) {
+          if (session?.user) {
+            console.log('✅ Usuario autenticado:', session.user.email)
+            setUser(session.user)
+            
+            // Cargar datos del usuario
+            await loadMemberData(session.user.id)
+            setIsLoading(false)
+          } else {
+            setIsLoading(false)
+          }
         }
       }
     )
 
-    // Como fallback, también intentar getUser() después de un pequeño delay
-    // Esto ayuda en caso de que las cookies no se hayan propagado a tiempo
+    // Como fallback, verificar usuario solo si no se ha cargado aún
     const initialize = async () => {
       try {
-        // Delay mínimo de 50ms para permitir que las cookies se establezcan
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise(resolve => setTimeout(resolve, 200))
         
-        if (!mounted) return
+        if (!mounted || memberLoaded) return
         
         console.log('🔍 Verificando usuario con getUser()...')
         const { data: { user: authUser }, error } = await supabase.auth.getUser()
         
-        console.log('👤 getUser() result:', { user: authUser?.email, error: error?.message })
-        
-        if (!error && authUser && mounted) {
+        if (!error && authUser && mounted && !memberLoaded) {
           console.log('✅ Usuario encontrado en getUser():', authUser.email)
-          if (!user) {
-            // Solo actualizar si aún no tenemos usuario del listener
-            setUser(authUser)
-            setIsLoading(false)
-            await loadMemberData(authUser.id)
-          }
+          setUser(authUser)
+          await loadMemberData(authUser.id)
+          setIsLoading(false)
+        } else if (!authUser) {
+          setIsLoading(false)
         }
       } catch (error) {
-        console.error('❌ Error en getUser():', error)
+        console.error('❌ Error en initialize:', error)
+        setIsLoading(false)
       }
     }
 
-    // Ejecutar inicialización fallback
-    initialize()
+    // Solo inicializar si no hay usuario actualmente
+    if (!user) {
+      initialize()
+    }
 
-    // Timeout de seguridad: si después de 3 segundos aún estamos cargando, detener
-    timeoutId = setTimeout(() => {
+    // Timeout de seguridad
+    const timeoutId = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('⚠️ Timeout en inicialización de auth (3s), deteniendo carga')
+        console.warn('⚠️ Timeout en inicialización de auth (5s), deteniendo carga')
         setIsLoading(false)
       }
-    }, 3000)
+    }, 5000)
 
     return () => {
       mounted = false
+      memberLoaded = false
       clearTimeout(timeoutId)
       subscription.unsubscribe()
     }
-  }, [supabase, user])
+  }, [supabase])
 
   const value = {
     user,
     isLoading,
-    member: member || (user ? { id: user.id, email: user.email || null, rol: null, estado: 'activo' as const } : null),
+    member,
   }
 
   return (

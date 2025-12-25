@@ -11,6 +11,30 @@ export async function PUT(
     const { email, rol, estado } = await request.json()
     const { id: userId } = await context.params
 
+    // Verificar que el usuario actual es admin
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autenticado' },
+        { status: 401 }
+      )
+    }
+
+    // Verificar que el usuario actual tiene rol de admin
+    const { data: currentUserData } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', currentUser.id)
+      .single()
+
+    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para editar usuarios' },
+        { status: 403 }
+      )
+    }
+
     // Validar datos
     if (!email || !rol || !estado) {
       return NextResponse.json(
@@ -27,8 +51,26 @@ export async function PUT(
       )
     }
 
+    // Validar rol válido
+    const rolesValidos = ['admin', 'tesorero', 'usuario', 'pendiente']
+    if (!rolesValidos.includes(rol)) {
+      return NextResponse.json(
+        { error: 'Rol no válido' },
+        { status: 400 }
+      )
+    }
+
+    // Validar estado válido
+    const estadosValidos = ['activo', 'inactivo', 'pendiente', 'suspendido']
+    if (!estadosValidos.includes(estado)) {
+      return NextResponse.json(
+        { error: 'Estado no válido' },
+        { status: 400 }
+      )
+    }
+
     // Verificar que el usuario existe
-    const { data: existingUser, error: fetchError } = await (supabase as any)
+    const { data: existingUser, error: fetchError } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', userId)
@@ -43,7 +85,7 @@ export async function PUT(
 
     // Verificar si el email ya está en uso por otro usuario
     if (email !== existingUser.email) {
-      const { data: emailCheck } = await (supabase as any)
+      const { data: emailCheck } = await supabase
         .from('usuarios')
         .select('id')
         .eq('email', email)
@@ -58,7 +100,7 @@ export async function PUT(
       }
 
       // Actualizar email en auth.users
-      const { error: authError } = await (supabase as any).auth.admin.updateUserById(
+      const { error: authError } = await supabase.auth.admin.updateUserById(
         userId,
         { email }
       )
@@ -73,12 +115,12 @@ export async function PUT(
     }
 
     // Actualizar en la tabla usuarios
-    const { data: updatedUser, error: updateError } = await (supabase as any)
+    const { data: updatedUser, error: updateError } = await supabase
       .from('usuarios')
       .update({
         email,
         rol: rol as 'admin' | 'tesorero' | 'usuario' | 'pendiente',
-        estado: estado as 'activo' | 'inactivo',
+        estado: estado as 'activo' | 'inactivo' | 'pendiente' | 'suspendido',
         updated_at: new Date().toISOString()
       })
       .eq('id', userId)
@@ -119,12 +161,26 @@ export async function DELETE(
     const soft = searchParams.get('soft') === 'true'
 
     // Obtener el usuario actual (quien está haciendo la petición)
-    const { data: { user: currentUser } } = await (supabase as any).auth.getUser()
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
 
     if (!currentUser) {
       return NextResponse.json(
         { error: 'No autenticado' },
         { status: 401 }
+      )
+    }
+
+    // Verificar que el usuario actual tiene rol de admin
+    const { data: currentUserData } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', currentUser.id)
+      .single()
+
+    if (!currentUserData || currentUserData.rol !== 'admin' || currentUserData.estado !== 'activo') {
+      return NextResponse.json(
+        { error: 'No tienes permisos para eliminar usuarios' },
+        { status: 403 }
       )
     }
 
@@ -137,7 +193,7 @@ export async function DELETE(
     }
 
     // Verificar que el usuario a eliminar existe
-    const { data: userToDelete, error: fetchError } = await (supabase as any)
+    const { data: userToDelete, error: fetchError } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', userId)
@@ -151,7 +207,7 @@ export async function DELETE(
     }
 
     // Contar cuántos admins hay
-    const { count: adminCount } = await (supabase as any)
+    const { count: adminCount } = await supabase
       .from('usuarios')
       .select('*', { count: 'exact', head: true })
       .eq('rol', 'admin')
@@ -167,7 +223,7 @@ export async function DELETE(
 
     if (soft) {
       // Soft delete: solo cambiar estado
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await supabase
         .from('usuarios')
         .update({
           estado: 'inactivo',
@@ -183,7 +239,7 @@ export async function DELETE(
       }
     } else {
       // Hard delete: eliminar de auth y BD
-      const { error: deleteError } = await (supabase as any)
+      const { error: deleteError } = await supabase
         .from('usuarios')
         .delete()
         .eq('id', userId)
@@ -196,7 +252,7 @@ export async function DELETE(
       }
 
       // Eliminar de auth
-      const { error: authError } = await (supabase as any).auth.admin.deleteUser(userId)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
 
       if (authError) {
         console.error('Error al eliminar usuario de auth:', authError)

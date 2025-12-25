@@ -27,6 +27,27 @@ export async function createVoto(data: VotoInput): Promise<{
     const supabase = await createClient()
     
     try {
+      // Verificar autenticación y permisos
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('No autenticado')
+      }
+
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', user.id)
+        .single()
+
+      if (!userData || userData.estado !== 'activo') {
+        throw new Error('Usuario no autorizado')
+      }
+
+      // Solo admin y tesorero pueden crear votos
+      if (!['admin', 'tesorero'].includes(userData.rol)) {
+        throw new Error('No tienes permisos para crear votos')
+      }
+
       // Prepare the voto data
       const votoData = {
         ...data,
@@ -64,6 +85,27 @@ export async function updateVoto(
     const supabase = await createClient()
     
     try {
+      // Verificar autenticación y permisos
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('No autenticado')
+      }
+
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', user.id)
+        .single()
+
+      if (!userData || userData.estado !== 'activo') {
+        throw new Error('Usuario no autorizado')
+      }
+
+      // Solo admin y tesorero pueden editar votos
+      if (!['admin', 'tesorero'].includes(userData.rol)) {
+        throw new Error('No tienes permisos para editar votos')
+      }
+
       const { error } = await (supabase as any)
         .from('votos')
         .update({
@@ -261,6 +303,27 @@ export async function deleteVoto(id: string): Promise<{
   const supabase = await createClient()
   
   try {
+    // Verificar autenticación y permisos
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('No autenticado')
+    }
+
+    const { data: userData } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData || userData.estado !== 'activo') {
+      throw new Error('Usuario no autorizado')
+    }
+
+    // Solo admin puede eliminar votos
+    if (userData.rol !== 'admin') {
+      throw new Error('No tienes permisos para eliminar votos')
+    }
+
     // Primero eliminar los pagos asociados
     const { error: pagosError } = await (supabase as any)
       .from('pagos')

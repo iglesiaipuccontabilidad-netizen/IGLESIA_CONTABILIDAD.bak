@@ -63,36 +63,57 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
       const { data: { session }, error: sessionError } = await supabase.auth.getSession()
       
       if (sessionError) {
+        console.error('Error de sesión:', sessionError)
         throw new Error('Error al verificar la sesión')
       }
       
       if (!session?.user) {
+        toast.error('Sesión expirada. Redirigiendo al login...')
         const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search)
         router.push(`/login?redirect=${redirectUrl}`)
         return
       }
 
-      // 2. Registrar pago
-      const { data: result, error: txError } = await (supabase.rpc as any)('registrar_pago', {
+      console.log('Llamando a registrar_pago con:', {
         p_voto_id: votoId,
         p_monto: monto,
         p_fecha_pago: formData.fecha_pago,
-        p_metodo_pago: formData.metodo_pago as string,
+        p_metodo_pago: formData.metodo_pago,
+        p_registrado_por: session.user.id
+      })
+
+      // 2. Registrar pago usando RPC
+      const { data: result, error: txError } = await supabase.rpc('registrar_pago', {
+        p_voto_id: votoId,
+        p_monto: monto,
+        p_fecha_pago: formData.fecha_pago,
+        p_metodo_pago: formData.metodo_pago,
         p_nota: formData.nota?.trim() || null,
         p_registrado_por: session.user.id,
         p_monto_total: montoTotal
       })
 
+      console.log('Respuesta de registrar_pago:', { result, error: txError })
+
       // Manejar errores de la transacción
       if (txError) {
+        console.error('Error en RPC:', txError)
         throw new Error(txError.message || 'Error al procesar el pago')
       }
 
-      if (!result || !(result as any).success) {
+      if (!result) {
+        console.error('No se recibió respuesta de registrar_pago')
+        throw new Error('No se pudo registrar el pago. Por favor, intenta de nuevo.')
+      }
+
+      const resultData = result as any
+      if (!resultData.success) {
+        console.error('Resultado con success=false:', resultData)
         throw new Error('No se pudo registrar el pago. Por favor, intenta de nuevo.')
       }
 
       // 3. Éxito - Mostrar mensaje y esperar un momento
+      console.log('Pago registrado exitosamente:', resultData)
       toast.success('¡Pago registrado exitosamente!', { id: toastId })
       await new Promise(resolve => setTimeout(resolve, 1000))
       
@@ -100,7 +121,7 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
       router.push(`/dashboard/votos/${votoId}`)
       router.refresh()
     } catch (error: any) {
-      console.error('Error al procesar pago:', error)
+      console.error('Error completo al procesar pago:', error)
       const errorMessage = error.message || 'Error al procesar el pago. Por favor, intenta de nuevo.'
       setError(errorMessage)
       toast.error(errorMessage, { id: toastId })

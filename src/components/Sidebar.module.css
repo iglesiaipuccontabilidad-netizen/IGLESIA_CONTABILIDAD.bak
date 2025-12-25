@@ -21,7 +21,7 @@
 }
 
 .brandName {
-  @apply text-sm font-bold text-white whitespace-nowrap;
+  @apply text-sm font-bold text-cyan-300 whitespace-nowrap;
 }
 
 .brandDescription {
@@ -59,19 +59,19 @@
 }
 
 .navLink {
-  @apply flex items-center gap-3 px-4 py-3 text-slate-300 text-sm font-medium rounded-lg transition-all no-underline cursor-pointer border-l-4 border-transparent hover:bg-slate-700 hover:text-white;
+  @apply flex items-center gap-3 px-4 py-3 text-slate-300 text-sm font-medium rounded-lg transition-all no-underline cursor-pointer border-l-4 border-transparent hover:bg-slate-700/50 hover:text-slate-100;
 }
 
 .navLink:hover {
-  @apply border-l-4 border-blue-500 text-white;
+  @apply border-l-4 border-cyan-400 text-cyan-100;
 }
 
 .navLinkActive {
-  @apply bg-blue-600 text-white border-l-4 border-blue-400 font-semibold;
+  @apply bg-gradient-to-r from-cyan-600/40 to-blue-600/40 text-cyan-100 border-l-4 border-cyan-400 font-semibold shadow-lg;
 }
 
 .navLinkActive:hover {
-  @apply bg-blue-700 text-white;
+  @apply bg-gradient-to-r from-cyan-600/50 to-blue-600/50 text-cyan-50;
 }
 
 .iconWrapper {
@@ -87,7 +87,7 @@
 }
 
 .linkLabel {
-  @apply text-sm font-semibold text-slate-100;
+  @apply text-sm font-semibold text-slate-200;
 }
 
 .linkDescription {
@@ -133,7 +133,7 @@
 }
 
 .profileName {
-  @apply text-sm font-semibold text-white truncate m-0;
+  @apply text-sm font-semibold text-cyan-200 truncate m-0;
 }
 
 .profileRole {
@@ -150,7 +150,7 @@
 }
 
 .userName {
-  @apply text-sm font-semibold text-white truncate;
+  @apply text-sm font-semibold text-cyan-200 truncate;
 }
 
 .userEmail {
@@ -172,6 +172,43 @@
 
 .sidebar.mobileVisible {
   @apply translate-x-0;
+}
+
+/* Custom Scrollbar */
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.5), rgba(37, 99, 235, 0.5));
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.7), rgba(37, 99, 235, 0.7));
+}
+
+.navigation::-webkit-scrollbar {
+  width: 6px;
+}
+
+.navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.navigation::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 3px;
+}
+
+.navigation::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.6);
 }
 
 /* Responsive */

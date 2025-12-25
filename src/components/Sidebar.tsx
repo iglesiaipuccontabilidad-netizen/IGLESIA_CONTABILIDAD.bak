@@ -45,7 +45,13 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
 
   const menuSections: MenuSection[] = React.useMemo(() => {
     // Debug: verificar el rol del usuario
-    console.log('🔍 Sidebar - Rol del usuario:', member?.rol, 'Email:', member?.email)
+    console.log('═══════════════════════════════════')
+    console.log('🔍 Sidebar - Member completo:', JSON.stringify(member, null, 2))
+    console.log('🔍 Sidebar - Rol:', member?.rol)
+    console.log('🔍 Sidebar - Email:', member?.email)
+    console.log('🔍 Sidebar - Estado:', member?.estado)
+    console.log('🔍 Sidebar - isLoading:', isLoading)
+    console.log('═══════════════════════════════════')
     
     const sections: MenuSection[] = [
       {
@@ -262,7 +268,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           <div className={styles.profileInfo}>
             <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
-              {isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Sin rol")}
+              {isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Pendiente")}
             </span>
           </div>
         )}

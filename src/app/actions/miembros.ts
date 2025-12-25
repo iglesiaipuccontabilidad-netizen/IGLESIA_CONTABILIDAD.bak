@@ -19,6 +19,27 @@ export async function createMiembro(formData: MiembroFormData) {
     try {
       const supabase = await createClient()
       
+      // Verificar autenticación y permisos
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('No autenticado')
+      }
+
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', user.id)
+        .single()
+
+      if (!userData || userData.estado !== 'activo') {
+        throw new Error('Usuario no autorizado')
+      }
+
+      // Solo admin y tesorero pueden crear miembros
+      if (!['admin', 'tesorero'].includes(userData.rol)) {
+        throw new Error('No tienes permisos para crear miembros')
+      }
+      
       const nuevoMiembro: MiembroInsert = {
         nombres: formData.nombres,
         apellidos: formData.apellidos, 
@@ -57,6 +78,27 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
     try {
       const supabase = await createClient()
 
+      // Verificar autenticación y permisos
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('No autenticado')
+      }
+
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', user.id)
+        .single()
+
+      if (!userData || userData.estado !== 'activo') {
+        throw new Error('Usuario no autorizado')
+      }
+
+      // Solo admin y tesorero pueden editar miembros
+      if (!['admin', 'tesorero'].includes(userData.rol)) {
+        throw new Error('No tienes permisos para editar miembros')
+      }
+
       const actualizacion: MiembroUpdate = {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
@@ -94,6 +136,27 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
 export async function eliminarMiembro(id: string) {
   try {
     const supabase = await createClient()
+
+    // Verificar autenticación y permisos
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { error: 'No autenticado' }
+    }
+
+    const { data: userData } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData || userData.estado !== 'activo') {
+      return { error: 'Usuario no autorizado' }
+    }
+
+    // Solo admin puede eliminar miembros
+    if (userData.rol !== 'admin') {
+      return { error: 'No tienes permisos para eliminar miembros' }
+    }
 
     // Verificar si el miembro tiene votos o pagos asociados
     const { data: votos, error: votosError } = await supabase

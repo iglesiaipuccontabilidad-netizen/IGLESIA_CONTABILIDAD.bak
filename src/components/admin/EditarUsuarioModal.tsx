@@ -145,6 +145,8 @@ export default function EditarUsuarioModal({
             <option value="">Selecciona un estado</option>
             <option value="activo">Activo</option>
             <option value="inactivo">Inactivo</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="suspendido">Suspendido</option>
           </select>
         </div>
 
