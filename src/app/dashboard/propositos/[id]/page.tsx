@@ -6,12 +6,14 @@ import { ArrowLeft, Edit, TrendingUp, Target, Calendar, Users, DollarSign } from
 import type { Database } from '@/lib/database.types'
 
 type Proposito = Database['public']['Tables']['propositos']['Row']
-type Voto = Database['public']['Tables']['votos']['Row'] & {
+
+// Tipo para votos con miembro incluido (lo que realmente devuelve la query)
+type VotoConMiembro = Database['public']['Tables']['votos']['Row'] & {
   miembro: {
     id: string
     nombres: string
     apellidos: string
-  }
+  } | null
 }
 
 export const dynamic = 'force-dynamic'
@@ -29,11 +31,11 @@ async function getPropositoConVotos(id: string) {
     return null
   }
   
-  const { data: votos } = await supabase
+  const { data: votos, error: votosError } = await supabase
     .from('votos')
     .select(`
       *,
-      miembro:miembros!miembro_id (
+      miembro:miembros (
         id,
         nombres,
         apellidos
@@ -42,9 +44,13 @@ async function getPropositoConVotos(id: string) {
     .eq('proposito_id', id)
     .order('created_at', { ascending: false })
   
+  if (votosError) {
+    console.error('Error al cargar votos:', votosError)
+  }
+  
   return {
-    proposito: proposito as Proposito,
-    votos: (votos || []) as Voto[]
+    proposito,
+    votos: votos || []
   }
 }
 
@@ -213,32 +219,39 @@ export default async function PropositoDetailPage({
           </div>
         ) : (
           <div className="space-y-3">
-            {votos.map((voto) => (
-              <Link
-                key={voto.id}
-                href={`/dashboard/votos/${voto.id}`}
-                className="block p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                      {voto.miembro.nombres} {voto.miembro.apellidos}
-                    </p>
-                    <p className="text-sm text-slate-600 mt-1">
-                      {voto.proposito}
-                    </p>
+            {votos
+              .filter((voto): voto is typeof voto & { miembro: { id: string; nombres: string; apellidos: string } } => {
+                return voto.miembro !== null && 
+                       typeof voto.miembro === 'object' && 
+                       'nombres' in voto.miembro &&
+                       'apellidos' in voto.miembro
+              })
+              .map((voto) => (
+                <Link
+                  key={voto.id}
+                  href={`/dashboard/votos/${voto.id}`}
+                  className="block p-4 border border-slate-200 rounded-xl hover:border-blue-300 hover:bg-blue-50/50 transition-all group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                        {voto.miembro.nombres} {voto.miembro.apellidos}
+                      </p>
+                      <p className="text-sm text-slate-600 mt-1">
+                        {voto.proposito}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900">
+                        ${voto.recaudado.toLocaleString('es-CO')}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        de ${voto.monto_total.toLocaleString('es-CO')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-slate-900">
-                      ${voto.recaudado.toLocaleString('es-CO')}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      de ${voto.monto_total.toLocaleString('es-CO')}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
           </div>
         )}
       </div>

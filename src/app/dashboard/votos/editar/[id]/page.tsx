@@ -39,7 +39,7 @@ export default function EditarVotoPage() {
 
       setVoto(data)
       setFormData({
-        proposito: data.proposito,
+        proposito: data.proposito || '',
         monto_total: data.monto_total.toString(),
         fecha_limite: data.fecha_limite.split('T')[0],
         estado: data.estado

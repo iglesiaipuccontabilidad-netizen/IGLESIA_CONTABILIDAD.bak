@@ -12,7 +12,6 @@ export interface Miembro {
   id: string
   nombres: string
   apellidos: string
-  cedula: string
   email: string | null
   telefono: string | null
   direccion: string | null
@@ -30,7 +29,6 @@ export interface MiembroConVotos extends Miembro {
 export interface MiembroFormData {
   nombres: string
   apellidos: string
-  cedula: string
   email?: string | null
   telefono?: string | null
   direccion?: string | null
@@ -42,7 +40,6 @@ export interface MiembroFormData {
 export interface MiembroError {
   nombres?: string
   apellidos?: string
-  cedula?: string
   email?: string
   telefono?: string
   direccion?: string

@@ -36,7 +36,6 @@ export default function MemberList({ miembros, onSearch, onFilterChange }: Membe
               </div>
               <div className={styles.memberInfo}>
                 <h3>{`${miembro.nombres} ${miembro.apellidos}`}</h3>
-                <span className={styles.memberCedula}>CC: {miembro.cedula}</span>
               </div>
             </div>
 

@@ -17,10 +17,6 @@ export function formatDate(date: string | Date): string {
   })
 }
 
-export function formatearCedula(cedula: string): string {
-  return cedula.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-}
-
 export function getProgressStatus(percentage: number): string {
   if (percentage >= 100) return 'completado'
   if (percentage >= 75) return 'buen-progreso'

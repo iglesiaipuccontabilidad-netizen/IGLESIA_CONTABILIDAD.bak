@@ -1,5 +1,10 @@
-import { createClient } from '@/lib/supabase/server'
+/**
+ * API Route para resetear contraseña de usuario
+ * Basado en mejores prácticas de Supabase
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
+import { getAdminContext } from '@/lib/auth/verify-admin'
 
 // Función para generar contraseña aleatoria segura
 function generateSecurePassword(length: number = 12): string {
@@ -32,13 +37,24 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient()
     const { id: userId } = await context.params
 
+    // Verificar permisos de admin usando helper centralizado
+    const adminContext = await getAdminContext()
+    
+    if (!adminContext.success) {
+      return NextResponse.json(
+        { error: adminContext.error },
+        { status: adminContext.error === 'No autenticado' ? 401 : 403 }
+      )
+    }
+
+    const { supabase, supabaseAdmin } = adminContext
+
     // Verificar que el usuario existe
-    const { data: existingUser, error: fetchError } = await (supabase as any)
+    const { data: existingUser, error: fetchError } = await supabase
       .from('usuarios')
-      .select('email')
+      .select('id, email')
       .eq('id', userId)
       .single()
 
@@ -52,8 +68,8 @@ export async function POST(
     // Generar nueva contraseña temporal
     const temporaryPassword = generateSecurePassword(12)
 
-    // Actualizar contraseña en auth
-    const { error: authError } = await (supabase as any).auth.admin.updateUserById(
+    // Actualizar contraseña en auth usando cliente admin (requiere service_role)
+    const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       { password: temporaryPassword }
     )
@@ -61,22 +77,19 @@ export async function POST(
     if (authError) {
       console.error('Error al actualizar contraseña:', authError)
       return NextResponse.json(
-        { error: 'Error al actualizar la contraseña' },
+        { error: 'Error al actualizar la contraseña: ' + authError.message },
         { status: 500 }
       )
     }
 
-    // Opcional: Marcar que debe cambiar la contraseña en el próximo login
-    // Esto depende de tu implementación de autenticación
-
     return NextResponse.json({
       success: true,
       temporaryPassword,
-      message: 'Contraseña reseteada exitosamente'
+      message: 'Contraseña reseteada exitosamente. El usuario debe cambiarla en su próximo inicio de sesión.'
     })
 
   } catch (error) {
-    console.error('Error al resetear contraseña:', error)
+    console.error('Error en POST /api/admin/usuarios/[id]/reset-password:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

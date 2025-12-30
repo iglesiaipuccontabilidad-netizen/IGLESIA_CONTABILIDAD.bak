@@ -72,17 +72,22 @@ function PropositoCard({ proposito }: { proposito: Proposito }) {
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="font-semibold text-slate-900">
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <TrendingUp className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                  <span>Recaudado</span>
+                </div>
+                <span className="font-bold text-slate-900 text-sm truncate">
                   ${proposito.monto_recaudado.toLocaleString('es-CO')}
                 </span>
-                <span className="text-slate-500">recaudado</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Target className="w-4 h-4 text-blue-600" />
-                <span className="font-semibold text-slate-900">
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  <Target className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                  <span>Meta</span>
+                </div>
+                <span className="font-bold text-slate-900 text-sm truncate">
                   ${proposito.monto_objetivo.toLocaleString('es-CO')}
                 </span>
               </div>

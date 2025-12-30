@@ -64,21 +64,6 @@ export default function RegistroPage() {
               </div>
 
               <div>
-                <label htmlFor="cedula" className="block text-sm font-medium text-gray-700">
-                  Cédula
-                </label>
-                <input
-                  id="cedula"
-                  name="cedula"
-                  type="text"
-                  required
-                  pattern="[0-9]{8,10}"
-                  className="mt-1 block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6"
-                  placeholder="1234567890"
-                />
-              </div>
-
-              <div>
                 <label htmlFor="telefono" className="block text-sm font-medium text-gray-700">
                   Teléfono
                 </label>

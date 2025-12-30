@@ -54,7 +54,16 @@ export async function getVotoById(votoId: string): Promise<VotoConRelaciones> {
     throw new Error(error.message)
   }
 
-  return voto as VotoConRelaciones
+  // Type guard para verificar que las relaciones se cargaron correctamente
+  if (!voto.miembro || typeof voto.miembro === 'string' || 'error' in voto.miembro) {
+    throw new Error('Error al cargar datos del miembro')
+  }
+
+  if (!Array.isArray(voto.pagos)) {
+    throw new Error('Error al cargar datos de pagos')
+  }
+
+  return voto as unknown as VotoConRelaciones
 }
 
 export async function registrarPago({

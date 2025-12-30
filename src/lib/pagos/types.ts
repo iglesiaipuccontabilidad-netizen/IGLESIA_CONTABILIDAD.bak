@@ -9,8 +9,8 @@ export interface PagoFormData {
   nota?: string
 }
 
-export type RegistrarPagoArgs = Database['public']['Functions']['registrar_pago']['Args']
-export type RegistrarPagoResult = Database['public']['Functions']['registrar_pago']['Returns']
+export type RegistrarPagoArgs = Database['public']['Functions']['registrar_pago_comite']['Args']
+export type RegistrarPagoResult = Database['public']['Functions']['registrar_pago_comite']['Returns']
 
 export interface PagoError extends Error {
   code?: string

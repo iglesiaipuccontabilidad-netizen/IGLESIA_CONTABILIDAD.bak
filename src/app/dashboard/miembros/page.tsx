@@ -21,7 +21,6 @@ export default async function MiembrosPage() {
       id,
       nombres,
       apellidos,
-      cedula,
       email,
       telefono,
       estado,

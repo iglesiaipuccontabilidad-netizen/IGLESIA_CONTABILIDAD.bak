@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       
-      const MAX_RETRIES = 3
-      const RETRY_DELAY = 800 // ms
+      const MAX_RETRIES = 1
+      const RETRY_DELAY = 200 // ms
       
       try {
         console.log('════════════════════════════════════════')
@@ -223,8 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Como fallback, verificar usuario solo si no se ha cargado aún
     const initialize = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 200))
-        
         if (!mounted || memberLoaded) return
         
         console.log('🔍 Verificando usuario con getUser()...')
@@ -249,13 +247,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       initialize()
     }
 
-    // Timeout de seguridad
+    // Timeout de seguridad reducido
     const timeoutId = setTimeout(() => {
       if (mounted && isLoading) {
-        console.warn('⚠️ Timeout en inicialización de auth (5s), deteniendo carga')
+        console.warn('⚠️ Timeout en inicialización de auth (2s), deteniendo carga')
         setIsLoading(false)
       }
-    }, 5000)
+    }, 2000)
 
     return () => {
       mounted = false

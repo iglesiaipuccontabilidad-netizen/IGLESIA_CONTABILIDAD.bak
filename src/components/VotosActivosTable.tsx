@@ -9,7 +9,7 @@ type TablaVotos = Database['public']['Tables']['votos']['Row']
 type TablaMiembros = Database['public']['Tables']['miembros']['Row']
 
 interface VotoConMiembro extends TablaVotos {
-  miembro: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos' | 'cedula'>
+  miembro: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos'>
 }
 
 interface VotosActivosTableProps {
@@ -73,7 +73,6 @@ export default function VotosActivosTable({ votos }: VotosActivosTableProps) {
                     <span className={styles.memberName}>
                       {voto.miembro.nombres} {voto.miembro.apellidos}
                     </span>
-                    <span className="text-sm text-gray-500">({voto.miembro.cedula})</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">

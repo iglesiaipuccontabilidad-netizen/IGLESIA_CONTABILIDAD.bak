@@ -5,13 +5,12 @@ type MemberCardProps = {
   id: string
   nombres: string
   apellidos: string
-  cedula: string
   email: string
   telefono: string
   votos_activos: { id: string }[]
 }
 
-export function MemberCard({ id, nombres, apellidos, cedula, email, telefono, votos_activos }: MemberCardProps) {
+export function MemberCard({ id, nombres, apellidos, email, telefono, votos_activos }: MemberCardProps) {
   const nombreCompleto = `${nombres} ${apellidos}`
   return (
     <div className={styles['member-card']}>
@@ -21,7 +20,6 @@ export function MemberCard({ id, nombres, apellidos, cedula, email, telefono, vo
         </div>
         <div className={styles['member-info']}>
           <h3>{nombreCompleto}</h3>
-          <div className={styles['member-cedula']}>CC: {cedula}</div>
         </div>
       </div>
 

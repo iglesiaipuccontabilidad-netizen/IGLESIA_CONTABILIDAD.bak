@@ -4,7 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target, FileText } from "lucide-react"
+import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target, FileText, Users } from "lucide-react"
 import styles from "@/components/Sidebar.module.css"
 import { useAuth } from "@/lib/context/AuthContext"
 
@@ -46,11 +46,15 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const menuSections: MenuSection[] = React.useMemo(() => {
     // Debug: verificar el rol del usuario
     console.log('═══════════════════════════════════')
-    console.log('🔍 Sidebar - Member completo:', JSON.stringify(member, null, 2))
-    console.log('🔍 Sidebar - Rol:', member?.rol)
-    console.log('🔍 Sidebar - Email:', member?.email)
-    console.log('🔍 Sidebar - Estado:', member?.estado)
-    console.log('🔍 Sidebar - isLoading:', isLoading)
+    console.log('🔍 SIDEBAR - Member completo:', JSON.stringify(member, null, 2))
+    console.log('🔍 SIDEBAR - Tipo de member:', typeof member)
+    console.log('🔍 SIDEBAR - Es null/undefined?:', member === null, member === undefined)
+    console.log('🔍 SIDEBAR - Rol:', member?.rol)
+    console.log('🔍 SIDEBAR - Tipo de rol:', typeof member?.rol)
+    console.log('🔍 SIDEBAR - Rol vacío?:', member?.rol === '', member?.rol === null, member?.rol === undefined)
+    console.log('🔍 SIDEBAR - Email:', member?.email)
+    console.log('🔍 SIDEBAR - Estado:', member?.estado)
+    console.log('🔍 SIDEBAR - isLoading:', isLoading)
     console.log('═══════════════════════════════════')
     
     const sections: MenuSection[] = [
@@ -111,6 +115,15 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
       sections.push({
         title: "Administración",
         items: [
+          {
+            href: "/dashboard/comites",
+            label: "Comités",
+            icon: Users,
+            description: "Comités con contabilidad independiente",
+            subItems: [
+              { href: "/dashboard/comites/nuevo", label: "Nuevo comité" }
+            ]
+          },
           {
             href: "/dashboard/admin/usuarios",
             label: "Usuarios",
@@ -268,7 +281,17 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           <div className={styles.profileInfo}>
             <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
-              {isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Pendiente")}
+              {(() => {
+                console.log('🎯 RENDERIZANDO ROL:', {
+                  isLoading,
+                  memberExists: !!member,
+                  rol: member?.rol,
+                  rolType: typeof member?.rol,
+                  rolTruthy: !!member?.rol,
+                  displayValue: isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Pendiente")
+                })
+                return isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Pendiente")
+              })()}
             </span>
           </div>
         )}

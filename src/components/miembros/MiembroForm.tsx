@@ -19,7 +19,6 @@ export function MiembroForm({ miembro, onSubmit }: MiembroFormProps) {
     miembro || {
       nombres: '',
       apellidos: '',
-      cedula: '',
       email: '',
       telefono: '',
       fecha_ingreso: new Date().toISOString().split('T')[0],
@@ -36,9 +35,6 @@ export function MiembroForm({ miembro, onSubmit }: MiembroFormProps) {
     }
     if (!formData.apellidos) {
       newErrors.apellidos = 'Los apellidos son requeridos'
-    }
-    if (!formData.cedula) {
-      newErrors.cedula = 'La cédula es requerida'
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email inválido'
@@ -86,18 +82,6 @@ export function MiembroForm({ miembro, onSubmit }: MiembroFormProps) {
           className={errors.apellidos ? styles['input-error'] : ''}
         />
         {errors.apellidos && <span className={styles['error-message']}>{errors.apellidos}</span>}
-      </div>
-
-      <div className={styles['form-group']}>
-        <label htmlFor="cedula">Cédula*</label>
-        <input
-          type="text"
-          id="cedula"
-          value={formData.cedula}
-          onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-          className={errors.cedula ? styles['input-error'] : ''}
-        />
-        {errors.cedula && <span className={styles['error-message']}>{errors.cedula}</span>}
       </div>
 
       <div className={styles['form-group']}>

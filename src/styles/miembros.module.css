@@ -48,11 +48,6 @@
   color: var(--azul-oscuro);
 }
 
-.member-cedula {
-  color: var(--gris-texto);
-  font-size: 0.9rem;
-}
-
 .member-details {
   border-top: 1px solid var(--gris-claro);
   padding-top: 1rem;

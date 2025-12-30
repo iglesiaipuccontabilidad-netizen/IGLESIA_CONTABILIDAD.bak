@@ -7,7 +7,6 @@ export const AUTH_ERRORS = {
   ProfileNotFound: 'No se encontró el perfil del usuario',
   DatabaseError: 'Error en el servidor. Por favor, intenta de nuevo más tarde.',
   DuplicateEmail: 'Este correo electrónico ya está registrado',
-  DuplicateCedula: 'Esta cédula ya está registrada en el sistema',
   SignupError: 'Error al crear la cuenta. Por favor, verifica los datos e intenta de nuevo.',
   ProfileCreationError: 'Error al crear el perfil. Por favor, intenta de nuevo más tarde.',
   NetworkError: 'Error de conexión. Por favor, verifica tu conexión a internet e intenta de nuevo.',

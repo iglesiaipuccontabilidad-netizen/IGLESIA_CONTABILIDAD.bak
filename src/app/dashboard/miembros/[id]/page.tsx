@@ -49,5 +49,11 @@ export default async function DetalleMiembroPage({
     );
   }
 
-  return <DetalleMiembroClient miembro={miembro} />;
+  // Asegurar que los votos sean un array válido
+  const miembroData = {
+    ...miembro,
+    votos: Array.isArray(miembro.votos) ? miembro.votos : []
+  };
+
+  return <DetalleMiembroClient miembro={miembroData as Parameters<typeof DetalleMiembroClient>[0]['miembro']} />;
 }

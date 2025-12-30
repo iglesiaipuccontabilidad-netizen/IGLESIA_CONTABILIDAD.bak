@@ -18,17 +18,6 @@ export const metadata: Metadata = {
   },
 };
 
-function LoadingFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="p-4 rounded-lg bg-gray-50 flex items-center gap-3">
-        <div className="w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        <span className="text-sm text-gray-600">Cargando...</span>
-      </div>
-    </div>
-  );
-}
-
 export default function RootLayout({
   children,
 }: {
@@ -37,7 +26,11 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} bg-background`}>
       <body className="font-sans antialiased min-h-screen bg-background text-foreground">
-        <Suspense fallback={<LoadingFallback />}>
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        }>
           <RootProvider>{children}</RootProvider>
         </Suspense>
       </body>

@@ -17,7 +17,7 @@ export default async function NuevoVotoPage() {
   // Cargar miembros activos
   const { data: miembros, error: miembrosError } = await supabase
     .from('miembros')
-    .select('id, nombres, apellidos, cedula')
+    .select('id, nombres, apellidos')
     .eq('estado', 'activo')
     .order('apellidos', { ascending: true })
     .order('nombres', { ascending: true })

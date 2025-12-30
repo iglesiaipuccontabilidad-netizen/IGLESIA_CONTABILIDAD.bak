@@ -21,27 +21,11 @@ export async function createMember(formData: FormData) {
 
     const nombres = formData.get('nombres')?.toString()?.trim()
     const apellidos = formData.get('apellidos')?.toString()?.trim()
-    const cedula = formData.get('cedula')?.toString()?.trim()
     const email = formData.get('email')?.toString()?.trim() || null
     const telefono = formData.get('telefono')?.toString()?.trim() || null
 
-    if (!nombres || !apellidos || !cedula) {
-      throw new Error('Los campos nombres, apellidos y cédula son requeridos')
-    }
-
-    // Verificar si ya existe un miembro con esa cédula
-    const { data: existingMember, error: checkError } = await (supabase as any)
-      .from('miembros')
-      .select('id')
-      .eq('cedula', cedula)
-      .single()
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw new Error('Error al verificar miembro existente')
-    }
-
-    if (existingMember) {
-      throw new Error('Ya existe un miembro con esa cédula')
+    if (!nombres || !apellidos) {
+      throw new Error('Los campos nombres y apellidos son requeridos')
     }
 
     // Crear el miembro en la base de datos
@@ -50,7 +34,6 @@ export async function createMember(formData: FormData) {
       .insert([{
         nombres,
         apellidos,
-        cedula,
         email,
         telefono
       }])

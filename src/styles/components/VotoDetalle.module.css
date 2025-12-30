@@ -351,11 +351,6 @@
   color: var(--azul-oscuro);
 }
 
-.memberCedula {
-  font-size: 0.9rem;
-  color: var(--gris-texto);
-}
-
 .highlights {
   margin-top: 1.5rem;
   display: grid;

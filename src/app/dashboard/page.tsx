@@ -3,10 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import DashboardCards from '@/components/dashboard/DashboardCards'
-import VotosActivosTable from '@/components/dashboard/VotosActivosTable'
 import { Database } from '@/lib/database.types'
 import { ArrowUpRight, Calendar, Target, TrendingUp, LogOut } from 'lucide-react'
-import { getVotosActivos } from '@/app/actions/dashboard'
 import LogoutButton from '@/components/LogoutButton'
 
 interface DashboardStats {
@@ -20,6 +18,19 @@ interface DashboardStats {
 }
 
 type PropositoRow = Database['public']['Tables']['propositos']['Row']
+
+// Tipo para los datos parciales que seleccionamos
+interface PropositoData {
+  id: string
+  nombre: string
+  descripcion: string | null
+  monto_objetivo: number | null
+  monto_recaudado: number
+  estado: string
+  fecha_fin: string | null
+  fecha_inicio: string | null
+  created_at: string | null
+}
 
 interface Voto {
   id: string
@@ -44,7 +55,7 @@ const formatCurrency = (value: number) => new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0
 }).format(value)
 
-async function getDashboardData(client: SupabaseClient<Database>): Promise<{ stats: DashboardStats; propositos: PropositoRow[] }> {
+async function getDashboardData(client: SupabaseClient<Database>): Promise<{ stats: DashboardStats; propositos: PropositoData[] }> {
   const { data, error } = await client
     .from('propositos')
     .select('id, nombre, descripcion, monto_objetivo, monto_recaudado, estado, fecha_fin, fecha_inicio, created_at')
@@ -66,7 +77,7 @@ async function getDashboardData(client: SupabaseClient<Database>): Promise<{ sta
     }
   }
 
-  const stats = (data || []).reduce<DashboardStats>((acc, proposito: PropositoRow) => {
+  const stats = (data || []).reduce<DashboardStats>((acc, proposito) => {
     const objetivo = proposito.monto_objetivo ?? 0
     const recaudado = proposito.monto_recaudado ?? 0
 
@@ -220,21 +231,21 @@ export default async function DashboardPage() {
             
             {/* Grid de resumen */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
-              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200/50">
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200/50 min-w-0">
                 <span className="block text-xs text-emerald-600 font-semibold mb-1">Recaudado</span>
-                <span className="text-xl font-bold text-emerald-700">{formatCurrency(stats.total_recaudado)}</span>
+                <span className="block text-lg font-bold text-emerald-700 break-words">{formatCurrency(stats.total_recaudado)}</span>
               </div>
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200/50">
+              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200/50 min-w-0">
                 <span className="block text-xs text-amber-600 font-semibold mb-1">Pendiente</span>
-                <span className="text-xl font-bold text-amber-700">{formatCurrency(stats.total_pendiente)}</span>
+                <span className="block text-lg font-bold text-amber-700 break-words">{formatCurrency(stats.total_pendiente)}</span>
               </div>
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200/50">
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200/50 min-w-0">
                 <span className="block text-xs text-blue-600 font-semibold mb-1">Comprometido</span>
-                <span className="text-xl font-bold text-blue-700">{formatCurrency(stats.total_comprometido)}</span>
+                <span className="block text-lg font-bold text-blue-700 break-words">{formatCurrency(stats.total_comprometido)}</span>
               </div>
-              <div className="p-4 bg-purple-50 rounded-xl border border-purple-200/50">
+              <div className="p-4 bg-purple-50 rounded-xl border border-purple-200/50 min-w-0">
                 <span className="block text-xs text-purple-600 font-semibold mb-1">Campañas activas</span>
-                <span className="text-xl font-bold text-purple-700">{stats.propositos_activos}</span>
+                <span className="block text-lg font-bold text-purple-700">{stats.propositos_activos}</span>
               </div>
             </div>
           </div>
@@ -342,14 +353,14 @@ export default async function DashboardPage() {
 
                         {/* Financiero */}
                         <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div className="p-2.5 bg-slate-50 rounded-lg">
+                          <div className="p-2.5 bg-slate-50 rounded-lg min-w-0">
                             <span className="block text-xs text-slate-600 font-semibold mb-1">Recaudado</span>
-                            <span className="text-sm font-bold text-slate-900">{formatCurrency(recaudado)}</span>
+                            <span className="block text-sm font-bold text-slate-900 truncate">{formatCurrency(recaudado)}</span>
                           </div>
                           {objetivo > 0 && (
-                            <div className="p-2.5 bg-slate-50 rounded-lg">
+                            <div className="p-2.5 bg-slate-50 rounded-lg min-w-0">
                               <span className="block text-xs text-slate-600 font-semibold mb-1">Meta</span>
-                              <span className="text-sm font-bold text-slate-900">{formatCurrency(objetivo)}</span>
+                              <span className="block text-sm font-bold text-slate-900 truncate">{formatCurrency(objetivo)}</span>
                             </div>
                           )}
                         </div>

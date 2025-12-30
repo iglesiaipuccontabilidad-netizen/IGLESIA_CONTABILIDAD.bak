@@ -43,7 +43,6 @@ export async function createMiembro(formData: MiembroFormData) {
       const nuevoMiembro: MiembroInsert = {
         nombres: formData.nombres,
         apellidos: formData.apellidos, 
-        cedula: formData.cedula,
         telefono: formData.telefono || null,
         email: formData.email || null,
         direccion: formData.direccion || null,
@@ -102,7 +101,6 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
       const actualizacion: MiembroUpdate = {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
-        cedula: formData.cedula,
         telefono: formData.telefono || null,
         email: formData.email || null,
         direccion: formData.direccion || null,
@@ -247,7 +245,7 @@ export async function getMiembroById(id: string) {
       throw error
     }
 
-    return data as MiembroConVotos
+    return data as unknown as MiembroConVotos
 
   } catch (error) {
     console.error('Error en getMiembroById:', error)

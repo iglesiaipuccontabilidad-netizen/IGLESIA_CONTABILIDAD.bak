@@ -18,7 +18,6 @@ export function EditarMiembroForm({ miembro }: EditarMiembroFormProps) {
     apellidos: miembro.apellidos,
     email: miembro.email || '',
     telefono: miembro.telefono || '',
-    cedula: miembro.cedula,
     direccion: miembro.direccion || '',
     fecha_ingreso: miembro.fecha_ingreso,
     estado: miembro.estado,
@@ -102,22 +101,6 @@ export function EditarMiembroForm({ miembro }: EditarMiembroFormProps) {
             onChange={(e) => setFormData(prev => ({
               ...prev,
               telefono: e.target.value
-            }))}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Cédula
-          </label>
-          <input
-            type="text"
-            required
-            value={formData.cedula}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              cedula: e.target.value
             }))}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />

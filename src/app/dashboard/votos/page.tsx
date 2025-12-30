@@ -118,10 +118,10 @@ export default function VotosPage() {
 
     const cumpleBusqueda = !busqueda ||
       nombreCompleto.includes(busqueda.toLowerCase()) ||
-      voto.proposito.toLowerCase().includes(busqueda.toLowerCase())
+      (voto.proposito?.toLowerCase().includes(busqueda.toLowerCase()) ?? false)
 
     const cumpleProposito = !proposito ||
-      voto.proposito.toLowerCase() === proposito.toLowerCase()
+      (voto.proposito?.toLowerCase() === proposito.toLowerCase())
 
     const cumpleEstado = !estado || voto.estado === estado
 

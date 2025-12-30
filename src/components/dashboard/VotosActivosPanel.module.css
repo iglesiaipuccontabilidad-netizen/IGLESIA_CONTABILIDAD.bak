@@ -120,11 +120,6 @@
   color: var(--azul-oscuro);
 }
 
-.miembroCedula {
-  font-size: 0.9rem;
-  color: var(--gris-texto);
-}
-
 .noVotos {
   text-align: center;
   padding: 2rem;

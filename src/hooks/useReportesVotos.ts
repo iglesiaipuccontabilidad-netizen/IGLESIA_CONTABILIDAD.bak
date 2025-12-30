@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { formatDate } from '@/lib/utils/dateFormatters'
 
 export interface VotoReporte {
   id: string
@@ -20,6 +21,7 @@ interface FiltrosVotos {
   fechaInicio?: string
   fechaFin?: string
   miembroId?: string
+  propositoId?: string
 }
 
 export function useReportesVotos(filtros: FiltrosVotos = {}) {
@@ -70,6 +72,10 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
           query = query.eq('miembro_id', filtros.miembroId)
         }
 
+        if (filtros.propositoId) {
+          query = query.eq('proposito_id', filtros.propositoId)
+        }
+
         const { data: votos, error: queryError } = await query
 
         if (queryError) throw queryError
@@ -86,10 +92,10 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
             recaudado: totalPagado,
             pendiente: montoTotal - totalPagado,
             estado: voto.estado || 'activo',
-            fecha_limite: voto.fecha_limite,
+            fecha_limite: formatDate(voto.fecha_limite),
             miembro_nombre: voto.miembro ? `${voto.miembro.nombres} ${voto.miembro.apellidos}` : 'Sin asignar',
             miembro_email: voto.miembro?.email || '',
-            created_at: voto.created_at
+            created_at: formatDate(voto.created_at)
           }
         })
 
@@ -113,7 +119,7 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
     }
 
     fetchVotos()
-  }, [filtros.busqueda, filtros.estado, filtros.fechaInicio, filtros.fechaFin, filtros.miembroId])
+  }, [filtros.busqueda, filtros.estado, filtros.fechaInicio, filtros.fechaFin, filtros.miembroId, filtros.propositoId])
 
   return { data, loading, error }
 }

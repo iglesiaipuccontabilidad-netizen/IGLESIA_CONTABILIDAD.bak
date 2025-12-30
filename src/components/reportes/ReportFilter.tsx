@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Search, Calendar, Filter } from 'lucide-react'
+import { usePropositos } from '@/hooks/usePropositos'
 
 interface ReportFilterProps {
   onFilterChange: (filters: FilterState) => void
@@ -25,6 +26,8 @@ export default function ReportFilter({ onFilterChange }: ReportFilterProps) {
     miembroId: '',
     propositoId: ''
   })
+
+  const { propositos } = usePropositos()
 
   const handleChange = (key: keyof FilterState, value: string) => {
     const newFilters = { ...localFilters, [key]: value }
@@ -52,7 +55,7 @@ export default function ReportFilter({ onFilterChange }: ReportFilterProps) {
         <h3 className="text-lg font-semibold text-slate-900">Filtros</h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Búsqueda */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -116,6 +119,25 @@ export default function ReportFilter({ onFilterChange }: ReportFilterProps) {
             <option value="activo">Activo</option>
             <option value="completado">Completado</option>
             <option value="vencido">Vencido</option>
+          </select>
+        </div>
+
+        {/* Propósito */}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Propósito
+          </label>
+          <select
+            value={localFilters.propositoId}
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            onChange={(e) => handleChange('propositoId', e.target.value)}
+          >
+            <option value="">Todos</option>
+            {propositos.map((proposito) => (
+              <option key={proposito.id} value={proposito.id}>
+                {proposito.nombre}
+              </option>
+            ))}
           </select>
         </div>
 

@@ -12,7 +12,7 @@ type TablaMiembros = Database['public']['Tables']['miembros']['Row']
 type TablaPagos = Database['public']['Tables']['pagos']['Row']
 
 interface VotoConDetalles extends TablaVotos {
-  miembro: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos' | 'cedula'>
+  miembro: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos'>
   pagos: Array<{
     id: string
     monto: number
@@ -48,8 +48,7 @@ export default async function VotoDetailPage({
       miembro:miembros!miembro_id (
         id,
         nombres,
-        apellidos,
-        cedula
+        apellidos
       ),
       pagos (
         id,
@@ -248,7 +247,6 @@ export default async function VotoDetailPage({
               <h3 className="text-lg font-semibold text-gray-900">
                 {voto.miembro.nombres} {voto.miembro.apellidos}
               </h3>
-              <p className="text-sm text-gray-600">CC: {voto.miembro.cedula}</p>
             </div>
           </div>
 

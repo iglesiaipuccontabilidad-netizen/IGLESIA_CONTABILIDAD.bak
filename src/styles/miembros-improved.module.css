@@ -201,11 +201,6 @@
   line-height: 1.2;
 }
 
-.memberCedula {
-  color: var(--slate-600);
-  font-size: 0.9rem;
-}
-
 .memberDetails {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

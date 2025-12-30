@@ -21,11 +21,15 @@ interface MiembroData {
   id: string
   nombres: string
   apellidos: string
-  cedula: string
   email: string | null
   telefono: string | null
-  fecha_ingreso: string
+  direccion?: string | null
+  fecha_ingreso: string | null
   estado: string
+  rol?: string
+  usuario_id?: string | null
+  created_at?: string
+  updated_at?: string
   votos?: Voto[]
 }
 
@@ -54,9 +58,6 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
             <h1 className="text-2xl font-bold text-gray-900">
               {miembro.nombres} {miembro.apellidos}
             </h1>
-            <p className="text-gray-500 mt-1">
-              Cédula: {miembro.cedula}
-            </p>
           </div>
           <span className={`
             px-3 py-1 rounded-full text-sm font-medium
@@ -114,11 +115,11 @@ export default function DetalleMiembroClient({ miembro }: DetalleMiembroClientPr
                     Fecha de Ingreso
                   </label>
                   <p className="mt-1 text-gray-900">
-                    {new Date(miembro.fecha_ingreso).toLocaleDateString('es-CO', {
+                    {miembro.fecha_ingreso ? new Date(miembro.fecha_ingreso).toLocaleDateString('es-CO', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
-                    })}
+                    }) : 'No especificada'}
                   </p>
                 </div>
               </div>

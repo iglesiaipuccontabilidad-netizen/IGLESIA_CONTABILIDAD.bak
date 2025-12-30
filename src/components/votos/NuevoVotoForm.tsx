@@ -12,7 +12,7 @@ type TablaMiembros = Database['public']['Tables']['miembros']['Row']
 type Proposito = Database['public']['Tables']['propositos']['Row']
 
 interface NuevoVotoFormProps {
-  miembros: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos' | 'cedula'>[]
+  miembros: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos'>[]
 }
 
 export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
@@ -111,10 +111,10 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Selector de Propósito (opcional) */}
+        {/* Selector de Propósito (requerido) */}
         <div className="space-y-2">
           <label htmlFor="propositoId" className="block text-sm font-semibold text-gray-900">
-            Asociar a un Propósito (opcional)
+            Asociar a un Propósito <span className="text-red-500">*</span>
           </label>
           <div className="flex gap-2">
             <select
@@ -122,10 +122,11 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
               name="propositoId"
               value={formData.propositoId || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, propositoId: e.target.value || null }))}
+              required
               disabled={loading}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
-              <option value="">Sin propósito asociado</option>
+              <option value="">Seleccione un propósito</option>
               {propositos.map((prop) => (
                 <option key={prop.id} value={prop.id}>
                   {prop.nombre}
@@ -144,21 +145,20 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
           </div>
           <p className="text-xs text-gray-500 flex items-center space-x-1">
             <Target className="h-4 w-4" />
-            <span>Vincula este voto a una campaña o propósito existente</span>
+            <span>Selecciona el propósito al que pertenece este compromiso financiero</span>
           </p>
         </div>
 
         {/* Propósito */}
         <div className="space-y-2">
           <label htmlFor="proposito" className="block text-sm font-semibold text-gray-900">
-            Descripción del Voto <span className="text-red-500">*</span>
+            Descripción del Voto (opcional)
           </label>
           <textarea
             id="proposito"
             name="proposito"
             value={formData.proposito}
             onChange={handleChange}
-            required
             className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             rows={4}
             placeholder="Ej: Contribución para misiones, construcción de templo, ayuda humanitaria..."
@@ -167,7 +167,7 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Describe claramente el propósito del compromiso financiero</span>
+            <span>Agrega detalles adicionales sobre este compromiso (opcional)</span>
           </p>
         </div>
 

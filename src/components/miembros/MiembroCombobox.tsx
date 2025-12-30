@@ -9,7 +9,7 @@ import type { Database } from '@/lib/database.types'
 type TablaMiembros = Database['public']['Tables']['miembros']['Row']
 
 interface MiembroComboboxProps {
-  miembros: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos' | 'cedula'>[]
+  miembros: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos'>[]
   value: string
   onChange: (miembroId: string | null) => void
   disabled?: boolean
@@ -28,7 +28,7 @@ export function MiembroCombobox({
   const filteredMiembros = query === ''
     ? miembros
     : miembros.filter((miembro) => {
-        const searchStr = `${miembro.nombres} ${miembro.apellidos} ${miembro.cedula}`.toLowerCase()
+        const searchStr = `${miembro.nombres} ${miembro.apellidos}`.toLowerCase()
         return searchStr.includes(query.toLowerCase())
       })
 
@@ -44,7 +44,7 @@ export function MiembroCombobox({
             displayValue={(miembroId: string) => {
               const miembro = miembros.find(m => m.id === miembroId)
               return miembro 
-                ? `${miembro.nombres} ${miembro.apellidos} - ${miembro.cedula}`
+                ? `${miembro.nombres} ${miembro.apellidos}`
                 : ''
             }}
             onChange={(event) => setQuery(event.target.value)}
@@ -86,7 +86,7 @@ export function MiembroCombobox({
                   {({ selected, active }) => (
                     <>
                       <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                        {miembro.nombres} {miembro.apellidos} - {miembro.cedula}
+                        {miembro.nombres} {miembro.apellidos}
                       </span>
                       {selected ? (
                         <span

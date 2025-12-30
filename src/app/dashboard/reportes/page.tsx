@@ -9,6 +9,12 @@ import { useReportesVotos } from '@/hooks/useReportesVotos'
 import { useReportesPagos } from '@/hooks/useReportesPagos'
 import { useReportesMiembros } from '@/hooks/useReportesMiembros'
 import { useReporteFinanciero } from '@/hooks/useReporteFinanciero'
+import { useGraficosReportes } from '@/hooks/useGraficosReportes'
+import ResumenFinanciero from '@/components/reportes/ResumenFinanciero'
+import DashboardFinancieroAvanzado from '@/components/reportes/DashboardFinancieroAvanzado'
+import GraficoPropositos from '@/components/reportes/GraficoPropositos'
+import GraficoEstadoVotos from '@/components/reportes/GraficoEstadoVotos'
+import GraficoTendenciaPagos from '@/components/reportes/GraficoTendenciaPagos'
 // Importaciones dinámicas para evitar errores si las dependencias no están instaladas
 const importPDFGenerators = async () => {
   try {
@@ -61,6 +67,11 @@ export default function ReportesPage() {
   })
 
   const financieroData = useReporteFinanciero({
+    fechaInicio: filtros.fechaInicio,
+    fechaFin: filtros.fechaFin
+  })
+
+  const graficosData = useGraficosReportes({
     fechaInicio: filtros.fechaInicio,
     fechaFin: filtros.fechaFin
   })
@@ -267,56 +278,48 @@ export default function ReportesPage() {
         )
 
       case 'financiero':
-        if (financieroData.loading) {
-          return <div className="animate-pulse space-y-4">
-            {[1,2,3].map(i => <div key={i} className="h-20 bg-slate-100 rounded"></div>)}
-          </div>
-        }
-
-        if (!financieroData.data) {
-          return <div className="text-center py-8 text-slate-600">No hay datos disponibles</div>
-        }
-
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-200">
-              <div className="text-sm font-medium text-blue-600 mb-2">Total Comprometido</div>
-              <div className="text-3xl font-bold text-blue-900">
-                ${financieroData.data.total_comprometido.toLocaleString()}
-              </div>
+          <div className="space-y-8">
+            {/* Dashboard Financiero Avanzado */}
+            <DashboardFinancieroAvanzado
+              data={financieroData.data}
+              loading={financieroData.loading}
+            />
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <GraficoPropositos
+                data={graficosData.datosPropositos}
+                loading={graficosData.loading}
+              />
+              <GraficoEstadoVotos
+                data={graficosData.datosEstadoVotos}
+                loading={graficosData.loading}
+              />
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-              <div className="text-sm font-medium text-green-600 mb-2">Total Recaudado</div>
-              <div className="text-3xl font-bold text-green-900">
-                ${financieroData.data.total_recaudado.toLocaleString()}
-              </div>
+
+            <div className="grid grid-cols-1 gap-6">
+              <GraficoTendenciaPagos
+                data={graficosData.datosTendenciaPagos}
+                loading={graficosData.loading}
+              />
             </div>
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
-              <div className="text-sm font-medium text-amber-600 mb-2">Total Pendiente</div>
-              <div className="text-3xl font-bold text-amber-900">
-                ${financieroData.data.total_pendiente.toLocaleString()}
-              </div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-200">
-              <div className="text-sm font-medium text-purple-600 mb-2">Promedio por Miembro</div>
-              <div className="text-3xl font-bold text-purple-900">
-                ${financieroData.data.promedio_por_miembro.toLocaleString()}
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-6 border border-slate-200 col-span-full">
+
+            {/* Detalles adicionales del estado de votos */}
+            <div className="bg-white rounded-xl p-6 border border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900 mb-4">Estado de Votos</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                   <span className="text-sm font-medium text-blue-900">Activos</span>
-                  <span className="text-2xl font-bold text-blue-600">{financieroData.data.votos_activos}</span>
+                  <span className="text-2xl font-bold text-blue-600">{financieroData.data?.votos_activos || 0}</span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
                   <span className="text-sm font-medium text-green-900">Completados</span>
-                  <span className="text-2xl font-bold text-green-600">{financieroData.data.votos_completados}</span>
+                  <span className="text-2xl font-bold text-green-600">{financieroData.data?.votos_completados || 0}</span>
                 </div>
                 <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
                   <span className="text-sm font-medium text-red-900">Vencidos</span>
-                  <span className="text-2xl font-bold text-red-600">{financieroData.data.votos_vencidos}</span>
+                  <span className="text-2xl font-bold text-red-600">{financieroData.data?.votos_vencidos || 0}</span>
                 </div>
               </div>
             </div>

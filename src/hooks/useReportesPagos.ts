@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { formatDate } from '@/lib/utils/dateFormatters'
 
 export interface PagoReporte {
   id: string
@@ -18,6 +19,7 @@ interface FiltrosPagos {
   fechaFin?: string
   metodoPago?: string
   miembroId?: string
+  propositoId?: string
 }
 
 export function useReportesPagos(filtros: FiltrosPagos = {}) {
@@ -64,6 +66,10 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
           query = query.eq('metodo_pago', filtros.metodoPago)
         }
 
+        if (filtros.propositoId) {
+          query = query.eq('voto.proposito_id', filtros.propositoId)
+        }
+
         const { data: pagos, error: queryError } = await query
 
         if (queryError) throw queryError
@@ -72,7 +78,7 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
         const pagosFormateados: PagoReporte[] = (pagos || []).map((pago: any) => ({
           id: pago.id,
           monto: Number(pago.monto) || 0,
-          fecha_pago: pago.fecha_pago,
+          fecha_pago: formatDate(pago.fecha_pago),
           metodo_pago: pago.metodo_pago || 'efectivo',
           nota: pago.nota,
           voto_proposito: pago.voto?.proposito || 'Sin propósito',
@@ -102,7 +108,7 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
     }
 
     fetchPagos()
-  }, [filtros.busqueda, filtros.fechaInicio, filtros.fechaFin, filtros.metodoPago, filtros.miembroId])
+  }, [filtros.busqueda, filtros.fechaInicio, filtros.fechaFin, filtros.metodoPago, filtros.miembroId, filtros.propositoId])
 
   return { data, loading, error }
 }

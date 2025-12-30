@@ -23,11 +23,10 @@ export async function signup(formData: FormData) {
     const password = formData.get('password') as string
     const nombres = formData.get('nombres') as string
     const apellidos = formData.get('apellidos') as string
-    const cedula = formData.get('cedula') as string
     const telefono = formData.get('telefono') as string
     const direccion = formData.get('direccion') as string
 
-    if (!email || !password || !nombres || !apellidos || !cedula) {
+    if (!email || !password || !nombres || !apellidos) {
       return { error: 'Todos los campos son obligatorios' }
     }
 
@@ -81,7 +80,6 @@ export async function signup(formData: FormData) {
       id: authData.user.id,
       nombres,
       apellidos,
-      cedula,
       email,
       telefono: telefono || null,
       direccion: direccion || null,

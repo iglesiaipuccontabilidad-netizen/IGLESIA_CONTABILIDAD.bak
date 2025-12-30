@@ -106,21 +106,6 @@ export default function NuevoMiembroForm() {
                         minLength={2}
                       />
                     </div>
-
-                    <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-                      <label htmlFor="cedula" className="text-sm font-medium text-slate-700">Cédula <span className="text-rose-500">*</span></label>
-                      <input
-                        type="text"
-                        id="cedula"
-                        name="cedula"
-                        className="input bg-white focus:ring-primary-500 focus:ring-2 focus:border-transparent"
-                        pattern="[0-9]{8,12}"
-                        title="Ingrese un número de cédula válido (8-12 dígitos)"
-                        placeholder="Sin puntos ni espacios"
-                        required
-                      />
-                      <p className="text-xs text-slate-500">Entre 8 y 12 números.</p>
-                    </div>
                   </div>
                 </section>
 

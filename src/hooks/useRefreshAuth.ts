@@ -31,8 +31,8 @@ export function useRefreshAuth() {
       }
     }
 
-    // Dar un pequeño delay para permitir que Supabase establezca las cookies
-    const timer = setTimeout(refreshSession, 100)
+    // Delay mínimo para permitir que Supabase establezca las cookies
+    const timer = setTimeout(refreshSession, 50)
     return () => clearTimeout(timer)
   }, [user, isLoading, supabase])
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { formatearCedula, formatearPeso } from '@/utils/format'
+import { formatearPeso } from '@/utils/format'
 import styles from './VotosActivosPanel.module.css'
 
 interface Voto {
@@ -14,7 +14,6 @@ interface Voto {
   miembro: {
     nombres: string
     apellidos: string
-    cedula: string
   }
 }
 
@@ -81,9 +80,6 @@ export default function VotosActivosPanel({ votos }: VotosActivosPanelProps) {
             <div className={styles.miembroInfo}>
               <span className={styles.miembroNombre}>
                 {voto.miembro.nombres} {voto.miembro.apellidos}
-              </span>
-              <span className={styles.miembroCedula}>
-                CC: {formatearCedula(voto.miembro.cedula)}
               </span>
             </div>
           </div>

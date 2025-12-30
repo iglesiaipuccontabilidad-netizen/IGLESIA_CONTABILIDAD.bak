@@ -13,7 +13,6 @@ type VotoConMiembro = {
     id: number
     nombres: string
     apellidos: string
-    cedula: string
   } | null
 }
 
@@ -32,8 +31,7 @@ export async function getVotosActivos() {
       miembro:miembros (
         id,
         nombres,
-        apellidos,
-        cedula
+        apellidos
       )
     `)
     .eq('estado', 'activo')
@@ -50,8 +48,7 @@ export async function getVotosActivos() {
     const miembro = voto.miembro || {
       id: 0,
       nombres: 'Sin',
-      apellidos: 'asignar',
-      cedula: ''
+      apellidos: 'asignar'
     }
 
     return {

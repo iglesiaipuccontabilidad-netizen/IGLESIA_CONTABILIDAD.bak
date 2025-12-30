@@ -292,4 +292,44 @@
   .page-title {
     @apply text-2xl;
   }
+  
+  /* Mejorar inputs en móviles */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  input[type="tel"],
+  textarea,
+  select {
+    @apply text-base; /* Prevenir zoom en iOS */
+    min-height: 44px; /* Área de toque mínima */
+  }
+  
+  /* Mejorar botones en móviles */
+  button {
+    min-height: 44px; /* Área de toque mínima */
+  }
+  
+  /* Mejorar espaciado en móviles */
+  .mobile-spacing {
+    @apply space-y-4;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Ajustes para móviles muy pequeños */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  input[type="tel"],
+  textarea,
+  select {
+    @apply text-base;
+    min-height: 40px;
+  }
+  
+  button {
+    min-height: 40px;
+  }
 }
