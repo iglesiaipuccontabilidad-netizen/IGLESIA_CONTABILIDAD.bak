@@ -15,6 +15,7 @@ import { BalanceCard } from '@/components/comites/BalanceCard'
 import { TransaccionesRecientes } from '@/components/comites/TransaccionesRecientes'
 import { VotosActivosComite } from '@/components/comites/VotosActivosComite'
 import { requireComiteAccess } from '@/lib/auth/comite-permissions'
+import LogoutButton from '@/components/LogoutButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -96,6 +97,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
               Vista general de la contabilidad del comité
             </p>
           </div>
+          <LogoutButton />
         </div>
       </div>
 
