@@ -55,32 +55,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('   Intento:', retryCount + 1, '/', MAX_RETRIES + 1)
         console.log('════════════════════════════════════════')
         
-        // Verificar que tenemos un supabase client válido
-        if (!supabase) {
-          console.error('❌ No hay cliente de Supabase disponible')
-          if (mounted) setMember(null)
-          return
-        }
-        
-        // Verificar la sesión actual primero
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-        
-        console.log('🔐 Verificación de sesión:')
-        console.log('   Session exists?:', !!session)
-        console.log('   Session user ID:', session?.user?.id)
-        console.log('   Session error:', sessionError)
-        
-        if (!session) {
-          console.error('❌ No hay sesión activa al intentar cargar member')
-          if (retryCount < MAX_RETRIES && mounted) {
-            console.log(`🔄 Reintentando por falta de sesión en ${RETRY_DELAY}ms...`)
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-            return loadMemberData(userId, retryCount + 1)
-          }
-          if (mounted) setMember(null)
-          return
-        }
-        
         console.log('🔍 Ejecutando query a tabla usuarios...')
         
         const { data: memberData, error: memberError } = await supabase
