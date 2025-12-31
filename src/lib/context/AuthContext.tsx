@@ -67,11 +67,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         console.log('🔍 Ejecutando query a tabla usuarios...')
         
-        const { data: memberData, error: memberError } = await supabase
+        // Agregar timeout a la query específica
+        const queryPromise = supabase
           .from('usuarios')
           .select('id, email, rol, estado')
           .eq('id', userId)
-          .maybeSingle() as { data: MemberType | null, error: any }
+          .maybeSingle() as Promise<{ data: MemberType | null, error: any }>
+        
+        const timeoutPromise = new Promise<{ data: null, error: any }>((resolve) => {
+          setTimeout(() => {
+            resolve({ data: null, error: { message: 'Query timeout after 3s' } })
+          }, 3000)
+        })
+        
+        const { data: memberData, error: memberError } = await Promise.race([
+          queryPromise,
+          timeoutPromise
+        ])
         
         console.log('📦 Respuesta de Supabase:')
         console.log('   Data:', memberData)
@@ -156,6 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           `)
           .eq('usuario_id', userId)
           .eq('estado', 'activo')
+          .timeout(3000) // Timeout de 3 segundos
         
         if (error) {
           console.error('❌ Error al cargar comités del usuario:', error)

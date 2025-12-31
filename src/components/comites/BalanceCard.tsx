@@ -27,8 +27,13 @@ export function BalanceCard({ data, isLoading = false }: BalanceCardProps) {
     )
   }
 
-  const porcentajeGastado = data.total_ingresos > 0 
-    ? (data.total_egresos / data.total_ingresos) * 100 
+  // Validación defensiva de datos
+  const balance = data?.balance ?? 0
+  const totalIngresos = data?.total_ingresos ?? 0
+  const totalEgresos = data?.total_egresos ?? 0
+
+  const porcentajeGastado = totalIngresos > 0 
+    ? (totalEgresos / totalIngresos) * 100 
     : 0
 
   return (
@@ -42,7 +47,7 @@ export function BalanceCard({ data, isLoading = false }: BalanceCardProps) {
           </div>
         </div>
         <p className="text-3xl font-bold">
-          ${data.balance.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
+          ${balance.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
         </p>
         <div className="mt-3 pt-3 border-t border-primary-400">
           <p className="text-xs text-primary-100">
@@ -60,7 +65,7 @@ export function BalanceCard({ data, isLoading = false }: BalanceCardProps) {
           </div>
         </div>
         <p className="text-3xl font-bold text-emerald-600">
-          ${data.total_ingresos.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
+          ${totalIngresos.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
         </p>
         <div className="mt-3 pt-3 border-t border-slate-100">
           <p className="text-xs text-slate-500">Pagos, ofrendas y donaciones</p>
@@ -76,7 +81,7 @@ export function BalanceCard({ data, isLoading = false }: BalanceCardProps) {
           </div>
         </div>
         <p className="text-3xl font-bold text-rose-600">
-          ${data.total_egresos.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
+          ${totalEgresos.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
         </p>
         <div className="mt-3 pt-3 border-t border-slate-100">
           <p className="text-xs text-slate-500">Gastos y egresos del comité</p>
