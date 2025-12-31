@@ -44,6 +44,19 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const { member, isLoading, comitesUsuario } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
+  // Mapeo de roles para mostrar nombres legibles
+  const rolLabels: Record<string, string> = {
+    admin: 'Administrador',
+    tesorero: 'Tesorero General',
+    usuario: 'Usuario',
+    pendiente: 'Pendiente'
+  }
+
+  // Debug: verificar estado de member
+  React.useEffect(() => {
+    console.log('🔍 Sidebar - Estado Auth:', { member, isLoading, comitesUsuario })
+  }, [member, isLoading, comitesUsuario])
+
   // Efecto para manejar el scroll del body cuando el menú móvil está abierto
   React.useEffect(() => {
     if (isMobileMenuVisible) {
@@ -357,7 +370,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
               {isLoading 
                 ? "Cargando..." 
                 : member?.rol 
-                  ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) 
+                  ? rolLabels[member.rol] || member.rol.charAt(0).toUpperCase() + member.rol.slice(1)
                   : "Sin rol"}
             </span>
           </div>
