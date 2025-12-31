@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/lib/supabase-client'
 import type { Database } from '@/lib/database.types'
 
 type MemberType = {
@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true)
   const realtimeSubscriptionRef = useRef<any>(null)
   
-  // Crear el cliente fuera del efecto para evitar recreaciones
-  const supabase = useMemo(() => createClient(), [])
+  // Usar cliente singleton para evitar recreaciones
+  const supabase = getSupabaseBrowserClient()
 
   useEffect(() => {
     mountedRef.current = true
@@ -243,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         realtimeSubscriptionRef.current = null
       }
     }
-  }, [supabase])
+  }, []) // Cliente singleton, no necesita dependencias
 
   const value = useMemo(() => ({
     user,
