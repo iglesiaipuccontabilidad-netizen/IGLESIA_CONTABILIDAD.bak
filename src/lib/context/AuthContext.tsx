@@ -209,13 +209,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    if (!user) {
-      initialize()
-    }
+    // Solo inicializar una vez al montar
+    initialize()
 
     // Timeout de seguridad
     const timeoutId = setTimeout(() => {
-      if (mountedRef.current && isLoading && !memberLoadedRef.current) {
+      if (mountedRef.current && !memberLoadedRef.current) {
         console.warn('Timeout en inicialización de auth (5s)')
         setIsLoading(false)
       }
@@ -223,7 +222,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mountedRef.current = false
-      memberLoadedRef.current = false
       clearTimeout(timeoutId)
       subscription.unsubscribe()
       
@@ -232,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         realtimeSubscriptionRef.current = null
       }
     }
-  }, [supabase, user, isLoading, loadMemberData])
+  }, [supabase, loadMemberData])
 
   const value = useMemo(() => ({
     user,
