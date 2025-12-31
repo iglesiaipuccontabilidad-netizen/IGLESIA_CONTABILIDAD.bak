@@ -127,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!userId || !mountedRef.current || memberLoadedRef.current) return
       
       memberLoadedRef.current = true
+      console.log('🔄 AuthContext - Cargando datos de usuario:', userId)
       
       try {
         const { data: memberData, error: memberError } = await supabase
@@ -136,11 +137,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .abortSignal(AbortSignal.timeout(8000))
           .maybeSingle()
         
+        console.log('📊 AuthContext - Resultado query:', { memberData, memberError })
+        
         const isEmptyError = memberError && 
           typeof memberError === 'object' && 
           Object.keys(memberError).length === 0
         
         if (memberData && mountedRef.current) {
+          console.log('✅ AuthContext - Usuario cargado exitosamente:', memberData)
           setMember(memberData)
           await loadComitesUsuario(userId)
           setupRealtimeSubscription(userId)
@@ -148,15 +152,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (memberError.code === 'TIMEOUT') {
             console.warn('⚠️ Timeout en consulta de usuarios. Ejecuta la migración de optimización.')
           } else {
-            console.error('Error al cargar usuario:', memberError.message)
+            console.error('❌ Error al cargar usuario:', memberError.message)
           }
+          if (mountedRef.current) setMember(null)
+        } else if (!memberData) {
+          console.warn('⚠️ No se encontró usuario con ID:', userId)
           if (mountedRef.current) setMember(null)
         }
       } catch (error) {
-        console.error('Excepción al cargar datos:', error instanceof Error ? error.message : 'Error desconocido')
+        console.error('💥 Excepción al cargar datos:', error instanceof Error ? error.message : 'Error desconocido')
         if (mountedRef.current) setMember(null)
       } finally {
-        if (mountedRef.current) setIsLoading(false)
+        if (mountedRef.current) {
+          console.log('✔️ AuthContext - Finalizando carga, isLoading = false')
+          setIsLoading(false)
+        }
       }
     }
     
