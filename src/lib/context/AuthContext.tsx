@@ -48,24 +48,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let realtimeSubscription: any = null // Para el listener en tiempo real
 
     async function loadMemberData(userId: string, retryCount = 0) {
-      console.log('🔵 loadMemberData llamada con userId:', userId, 'memberLoaded:', memberLoaded)
-      
-      if (memberLoaded) {
-        console.log('⚠️ Member ya fue cargado, saltando...')
-        return
-      }
+      if (memberLoaded) return
       
       const MAX_RETRIES = 1
-      const RETRY_DELAY = 200 // ms
+      const RETRY_DELAY = 200
       
       try {
-        console.log('════════════════════════════════════════')
-        console.log('🔍 INICIANDO loadMemberData')
-        console.log('   User ID:', userId)
-        console.log('   Intento:', retryCount + 1, '/', MAX_RETRIES + 1)
-        console.log('════════════════════════════════════════')
-        
-        console.log('🔍 Ejecutando query a tabla usuarios...')
         
         // Agregar timeout a la query específica
         const queryPromise = supabase
@@ -85,12 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           timeoutPromise
         ])
         
-        console.log('📦 Respuesta de Supabase:')
-        console.log('   Data:', memberData)
-        console.log('   Error:', memberError)
-        console.log('   Has data?:', !!memberData)
-        console.log('   Has error?:', !!memberError)
-        
         if (memberError) {
           console.error('❌ Error al cargar datos del usuario:', memberError)
           
@@ -102,17 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (mounted) setMember(null)
         } else if (memberData && typeof memberData === 'object') {
-          console.log('✅✅✅ DATOS CARGADOS EXITOSAMENTE:')
-          console.log('   ID:', memberData.id)
-          console.log('   Email:', memberData.email)
-          console.log('   Rol:', memberData.rol)
-          console.log('   Estado:', memberData.estado)
-          
-          // ACTUALIZAR ESTADO INMEDIATAMENTE, sin chequear mounted
-          // Si el componente se desmonta, React ignorará la actualización de forma segura
           setMember(memberData)
-          memberLoaded = true // Marcar como cargado
-          console.log('✅ Member actualizado en el estado de React')
+          memberLoaded = true
           
           // Cargar los comités del usuario
           await loadComitesUsuario(userId)
@@ -150,12 +123,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Cargar los comités asignados al usuario
     async function loadComitesUsuario(userId: string) {
-      console.log('🏢 Cargando comités del usuario:', userId)
       
       try {
-        const { data, error } = await supabase
+        // Crear timeout manual con Promise.race
+        const queryPromise = supabase
           .from('comite_usuarios')
           .select(`
             comite_id,
@@ -168,7 +140,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           `)
           .eq('usuario_id', userId)
           .eq('estado', 'activo')
-          .timeout(3000) // Timeout de 3 segundos
+        
+        const timeoutPromise = new Promise<{ data: null, error: any }>((resolve) => {
+          setTimeout(() => {
+            resolve({ data: null, error: { message: 'Query timeout after 3s' } })
+          }, 3000)
+        })
+        
+        const { data, error } = await Promise.race([
+          queryPromise,
+          timeoutPromise
+        ])
         
         if (error) {
           console.error('❌ Error al cargar comités del usuario:', error)
@@ -184,7 +166,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           estado: cu.estado
         }))
         
-        console.log('✅ Comités del usuario cargados:', comites)
         setComitesUsuario(comites)
       } catch (error) {
         console.error('❌ Excepción al cargar comités:', error)

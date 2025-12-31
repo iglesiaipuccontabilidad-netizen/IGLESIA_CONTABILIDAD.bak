@@ -44,20 +44,6 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   }, [isMobileMenuVisible])
 
   const menuSections: MenuSection[] = React.useMemo(() => {
-    // Debug: verificar el rol del usuario
-    console.log('═══════════════════════════════════')
-    console.log('🔍 SIDEBAR - Member completo:', JSON.stringify(member, null, 2))
-    console.log('🔍 SIDEBAR - Tipo de member:', typeof member)
-    console.log('🔍 SIDEBAR - Es null/undefined?:', member === null, member === undefined)
-    console.log('🔍 SIDEBAR - Rol:', member?.rol)
-    console.log('🔍 SIDEBAR - Tipo de rol:', typeof member?.rol)
-    console.log('🔍 SIDEBAR - Rol vacío?:', member?.rol === '', member?.rol === null, member?.rol === undefined)
-    console.log('🔍 SIDEBAR - Email:', member?.email)
-    console.log('🔍 SIDEBAR - Estado:', member?.estado)
-    console.log('🔍 SIDEBAR - isLoading:', isLoading)
-    console.log('🔍 SIDEBAR - comitesUsuario:', comitesUsuario)
-    console.log('🔍 SIDEBAR - comitesUsuario length:', comitesUsuario?.length)
-    console.log('═══════════════════════════════════')
     
     const sections: MenuSection[] = [
       {
@@ -113,7 +99,6 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
 
     // Solo mostrar la sección de Administración si el usuario es admin o tesorero global
     if (member?.rol === 'admin' || member?.rol === 'tesorero') {
-      console.log('✅ Agregando sección de Administración')
       sections.push({
         title: "Administración",
         items: [
@@ -136,7 +121,6 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
       })
     } else if (comitesUsuario && comitesUsuario.length > 0) {
       // Si el usuario no es admin pero tiene comités asignados, mostrar sus comités
-      console.log('✅ Agregando sección Mis Comités para usuario con comités asignados:', comitesUsuario)
       sections.push({
         title: "Mis Comités",
         items: comitesUsuario.map(comite => ({
@@ -146,8 +130,6 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           description: `Rol: ${comite.rol_en_comite}`
         }))
       })
-    } else {
-      console.log('❌ No se agrega Administración ni Comités - Rol actual:', member?.rol)
     }
 
     return sections
