@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 import { MiembroCombobox } from '@/components/miembros/MiembroCombobox'
 import { Plus, Target } from 'lucide-react'
+import { FormattedNumberInput } from '@/components/ui/FormattedNumberInput'
 
 type TablaVotos = Database['public']['Tables']['votos']['Insert']
 type TablaMiembros = Database['public']['Tables']['miembros']['Row']
@@ -177,21 +178,18 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
             <label htmlFor="montoTotal" className="block text-sm font-semibold text-gray-900">
               Monto Total <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
-              <input
-                type="number"
-                id="montoTotal"
-                name="montoTotal"
-                value={formData.montoTotal}
-                onChange={handleChange}
-                required
-                min="1"
-                step="0.01"
-                className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="0.00"
-              />
-            </div>
+            <input
+              id="montoTotal"
+              type="number"
+              name="montoTotal"
+              value={formData.montoTotal || ''}
+              onChange={handleChange}
+              disabled={loading}
+              step="0.01"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0.00"
+              required
+            />
             <p className="text-xs text-gray-500">Monto total del compromiso en COP</p>
           </div>
 

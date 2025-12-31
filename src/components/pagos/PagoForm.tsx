@@ -4,6 +4,7 @@ import React, { useEffect } from 'react'
 import { useFormState, useFormStatus } from 'react-dom'
 import { redirect } from 'next/navigation'
 import { procesarPago, ActionResponse, ActionState } from '@/app/actions/registro-pago'
+import { FormattedNumberInput } from '@/components/ui/FormattedNumberInput'
 import styles from '@/styles/components/PagoForm.module.css'
 
 interface PagoFormProps {

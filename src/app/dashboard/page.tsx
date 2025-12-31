@@ -3,10 +3,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import DashboardCards from '@/components/dashboard/DashboardCards'
+import { ProgressSection } from '@/components/dashboard/ProgressSection'
+import { QuickSummarySection } from '@/components/dashboard/QuickSummarySection'
+import { RecentPropositionsSection } from '@/components/dashboard/RecentPropositionsSection'
+import { DashboardErrorBoundary } from '@/components/dashboard/DashboardErrorBoundary'
 import { Database } from '@/lib/database.types'
-import { ArrowUpRight, Calendar, Target, TrendingUp, LogOut } from 'lucide-react'
 import LogoutButton from '@/components/LogoutButton'
 import { ComiteUserRedirect } from '@/components/ComiteUserRedirect'
+import { requireAdminOrTesorero } from '@/lib/auth/permissions'
 
 interface DashboardStats {
   total_comprometido: number
@@ -56,14 +60,25 @@ const formatCurrency = (value: number) => new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0
 }).format(value)
 
+// Consultas paralelas para mejor rendimiento
 async function getDashboardData(client: SupabaseClient<Database>): Promise<{ stats: DashboardStats; propositos: PropositoData[] }> {
-  const { data, error } = await client
-    .from('propositos')
-    .select('id, nombre, descripcion, monto_objetivo, monto_recaudado, estado, fecha_fin, fecha_inicio, created_at')
-    .order('created_at', { ascending: false })
+  // Ejecutar consultas en paralelo
+  const [propositosResult, statsResult] = await Promise.all([
+    // Obtener solo los propósitos recientes necesarios para la vista
+    client
+      .from('propositos')
+      .select('id, nombre, descripcion, monto_objetivo, monto_recaudado, estado, fecha_fin, fecha_inicio, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10), // Solo los 10 más recientes
+    
+    // Obtener estadísticas agregadas
+    client
+      .from('propositos')
+      .select('monto_objetivo, monto_recaudado, estado')
+  ])
 
-  if (error) {
-    console.error('Error al obtener propósitos:', error)
+  if (propositosResult.error || statsResult.error) {
+    console.error('Error al obtener datos del dashboard:', propositosResult.error || statsResult.error)
     return {
       stats: {
         total_comprometido: 0,
@@ -78,7 +93,8 @@ async function getDashboardData(client: SupabaseClient<Database>): Promise<{ sta
     }
   }
 
-  const stats = (data || []).reduce<DashboardStats>((acc, proposito) => {
+  // Calcular estadísticas desde los datos agregados
+  const stats = (statsResult.data || []).reduce<DashboardStats>((acc, proposito) => {
     const objetivo = proposito.monto_objetivo ?? 0
     const recaudado = proposito.monto_recaudado ?? 0
 
@@ -115,37 +131,18 @@ async function getDashboardData(client: SupabaseClient<Database>): Promise<{ sta
 
   return {
     stats,
-    propositos: data || []
+    propositos: propositosResult.data || []
   }
 }
 
 // Componente principal del Dashboard  
 export default async function DashboardPage() {
+  // Verificar que el usuario sea admin o tesorero
+  await requireAdminOrTesorero()
+  
   try {
     const supabase = await createClient()
     const { stats, propositos } = await getDashboardData(supabase)
-
-    const propositosRecientes = propositos.slice(0, 4)
-    const resumenRapido = [
-      {
-        title: 'Campañas completadas',
-        value: stats.propositos_completados,
-        description: 'Propósitos que alcanzaron su objetivo',
-        icon: <TrendingUp className="w-5 h-5 text-emerald-600" />
-      },
-      {
-        title: 'Campañas activas',
-        value: stats.propositos_activos,
-        description: 'Propósitos actualmente en progreso',
-        icon: <Target className="w-5 h-5 text-blue-600" />
-      },
-      {
-        title: 'Campañas canceladas',
-        value: stats.propositos_cancelados,
-        description: 'Propósitos detenidos o cancelados',
-        icon: <ArrowUpRight className="w-5 h-5 text-rose-500 rotate-45" />
-      }
-    ]
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
@@ -208,181 +205,20 @@ export default async function DashboardPage() {
             </Suspense>
           </div>
 
-          {/* Progreso global - Mejorado */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300 p-8 space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-slate-900 mb-2">Progreso global de propósitos</h2>
-                <p className="text-slate-600 text-sm">
-                  Seguimiento del avance en todas las campañas activas y completadas
-                </p>
-              </div>
-              <div className="w-full lg:w-2/5">
-                <div className="space-y-4">
-                  <div className="flex items-end justify-between">
-                    <span className="text-sm font-semibold text-slate-700">Avance general</span>
-                    <span className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-cyan-600 bg-clip-text text-transparent">{stats.progreso_general}%</span>
-                  </div>
-                  <div className="h-4 bg-slate-100 rounded-full overflow-hidden ring-1 ring-slate-200">
-                    <div
-                      className="h-full bg-gradient-to-r from-primary-500 via-cyan-500 to-emerald-500 rounded-full transition-all duration-700 shadow-md"
-                      style={{ width: `${stats.progreso_general}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Grid de resumen */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100">
-              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200/50 min-w-0">
-                <span className="block text-xs text-emerald-600 font-semibold mb-1">Recaudado</span>
-                <span className="block text-lg font-bold text-emerald-700 break-words">{formatCurrency(stats.total_recaudado)}</span>
-              </div>
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-200/50 min-w-0">
-                <span className="block text-xs text-amber-600 font-semibold mb-1">Pendiente</span>
-                <span className="block text-lg font-bold text-amber-700 break-words">{formatCurrency(stats.total_pendiente)}</span>
-              </div>
-              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200/50 min-w-0">
-                <span className="block text-xs text-blue-600 font-semibold mb-1">Comprometido</span>
-                <span className="block text-lg font-bold text-blue-700 break-words">{formatCurrency(stats.total_comprometido)}</span>
-              </div>
-              <div className="p-4 bg-purple-50 rounded-xl border border-purple-200/50 min-w-0">
-                <span className="block text-xs text-purple-600 font-semibold mb-1">Campañas activas</span>
-                <span className="block text-lg font-bold text-purple-700">{stats.propositos_activos}</span>
-              </div>
-            </div>
-          </div>
+          {/* Progreso global - Componente optimizado */}
+          <DashboardErrorBoundary>
+            <ProgressSection stats={stats} />
+          </DashboardErrorBoundary>
 
-          {/* Resumen rápido - Mejorado */}
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold text-slate-900 px-1">Información adicional</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {resumenRapido.map((item, idx) => (
-                <div key={item.title} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 group">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">{item.title}</p>
-                      <p className="text-3xl font-bold text-slate-900">{item.value}</p>
-                    </div>
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center text-slate-600 group-hover:scale-110 transition-transform">
-                      {item.icon}
-                    </div>
-                  </div>
-                  <p className="text-sm text-slate-600 leading-relaxed mt-3 border-t border-slate-100 pt-3">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Resumen rápido - Componente optimizado */}
+          <DashboardErrorBoundary>
+            <QuickSummarySection stats={stats} />
+          </DashboardErrorBoundary>
 
-          {/* Propósitos recientes */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">Propósitos recientes</h2>
-                <p className="text-slate-600 text-sm mt-1">Últimas campañas creadas y su avance financiero</p>
-              </div>
-              <Link
-                href="/dashboard/propositos"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 hover:border-blue-300 transition-all"
-              >
-                Ver todas las campañas
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {propositosRecientes.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-16 text-center">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
-                  <Target className="w-10 h-10 text-slate-400" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">Aún no hay propósitos registrados</h3>
-                <p className="text-slate-600 mb-8 max-w-sm mx-auto">Comienza creando una campaña financiera para la iglesia y haz seguimiento a tu progreso.</p>
-                <Link
-                  href="/dashboard/propositos/nuevo"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-cyan-700 transition-all hover:shadow-lg"
-                >
-                  <span>Crear nueva campaña</span>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                </Link>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                {propositosRecientes.map((proposito) => {
-                  const objetivo = proposito.monto_objetivo ?? 0
-                  const recaudado = proposito.monto_recaudado ?? 0
-                  const progreso = objetivo > 0 ? Math.min(Math.round((recaudado / objetivo) * 100), 100) : 0
-
-                  const estadoBadge = proposito.estado === 'activo'
-                    ? 'bg-blue-50 text-blue-700 border-blue-200'
-                    : proposito.estado === 'completado'
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-slate-50 text-slate-700 border-slate-200'
-
-                  return (
-                    <Link
-                      key={proposito.id}
-                      href={`/dashboard/propositos/${proposito.id}`}
-                      className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300"
-                    >
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-3 mb-5">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
-                            {proposito.nombre}
-                          </h3>
-                          {proposito.descripcion && (
-                            <p className="text-sm text-slate-600 mt-1 line-clamp-2">{proposito.descripcion}</p>
-                          )}
-                        </div>
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border whitespace-nowrap flex-shrink-0 ${estadoBadge}`}>
-                          {proposito.estado}
-                        </span>
-                      </div>
-
-                      {/* Progreso */}
-                      <div className="space-y-3 border-t border-slate-100 pt-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-slate-700">Progreso</span>
-                          <span className="font-bold text-slate-900">{progreso}%</span>
-                        </div>
-                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden ring-1 ring-slate-200">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 rounded-full transition-all duration-500"
-                            style={{ width: `${progreso}%` }}
-                          ></div>
-                        </div>
-
-                        {/* Financiero */}
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                          <div className="p-2.5 bg-slate-50 rounded-lg min-w-0">
-                            <span className="block text-xs text-slate-600 font-semibold mb-1">Recaudado</span>
-                            <span className="block text-sm font-bold text-slate-900 truncate">{formatCurrency(recaudado)}</span>
-                          </div>
-                          {objetivo > 0 && (
-                            <div className="p-2.5 bg-slate-50 rounded-lg min-w-0">
-                              <span className="block text-xs text-slate-600 font-semibold mb-1">Meta</span>
-                              <span className="block text-sm font-bold text-slate-900 truncate">{formatCurrency(objetivo)}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Fecha */}
-                        {proposito.fecha_fin && (
-                          <div className="flex items-center gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
-                            <Calendar className="w-4 h-4 flex-shrink-0" />
-                            <span>Finaliza {new Date(proposito.fecha_fin).toLocaleDateString('es-CO')}</span>
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          {/* Propósitos recientes - Componente optimizado */}
+          <DashboardErrorBoundary>
+            <RecentPropositionsSection propositos={propositos} />
+          </DashboardErrorBoundary>
         </div>
       </div>
     )

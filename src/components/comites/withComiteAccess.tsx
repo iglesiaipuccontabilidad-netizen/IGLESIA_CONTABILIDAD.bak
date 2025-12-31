@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/context/AuthContext"
 
 interface WithComiteAccessOptions {
   requireAdmin?: boolean
-  allowedRoles?: Array<'lider' | 'tesorero' | 'secretario'>
+  allowedRoles?: Array<'lider' | 'tesorero' | 'secretario' | 'vocal'>
   redirectTo?: string
 }
 

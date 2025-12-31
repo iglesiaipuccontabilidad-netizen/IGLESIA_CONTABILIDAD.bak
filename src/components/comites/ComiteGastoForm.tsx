@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { Loader2, Save, X, TrendingDown } from "lucide-react"
+import { Loader2, Save, X, TrendingDown, AlertTriangle } from "lucide-react"
+import { FormattedNumberInput } from "@/components/ui/FormattedNumberInput"
 
 const gastoSchema = z.object({
   monto: z.string().min(1, "El monto es requerido"),
@@ -23,6 +24,7 @@ interface ComiteGastoFormProps {
   comiteId: string
   initialData?: Partial<GastoFormData>
   gastoId?: string
+  balanceDisponible?: number
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -31,12 +33,14 @@ export function ComiteGastoForm({
   comiteId,
   initialData,
   gastoId,
+  balanceDisponible,
   onSuccess,
   onCancel,
 }: ComiteGastoFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
 
   const {
     register,
@@ -58,12 +62,22 @@ export function ComiteGastoForm({
   const onSubmit = async (data: GastoFormData) => {
     setIsSubmitting(true)
     setError(null)
+    setWarning(null)
 
     try {
+      const montoGasto = parseFloat(data.monto)
+      
+      // Validar que el gasto no supere el balance disponible
+      if (!gastoId && balanceDisponible !== undefined && montoGasto > balanceDisponible) {
+        throw new Error(
+          `El gasto ($${montoGasto.toLocaleString('es-CO')}) supera el balance disponible ($${balanceDisponible.toLocaleString('es-CO')})`
+        )
+      }
+      
       // Preparar datos
       const payload = {
         comite_id: comiteId,
-        monto: parseFloat(data.monto),
+        monto: montoGasto,
         fecha_gasto: data.fecha_gasto,
         categoria: data.categoria,
         concepto: data.concepto,
@@ -101,8 +115,34 @@ export function ComiteGastoForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {error && (
-        <div className="bg-rose-50 text-rose-600 p-4 rounded-lg border border-rose-200 text-sm">
-          {error}
+        <div className="bg-rose-50 text-rose-600 p-4 rounded-lg border border-rose-200 text-sm flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+      
+      {warning && (
+        <div className="bg-amber-50 text-amber-700 p-4 rounded-lg border border-amber-200 text-sm flex items-start gap-2">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <span>{warning}</span>
+        </div>
+      )}
+      
+      {/* Balance disponible */}
+      {balanceDisponible !== undefined && !gastoId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-blue-900 font-medium">Balance disponible:</span>
+            <span className="text-lg font-bold text-blue-900">
+              ${balanceDisponible.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
+            </span>
+          </div>
+          {balanceDisponible < 100000 && (
+            <p className="text-xs text-blue-700 mt-2 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              Balance bajo. Considere este límite al registrar gastos.
+            </p>
+          )}
         </div>
       )}
 
@@ -111,24 +151,20 @@ export function ComiteGastoForm({
         <label htmlFor="monto" className="block text-sm font-medium text-slate-700 mb-2">
           Monto <span className="text-rose-500">*</span>
         </label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-          <input
-            {...register("monto")}
-            type="number"
-            id="monto"
-            step="0.01"
-            placeholder="0"
-            className={`
-              w-full pl-8 pr-4 py-2.5 rounded-lg border bg-white
-              focus:outline-none focus:ring-2 focus:ring-rose-500
-              ${errors.monto ? "border-rose-300" : "border-slate-200"}
-            `}
-            disabled={isSubmitting}
-          />
-        </div>
+        <input
+          id="monto"
+          type="number"
+          {...register("monto", {
+            required: "El monto es requerido",
+            valueAsNumber: true,
+            min: { value: 1, message: "El monto debe ser mayor a 0" },
+          })}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+          placeholder="0"
+          disabled={isSubmitting}
+        />
         {errors.monto && (
-          <p className="text-rose-500 text-xs mt-1">{errors.monto.message}</p>
+          <p className="text-xs text-rose-600 mt-1">{errors.monto.message}</p>
         )}
       </div>
 

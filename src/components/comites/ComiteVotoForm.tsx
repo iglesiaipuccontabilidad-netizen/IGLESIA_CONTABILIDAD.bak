@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Loader2, Save, X, Vote } from "lucide-react"
+import { FormattedNumberInput } from "@/components/ui/FormattedNumberInput"
 
 const votoSchema = z.object({
   comite_miembro_id: z.string().min(1, "Debes seleccionar un miembro"),
@@ -190,15 +191,19 @@ export function ComiteVotoForm({
           Monto Total <span className="text-rose-500">*</span>
         </label>
         <input
-          type="number"
           id="monto_total"
-          step="0.01"
-          {...register("monto_total")}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          placeholder="0.00"
+          type="number"
+          {...register("monto_total", {
+            required: "El monto es requerido",
+            valueAsNumber: true,
+            min: { value: 1, message: "El monto debe ser mayor a 0" },
+          })}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="0"
+          disabled={isSubmitting}
         />
         {errors.monto_total && (
-          <p className="text-rose-500 text-xs mt-1">{errors.monto_total.message}</p>
+          <p className="text-xs text-rose-600 mt-1">{errors.monto_total.message}</p>
         )}
       </div>
 

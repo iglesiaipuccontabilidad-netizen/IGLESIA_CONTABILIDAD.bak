@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, TrendingDown, Plus, Calendar, DollarSign } from 'lucide-react'
+import { ArrowLeft, TrendingDown, Plus, DollarSign } from 'lucide-react'
+import { GastosList } from '@/components/comites/GastosList'
+import { ExportButton } from '@/components/comites/ExportButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -115,15 +117,23 @@ export default async function GastosComitePage({ params }: PageProps) {
             </p>
           </div>
 
-          {canManage && (
-            <Link
-              href={`/dashboard/comites/${id}/gastos/nuevo`}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              Nuevo Gasto
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            <ExportButton
+              comiteId={id}
+              comiteNombre={comite.nombre}
+              tipo="gastos"
+              datos={gastos || []}
+            />
+            {canManage && (
+              <Link
+                href={`/dashboard/comites/${id}/gastos/nuevo`}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Nuevo Gasto
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
@@ -156,106 +166,8 @@ export default async function GastosComitePage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Lista de Gastos */}
-      {!gastos || gastos.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl border border-slate-200 p-12 text-center">
-          <TrendingDown className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
-            No hay gastos registrados
-          </h3>
-          <p className="text-slate-600 mb-6">
-            Registra el primer gasto para comenzar a rastrear los egresos
-          </p>
-          {canManage && (
-            <Link
-              href={`/dashboard/comites/${id}/gastos/nuevo`}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-rose-500 to-rose-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              Registrar Primer Gasto
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Categoría
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Monto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Concepto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Beneficiario
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Método Pago
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Comprobante
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {gastos.map((gasto) => (
-                  <tr key={gasto.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-900">
-                          {new Date(gasto.fecha).toLocaleDateString('es-CO', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 capitalize">
-                        {gasto.concepto}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-rose-500" />
-                        <span className="text-sm font-bold text-rose-600">
-                          ${gasto.monto.toLocaleString('es-CO')}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-900">
-                      <div className="max-w-xs truncate">
-                        {gasto.concepto}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {gasto.nota || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-600 capitalize">
-                        {gasto.metodo_pago}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {gasto.comprobante || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Lista de Gastos con filtros */}
+      <GastosList gastos={gastos || []} comiteId={id} />
     </div>
   )
 }

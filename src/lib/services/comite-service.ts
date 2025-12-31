@@ -143,9 +143,14 @@ export async function getUsuariosComite(comiteId: string) {
  * @param comiteId - ID del comité
  * @returns true si el usuario tiene acceso, false si no
  */
-export async function verificarAccesoComite(usuarioId: string, comiteId: string) {
+export async function verificarAccesoComite(usuarioId: string, comiteId: string, clienteServidor?: any) {
   try {
-    const { data, error } = await supabase
+    console.log('🔎 verificarAccesoComite - Consultando:', { usuarioId, comiteId });
+
+    // Usar cliente del servidor si se proporciona, de lo contrario usar el cliente de browser
+    const client = clienteServidor || supabase;
+
+    const { data, error } = await client
       .from('comite_usuarios')
       .select('id, rol')
       .eq('comite_id', comiteId)
@@ -153,9 +158,12 @@ export async function verificarAccesoComite(usuarioId: string, comiteId: string)
       .eq('estado', 'activo')
       .single();
 
+    console.log('🔎 verificarAccesoComite - Resultado:', { data, error });
+
     if (error) {
       if (error.code === 'PGRST116') {
         // No se encontró registro
+        console.log('⚠️ No se encontró registro en comite_usuarios');
         return { data: null, error: null };
       }
       throw error;
@@ -163,7 +171,7 @@ export async function verificarAccesoComite(usuarioId: string, comiteId: string)
 
     return { data: data, error: null };
   } catch (error) {
-    console.error('Error al verificar acceso al comité:', error);
+    console.error('❌ Error al verificar acceso al comité:', error);
     return { data: null, error: error as Error };
   }
 }

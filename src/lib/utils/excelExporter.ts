@@ -1094,3 +1094,262 @@ export const exportarExcelVotos = (datos: any[]) => {
     return { success: false, mensaje: 'Error al generar el Excel' }
   }
 }
+
+// ============================================================
+// EXPORTACIÓN: Reporte de Ventas por Producto
+// ============================================================
+export const exportarExcelVentas = (datos: any[]) => {
+  if (!datos || datos.length === 0) {
+    return { success: false, mensaje: 'No hay datos de ventas para exportar' }
+  }
+
+  try {
+    const wb = XLSX.utils.book_new()
+
+    // ============ HOJA 1: RESUMEN EJECUTIVO ============
+    const totalUnidades = datos.reduce((sum, p) => sum + (p.unidades_vendidas || 0), 0)
+    const totalRecaudado = datos.reduce((sum, p) => sum + (p.total_recaudado || 0), 0)
+    const totalPendiente = datos.reduce((sum, p) => sum + (p.total_pendiente || 0), 0)
+    const totalVentas = datos.reduce((sum, p) => sum + (p.cantidad_ventas || 0), 0)
+
+    const resumen = [
+      ['REPORTE DE VENTAS POR PRODUCTO'],
+      [''],
+      ['Fecha de generación', new Date().toLocaleDateString('es-CO')],
+      [''],
+      ['RESUMEN GENERAL'],
+      ['Métrica', 'Valor'],
+      ['Total de productos', datos.length],
+      ['Unidades vendidas', totalUnidades],
+      ['Cantidad de ventas', totalVentas],
+      ['Total recaudado', totalRecaudado],
+      ['Total pendiente', totalPendiente],
+      ['Total comprometido', totalRecaudado + totalPendiente],
+      [''],
+      ['PROMEDIOS'],
+      ['Métrica', 'Valor'],
+      ['Promedio unidades por producto', datos.length > 0 ? totalUnidades / datos.length : 0],
+      ['Promedio ventas por producto', datos.length > 0 ? totalVentas / datos.length : 0],
+      ['Promedio recaudado por producto', datos.length > 0 ? totalRecaudado / datos.length : 0],
+      ['Promedio pendiente por producto', datos.length > 0 ? totalPendiente / datos.length : 0]
+    ]
+
+    const wsResumen = XLSX.utils.aoa_to_sheet(resumen)
+    wsResumen['!cols'] = [{ wch: 30 }, { wch: 20 }]
+
+    // Estilos
+    wsResumen['A1'].s = {
+      font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '3B82F6' } },
+      alignment: { horizontal: 'center' }
+    }
+    wsResumen['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }]
+
+    ;['A5', 'A14'].forEach(cell => {
+      wsResumen[cell].s = {
+        font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '3B82F6' } }
+      }
+    })
+
+    // Headers
+    ;['A6', 'A15'].forEach(cell => {
+      const row = parseInt(cell.substring(1))
+      ;['A', 'B'].forEach(col => {
+        const cellRef = col + row
+        if (wsResumen[cellRef]) {
+          wsResumen[cellRef].s = {
+            font: { bold: true, color: { rgb: 'FFFFFF' } },
+            fill: { fgColor: { rgb: '60A5FA' } }
+          }
+        }
+      })
+    })
+
+    // Formato de monedas
+    ;['B10', 'B11', 'B12', 'B18', 'B19'].forEach(cell => {
+      if (wsResumen[cell]) wsResumen[cell].z = '$#,##0'
+    })
+
+    // Formato de decimales
+    ;['B16', 'B17'].forEach(cell => {
+      if (wsResumen[cell]) wsResumen[cell].z = '0.00'
+    })
+
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+
+    // ============ HOJA 2: VENTAS POR PRODUCTO ============
+    const ventasData = [
+      ['VENTAS POR PRODUCTO - DETALLE'],
+      [''],
+      ['Producto', 'Precio Unitario', 'Unidades Vendidas', 'Cantidad Ventas', 'Total Recaudado', 'Total Pendiente', 'Total Comprometido', 'Estado']
+    ]
+
+    datos.forEach(producto => {
+      ventasData.push([
+        producto.producto_nombre,
+        producto.producto_precio || 0,
+        producto.unidades_vendidas || 0,
+        producto.cantidad_ventas || 0,
+        producto.total_recaudado || 0,
+        producto.total_pendiente || 0,
+        (producto.total_recaudado || 0) + (producto.total_pendiente || 0),
+        producto.estado === 'activo' ? 'Activo' : 'Inactivo'
+      ])
+    })
+
+    // Agregar fila de totales
+    ventasData.push([])
+    ventasData.push([
+      'TOTALES',
+      '',
+      totalUnidades,
+      totalVentas,
+      totalRecaudado,
+      totalPendiente,
+      totalRecaudado + totalPendiente,
+      ''
+    ])
+
+    const wsVentas = XLSX.utils.aoa_to_sheet(ventasData)
+    wsVentas['!cols'] = [
+      { wch: 35 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 20 },
+      { wch: 12 }
+    ]
+
+    // Estilos
+    wsVentas['A1'].s = {
+      font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '3B82F6' } },
+      alignment: { horizontal: 'center' }
+    }
+    wsVentas['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }]
+
+    // Header de columnas
+    for (let col = 0; col < 8; col++) {
+      const cellRef = XLSX.utils.encode_col(col) + '3'
+      if (wsVentas[cellRef]) {
+        wsVentas[cellRef].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '60A5FA' } },
+          alignment: { horizontal: 'center' }
+        }
+      }
+    }
+
+    // Formato de monedas y números en datos
+    for (let i = 4; i < ventasData.length - 1; i++) {
+      // Precio unitario
+      const cellB = `B${i}`
+      if (wsVentas[cellB]) wsVentas[cellB].z = '$#,##0.00'
+      
+      // Total recaudado, pendiente, comprometido
+      ;['E', 'F', 'G'].forEach(col => {
+        const cell = `${col}${i}`
+        if (wsVentas[cell]) wsVentas[cell].z = '$#,##0'
+      })
+    }
+
+    // Fila de totales
+    const totalRow = ventasData.length
+    wsVentas[`A${totalRow}`].s = {
+      font: { bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '3B82F6' } }
+    }
+    ;['C', 'D', 'E', 'F', 'G'].forEach(col => {
+      const cell = `${col}${totalRow}`
+      if (wsVentas[cell]) {
+        wsVentas[cell].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '3B82F6' } }
+        }
+        if (['E', 'F', 'G'].includes(col)) {
+          wsVentas[cell].z = '$#,##0'
+        }
+      }
+    })
+
+    XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas por Producto')
+
+    // ============ HOJA 3: TOP PRODUCTOS ============
+    const productosOrdenados = [...datos].sort((a, b) => 
+      (b.total_recaudado || 0) - (a.total_recaudado || 0)
+    )
+    const top10 = productosOrdenados.slice(0, 10)
+
+    const topData = [
+      ['TOP 10 PRODUCTOS POR RECAUDACIÓN'],
+      [''],
+      ['Ranking', 'Producto', 'Unidades', 'Ventas', 'Recaudado', 'Pendiente', 'Estado']
+    ]
+
+    top10.forEach((producto, index) => {
+      topData.push([
+        index + 1,
+        producto.producto_nombre,
+        producto.unidades_vendidas || 0,
+        producto.cantidad_ventas || 0,
+        producto.total_recaudado || 0,
+        producto.total_pendiente || 0,
+        producto.estado === 'activo' ? 'Activo' : 'Inactivo'
+      ])
+    })
+
+    const wsTop = XLSX.utils.aoa_to_sheet(topData)
+    wsTop['!cols'] = [
+      { wch: 10 },
+      { wch: 35 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 12 }
+    ]
+
+    // Estilos
+    wsTop['A1'].s = {
+      font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '10B981' } },
+      alignment: { horizontal: 'center' }
+    }
+    wsTop['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }]
+
+    // Header
+    for (let col = 0; col < 7; col++) {
+      const cellRef = XLSX.utils.encode_col(col) + '3'
+      if (wsTop[cellRef]) {
+        wsTop[cellRef].s = {
+          font: { bold: true, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: '34D399' } },
+          alignment: { horizontal: 'center' }
+        }
+      }
+    }
+
+    // Formato de monedas
+    for (let i = 4; i < topData.length; i++) {
+      ;['E', 'F'].forEach(col => {
+        const cell = `${col}${i}`
+        if (wsTop[cell]) wsTop[cell].z = '$#,##0'
+      })
+    }
+
+    XLSX.utils.book_append_sheet(wb, wsTop, 'Top 10 Productos')
+
+    // Generar y descargar
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([wbout], { type: 'application/octet-stream' })
+    saveAs(blob, `Reporte_Ventas_Productos_${new Date().getTime()}.xlsx`)
+
+    return { success: true, mensaje: 'Excel de ventas generado con 3 hojas de análisis completo' }
+  } catch (error) {
+    console.error('Error al generar Excel de ventas:', error)
+    return { success: false, mensaje: 'Error al generar el Excel' }
+  }
+}

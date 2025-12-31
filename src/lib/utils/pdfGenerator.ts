@@ -1220,3 +1220,150 @@ export const generarPDFVotos = (datos: any[]) => {
   
   return { success: true, mensaje: 'PDF avanzado de votos generado exitosamente' }
 }
+
+// ============================================================
+// EXPORTACIÓN: Reporte de Ventas por Producto
+// ============================================================
+export const generarPDFVentas = (datos: any[]) => {
+  if (!datos || datos.length === 0) {
+    return { success: false, mensaje: 'No hay datos de ventas para exportar' }
+  }
+
+  try {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    // Configuración
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const marginLeft = 14
+    const marginRight = 14
+    const contentWidth = pageWidth - marginLeft - marginRight
+
+    // Header
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.setTextColor(31, 41, 55)
+    doc.text('Reporte de Ventas por Producto', marginLeft, 20)
+
+    // Subtítulo
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(11)
+    doc.setTextColor(100)
+    const fecha = new Date().toLocaleDateString('es-CO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    doc.text(`Generado: ${fecha}`, marginLeft, 28)
+    doc.text('IPUC Contabilidad', pageWidth - marginRight, 28, { align: 'right' })
+
+    // Línea separadora
+    doc.setDrawColor(200)
+    doc.line(marginLeft, 32, pageWidth - marginRight, 32)
+
+    // Calcular totales
+    const totalUnidades = datos.reduce((sum, p) => sum + (p.unidades_vendidas || 0), 0)
+    const totalRecaudado = datos.reduce((sum, p) => sum + (p.total_recaudado || 0), 0)
+    const totalPendiente = datos.reduce((sum, p) => sum + (p.total_pendiente || 0), 0)
+    const totalVentas = datos.reduce((sum, p) => sum + (p.cantidad_ventas || 0), 0)
+
+    // Resumen ejecutivo en cards
+    let yPos = 40
+    const cardWidth = (contentWidth - 10) / 4
+    const cardHeight = 20
+
+    const cards = [
+      { label: 'Productos', value: datos.length.toString(), color: [59, 130, 246] },
+      { label: 'Unidades Vendidas', value: totalUnidades.toString(), color: [16, 185, 129] },
+      { label: 'Total Recaudado', value: `$${totalRecaudado.toLocaleString('es-CO')}`, color: [34, 197, 94] },
+      { label: 'Pendiente', value: `$${totalPendiente.toLocaleString('es-CO')}`, color: [251, 146, 60] }
+    ]
+
+    cards.forEach((card, index) => {
+      const xPos = marginLeft + (cardWidth + 2.5) * index
+      
+      // Fondo del card
+      doc.setFillColor(card.color[0], card.color[1], card.color[2])
+      doc.roundedRect(xPos, yPos, cardWidth, cardHeight, 2, 2, 'F')
+      
+      // Label
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(255, 255, 255)
+      doc.text(card.label, xPos + cardWidth / 2, yPos + 8, { align: 'center' })
+      
+      // Value
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.text(card.value, xPos + cardWidth / 2, yPos + 15, { align: 'center' })
+    })
+
+    yPos += cardHeight + 10
+
+    // Tabla de ventas por producto
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Producto', 'Precio Unit.', 'Unidades', 'Ventas', 'Recaudado', 'Pendiente', 'Estado']],
+      body: datos.map(producto => [
+        producto.producto_nombre,
+        `$${producto.producto_precio?.toLocaleString('es-CO') || 0}`,
+        producto.unidades_vendidas || 0,
+        producto.cantidad_ventas || 0,
+        `$${producto.total_recaudado?.toLocaleString('es-CO') || 0}`,
+        `$${producto.total_pendiente?.toLocaleString('es-CO') || 0}`,
+        producto.estado === 'activo' ? 'Activo' : 'Inactivo'
+      ]),
+      theme: 'striped',
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: 'bold',
+        fontSize: 10
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: 50
+      },
+      alternateRowStyles: {
+        fillColor: [245, 247, 250]
+      },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { halign: 'right' },
+        2: { halign: 'center' },
+        3: { halign: 'center' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        6: { halign: 'center' }
+      },
+      margin: { left: marginLeft, right: marginRight },
+      didDrawPage: (data) => {
+        // Footer en cada página
+        const pageCount = doc.getNumberOfPages()
+        const pageNumber = doc.getCurrentPageInfo().pageNumber
+        
+        doc.setFontSize(8)
+        doc.setTextColor(150)
+        doc.text(
+          `Página ${pageNumber} de ${pageCount}`,
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        )
+      }
+    })
+
+    doc.save(`Reporte_Ventas_Productos_${new Date().getTime()}.pdf`)
+    
+    return { success: true, mensaje: 'PDF de ventas generado exitosamente' }
+  } catch (error) {
+    console.error('Error al generar PDF de ventas:', error)
+    return { success: false, mensaje: 'Error al generar el PDF' }
+  }
+}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ComiteCard } from '@/components/comites/ComiteCard'
 import Link from 'next/link'
 import { Users, Plus } from 'lucide-react'
+import LogoutButton from '@/components/LogoutButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -77,15 +78,18 @@ export default async function ComitesPage() {
           </p>
         </div>
 
-        {isAdmin && (
-          <Link
-            href="/dashboard/comites/nuevo"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-500 via-primary-600 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
-          >
-            <Plus className="w-5 h-5" />
-            Nuevo Comité
-          </Link>
-        )}
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Link
+              href="/dashboard/comites/nuevo"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-500 via-primary-600 to-cyan-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all duration-200"
+            >
+              <Plus className="w-5 h-5" />
+              Nuevo Comité
+            </Link>
+          )}
+          <LogoutButton />
+        </div>
       </div>
 
       {/* Stats */}

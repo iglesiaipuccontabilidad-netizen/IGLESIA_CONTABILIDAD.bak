@@ -18,17 +18,20 @@ const formatCurrency = (amount: number) => {
   }).format(amount)
 }
 
-export default function DashboardCards({
+const DashboardCards = React.memo(function DashboardCards({
   totalComprometido,
   totalRecaudado,
   totalPendiente,
   propositosActivos
 }: DashboardCardsProps) {
-  const porcentajeCompletado = totalComprometido > 0
-    ? Math.min(Math.round((totalRecaudado / totalComprometido) * 100), 100)
-    : 0
+  const porcentajeCompletado = React.useMemo(() => 
+    totalComprometido > 0
+      ? Math.min(Math.round((totalRecaudado / totalComprometido) * 100), 100)
+      : 0,
+    [totalComprometido, totalRecaudado]
+  )
 
-  const cards = [
+  const cards = React.useMemo(() => [
     {
       title: 'Total Comprometido',
       value: formatCurrency(totalComprometido),
@@ -85,7 +88,7 @@ export default function DashboardCards({
       iconBg: 'bg-gradient-to-br from-violet-500 to-purple-600',
       ringColor: 'ring-violet-500/50',
     },
-  ]
+  ], [totalComprometido, totalRecaudado, totalPendiente, propositosActivos, porcentajeCompletado])
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -144,4 +147,8 @@ export default function DashboardCards({
       ))}
     </div>
   )
-}
+})
+
+DashboardCards.displayName = 'DashboardCards'
+
+export default DashboardCards

@@ -4,7 +4,20 @@ import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, ScrollText, Users2, UserCog, ChevronLeft, Target, FileText, Users } from "lucide-react"
+import { 
+  LayoutDashboard, 
+  ScrollText, 
+  Users2, 
+  UserCog, 
+  ChevronLeft, 
+  Target, 
+  FileText, 
+  Users,
+  DollarSign,
+  TrendingUp,
+  Wallet,
+  Receipt
+} from "lucide-react"
 import styles from "@/components/Sidebar.module.css"
 import { useAuth } from "@/lib/context/AuthContext"
 
@@ -44,96 +57,160 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   }, [isMobileMenuVisible])
 
   const menuSections: MenuSection[] = React.useMemo(() => {
-    
-    const sections: MenuSection[] = [
-      {
-        title: "Principal",
-        items: [
-          {
-            href: "/dashboard",
-            label: "Dashboard",
-            icon: LayoutDashboard,
-            description: "Resumen general y métricas clave"
-          }
-        ]
-      },
-      {
-        title: "Gestión",
-        items: [
-          {
-            href: "/dashboard/propositos",
-            label: "Propósitos",
-            icon: Target,
-            description: "Campañas y objetivos financieros",
-            subItems: [
-              { href: "/dashboard/propositos/nuevo", label: "Nuevo propósito" }
-            ]
-          },
-          {
-            href: "/dashboard/votos",
-            label: "Votos",
-            icon: ScrollText,
-            description: "Control de compromisos y pagos",
-            subItems: [
-              { href: "/dashboard/votos/nuevo", label: "Registrar voto" }
-            ]
-          },
-          {
-            href: "/dashboard/miembros",
-            label: "Miembros",
-            icon: Users2,
-            description: "Gestión de la comunidad",
-            subItems: [
-              { href: "/dashboard/miembros/nuevo", label: "Nuevo miembro" }
-            ]
-          },
-          {
-            href: "/dashboard/reportes",
-            label: "Reportes",
-            icon: FileText,
-            description: "Informes y exportaciones"
-          }
-        ]
-      }
-    ]
+    const sections: MenuSection[] = []
 
-    // Solo mostrar la sección de Administración si el usuario es admin o tesorero global
-    if (member?.rol === 'admin' || member?.rol === 'tesorero') {
+    // Solo mostrar contabilidad general si es admin o tesorero global
+    const isAdminOrTesorero = member?.rol === 'admin' || member?.rol === 'tesorero'
+    
+    if (isAdminOrTesorero) {
+      // Secciones de contabilidad general (solo para admin/tesorero)
+      sections.push(
+        {
+          title: "Principal",
+          items: [
+            {
+              href: "/dashboard",
+              label: "Dashboard",
+              icon: LayoutDashboard,
+              description: "Resumen general y métricas clave"
+            }
+          ]
+        },
+        {
+          title: "Gestión",
+          items: [
+            {
+              href: "/dashboard/propositos",
+              label: "Propósitos",
+              icon: Target,
+              description: "Campañas y objetivos financieros",
+              subItems: [
+                { href: "/dashboard/propositos/nuevo", label: "Nuevo propósito" }
+              ]
+            },
+            {
+              href: "/dashboard/votos",
+              label: "Votos",
+              icon: ScrollText,
+              description: "Control de compromisos y pagos",
+              subItems: [
+                { href: "/dashboard/votos/nuevo", label: "Registrar voto" }
+              ]
+            },
+            {
+              href: "/dashboard/miembros",
+              label: "Miembros",
+              icon: Users2,
+              description: "Gestión de la comunidad",
+              subItems: [
+                { href: "/dashboard/miembros/nuevo", label: "Nuevo miembro" }
+              ]
+            },
+            {
+              href: "/dashboard/reportes",
+              label: "Reportes",
+              icon: FileText,
+              description: "Informes y exportaciones"
+            }
+          ]
+        },
+        {
+          title: "Administración",
+          items: [
+            {
+              href: "/dashboard/comites",
+              label: "Comités",
+              icon: Users,
+              description: "Comités con contabilidad independiente",
+              subItems: [
+                { href: "/dashboard/comites/nuevo", label: "Nuevo comité" }
+              ]
+            },
+            {
+              href: "/dashboard/admin/usuarios",
+              label: "Usuarios",
+              icon: UserCog,
+              description: "Roles y permisos del equipo"
+            }
+          ]
+        }
+      )
+    } else if (comitesUsuario && comitesUsuario.length > 0) {
+      // Usuarios de comité: mostrar cada comité con su propio menú
+      comitesUsuario.forEach((comite, index) => {
+        const comiteBase = `/dashboard/comites/${comite.comite_id}`
+        
+        // Obtener el label del rol en español
+        const rolLabels: Record<string, string> = {
+          lider: 'Líder',
+          tesorero: 'Tesorero',
+          secretario: 'Secretario',
+          vocal: 'Vocal'
+        }
+        const rolLabel = rolLabels[comite.rol_en_comite || 'vocal'] || comite.rol_en_comite
+        
+        sections.push({
+          title: `${comite.comite_nombre} · ${rolLabel}`,
+          items: [
+            {
+              href: `${comiteBase}/dashboard`,
+              label: "Dashboard",
+              icon: LayoutDashboard,
+              description: "Resumen y métricas del comité"
+            },
+            {
+              href: `${comiteBase}/votos`,
+              label: "Votos",
+              icon: ScrollText,
+              description: "Compromisos del comité",
+              subItems: [
+                { href: `${comiteBase}/votos/nuevo`, label: "Nuevo voto" }
+              ]
+            },
+            {
+              href: `${comiteBase}/proyectos`,
+              label: "Proyectos",
+              icon: Target,
+              description: "Proyectos y campañas"
+            },
+            {
+              href: `${comiteBase}/miembros`,
+              label: "Miembros",
+              icon: Users2,
+              description: "Miembros del comité"
+            },
+            {
+              href: `${comiteBase}/ofrendas`,
+              label: "Ofrendas",
+              icon: DollarSign,
+              description: "Registro de ofrendas"
+            },
+            {
+              href: `${comiteBase}/gastos`,
+              label: "Gastos",
+              icon: Receipt,
+              description: "Gastos y egresos"
+            }
+          ]
+        })
+      })
+    } else {
+      // Usuario sin comités asignados: mostrar mensaje informativo
       sections.push({
-        title: "Administración",
+        title: "Mi Perfil",
         items: [
           {
-            href: "/dashboard/comites",
-            label: "Comités",
-            icon: Users,
-            description: "Comités con contabilidad independiente",
-            subItems: [
-              { href: "/dashboard/comites/nuevo", label: "Nuevo comité" }
-            ]
-          },
-          {
-            href: "/dashboard/admin/usuarios",
-            label: "Usuarios",
+            href: "/dashboard/perfil",
+            label: "Perfil",
             icon: UserCog,
-            description: "Roles y permisos del equipo"
+            description: "Información de mi cuenta"
           }
         ]
-      })
-    } else if (comitesUsuario && comitesUsuario.length > 0) {
-      // Si el usuario no es admin pero tiene comités asignados, mostrar sus comités
-      sections.push({
-        title: "Mis Comités",
-        items: comitesUsuario.map(comite => ({
-          href: `/dashboard/comites/${comite.comite_id}`,
-          label: comite.comite_nombre,
-          icon: Users,
-          description: `Rol: ${comite.rol_en_comite}`
-        }))
       })
     }
 
     return sections
-  }, [member?.rol, member?.email, comitesUsuario])
+  }, [member?.rol, comitesUsuario])
 
   const initials = React.useMemo(() => {
     if (!member?.email) return "IP"
@@ -277,26 +354,11 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           <div className={styles.profileInfo}>
             <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
-              {(() => {
-                const displayValue = isLoading 
-                  ? "Cargando..." 
-                  : member?.rol 
-                    ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) 
-                    : "Sin rol"
-                
-                console.log('🎯 RENDERIZANDO ROL:', {
-                  isLoading,
-                  memberExists: !!member,
-                  memberIsNull: member === null,
-                  memberIsUndefined: member === undefined,
-                  rol: member?.rol,
-                  rolType: typeof member?.rol,
-                  rolTruthy: !!member?.rol,
-                  displayValue
-                })
-                
-                return displayValue
-              })()}
+              {isLoading 
+                ? "Cargando..." 
+                : member?.rol 
+                  ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) 
+                  : "Sin rol"}
             </span>
           </div>
         )}

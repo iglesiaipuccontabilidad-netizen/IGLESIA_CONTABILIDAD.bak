@@ -76,6 +76,13 @@ export default async function NuevoGastoPage({ params }: PageProps) {
     return notFound()
   }
 
+  // Obtener balance del comité
+  const { data: balanceData } = await supabase.rpc('obtener_balance_comite', {
+    p_comite_id: id,
+  })
+
+  const balance = (Array.isArray(balanceData) ? balanceData[0] : balanceData) as { balance: number } || { balance: 0 }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       {/* Header */}
@@ -108,7 +115,7 @@ export default async function NuevoGastoPage({ params }: PageProps) {
           </p>
         </div>
 
-        <ComiteGastoForm comiteId={id} />
+        <ComiteGastoForm comiteId={id} balanceDisponible={balance.balance} />
       </div>
     </div>
   )

@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, TrendingUp, Plus, Calendar, DollarSign } from 'lucide-react'
+import { ArrowLeft, TrendingUp, Plus, DollarSign, FileText } from 'lucide-react'
+import { OfrendasList } from '@/components/comites/OfrendasList'
+import { OfrendasStats } from '@/components/comites/OfrendasStats'
+import { ExportButton } from '@/components/comites/ExportButton'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -76,7 +79,12 @@ export default async function OfrendasComitePage({ params }: PageProps) {
   // Obtener ofrendas del comité
   const { data: ofrendas, error: ofrendasError } = await supabase
     .from('comite_ofrendas')
-    .select('*')
+    .select(`
+      *,
+      comite_proyectos (
+        nombre
+      )
+    `)
     .eq('comite_id', id)
     .order('fecha', { ascending: false })
 
@@ -84,11 +92,54 @@ export default async function OfrendasComitePage({ params }: PageProps) {
     console.error('Error al cargar ofrendas:', ofrendasError)
   }
 
+  // Mapear ofrendas con nombre del proyecto
+  const ofrendasConProyecto = ofrendas?.map(ofrenda => ({
+    ...ofrenda,
+    proyecto_nombre: ofrenda.comite_proyectos?.nombre
+  })) || []
+
   // Calcular estadísticas
-  const totalOfrendas = ofrendas?.length || 0
-  const montoTotal = ofrendas?.reduce((sum, o) => sum + o.monto, 0) || 0
+  const totalOfrendas = ofrendasConProyecto.length
+  const montoTotal = ofrendasConProyecto.reduce((sum, o) => sum + o.monto, 0)
 
   const canManage = isAdmin || rolEnComite === 'lider' || rolEnComite === 'tesorero'
+
+  // Función para generar reporte
+  const generarReporteOfrendas = (ofrendas: any[], nombreComite: string) => {
+    const total = ofrendas.length
+    const montoTotal = ofrendas.reduce((sum, o) => sum + o.monto, 0)
+    const promedio = total > 0 ? montoTotal / total : 0
+
+    const porTipo = ofrendas.reduce((acc, o) => {
+      acc[o.tipo] = (acc[o.tipo] || 0) + o.monto
+      return acc
+    }, {} as Record<string, number>)
+
+    let reporte = `REPORTE DE OFRENDAS - ${nombreComite.toUpperCase()}\n`
+    reporte += `Fecha de generación: ${new Date().toLocaleDateString('es-CO')}\n\n`
+
+    reporte += `ESTADÍSTICAS GENERALES:\n`
+    reporte += `- Total de ofrendas: ${total}\n`
+    reporte += `- Monto total: $${montoTotal.toLocaleString('es-CO')}\n`
+    reporte += `- Promedio por ofrenda: $${promedio.toLocaleString('es-CO')}\n\n`
+
+    reporte += `DISTRIBUCIÓN POR TIPO:\n`
+    Object.entries(porTipo).forEach(([tipo, monto]) => {
+      const montoNum = typeof monto === 'number' ? monto : 0
+      const porcentaje = ((montoNum / montoTotal) * 100).toFixed(1)
+      reporte += `- ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}: $${montoNum.toLocaleString('es-CO')} (${porcentaje}%)\n`
+    })
+
+    reporte += `\nDETALLE DE OFRENDAS:\n`
+    ofrendas.forEach((ofrenda, index) => {
+      reporte += `${index + 1}. ${new Date(ofrenda.fecha).toLocaleDateString('es-CO')} - ${ofrenda.tipo} - $${ofrenda.monto.toLocaleString('es-CO')}`
+      if (ofrenda.concepto) reporte += ` - ${ofrenda.concepto}`
+      if (ofrenda.proyecto_nombre) reporte += ` (Proyecto: ${ofrenda.proyecto_nombre})`
+      reporte += `\n`
+    })
+
+    return reporte
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -115,141 +166,42 @@ export default async function OfrendasComitePage({ params }: PageProps) {
             </p>
           </div>
 
-          {canManage && (
-            <Link
-              href={`/dashboard/comites/${id}/ofrendas/nueva`}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+          <div className="flex items-center gap-3">
+            <ExportButton
+              comiteId={id}
+              comiteNombre={comite.nombre}
+              tipo="ofrendas"
+              datos={ofrendasConProyecto}
+            />
+            <button
+              onClick={() => {
+                const reporte = generarReporteOfrendas(ofrendasConProyecto, comite.nombre)
+                navigator.clipboard.writeText(reporte)
+                alert('Reporte copiado al portapapeles')
+              }}
+              className="inline-flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
             >
-              <Plus className="w-5 h-5" />
-              Nueva Ofrenda
-            </Link>
-          )}
+              <FileText className="w-5 h-5" />
+              Generar Reporte
+            </button>
+            {canManage && (
+              <Link
+                href={`/dashboard/comites/${id}/ofrendas/nueva`}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Nueva Ofrenda
+              </Link>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Total Ofrendas</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1">{totalOfrendas}</p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-emerald-600" />
-            </div>
-          </div>
-        </div>
+      <OfrendasStats ofrendas={ofrendasConProyecto} />
 
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-6 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-emerald-100 text-sm">Monto Total</p>
-              <p className="text-3xl font-bold mt-1">
-                ${montoTotal.toLocaleString('es-CO')}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-emerald-400/30 flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-white" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Lista de Ofrendas */}
-      {!ofrendas || ofrendas.length === 0 ? (
-        <div className="bg-slate-50 rounded-xl border border-slate-200 p-12 text-center">
-          <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
-            No hay ofrendas registradas
-          </h3>
-          <p className="text-slate-600 mb-6">
-            Registra la primera ofrenda para comenzar a rastrear los ingresos
-          </p>
-          {canManage && (
-            <Link
-              href={`/dashboard/comites/${id}/ofrendas/nueva`}
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              Registrar Primera Ofrenda
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Tipo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Monto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Método Pago
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Comprobante
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                    Concepto
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {ofrendas.map((ofrenda) => (
-                  <tr key={ofrenda.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-slate-400" />
-                        <span className="text-sm text-slate-900">
-                          {new Date(ofrenda.fecha).toLocaleDateString('es-CO', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                          })}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 capitalize">
-                        {ofrenda.tipo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-emerald-500" />
-                        <span className="text-sm font-bold text-emerald-600">
-                          ${ofrenda.monto.toLocaleString('es-CO')}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-slate-600 capitalize">
-                        {ofrenda.nota || '-'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      -
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      <div className="max-w-xs truncate">
-                        {ofrenda.concepto || '-'}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Lista de Ofrendas con filtros */}
+      <OfrendasList ofrendas={ofrendasConProyecto} comiteId={id} />
     </div>
   )
 }

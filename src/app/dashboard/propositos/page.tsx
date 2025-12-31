@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Plus, TrendingUp, Target, Calendar } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
+import { requireAdminOrTesorero } from '@/lib/auth/permissions'
 
 type Proposito = Database['public']['Tables']['propositos']['Row']
 
@@ -127,6 +128,9 @@ function LoadingSkeleton() {
 }
 
 export default async function PropositosPage() {
+  // Verificar que el usuario sea admin o tesorero
+  await requireAdminOrTesorero()
+  
   const propositos = await getPropositos()
 
   return (

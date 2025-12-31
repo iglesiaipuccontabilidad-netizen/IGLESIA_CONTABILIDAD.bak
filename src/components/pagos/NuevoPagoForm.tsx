@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import styles from '@/styles/pagos.module.css'
 import type { PagoFormData, MetodoPago } from '@/lib/pagos/types'
 import { registrarPago } from '@/lib/pagos/service'
+import { FormattedNumberInput } from '@/components/ui/FormattedNumberInput'
 
 interface Props {
   votoId: string
@@ -73,23 +74,24 @@ export default function NuevoPagoForm({ votoId, montoPendiente, montoTotal }: Pr
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.formGroup}>
-        <label htmlFor="monto" className={styles.label}>
-          Monto del Pago *
+        <label htmlFor="monto" className="block text-sm font-medium text-slate-700 mb-2">
+          Monto del Pago <span className="text-rose-500">*</span>
         </label>
         <input
-          type="number"
           id="monto"
+          type="number"
           name="monto"
-          value={formData.monto}
+          value={formData.monto || ''}
           onChange={handleChange}
-          placeholder="Ingresa el monto"
-          className={styles.input}
-          required
-          min="1"
+          disabled={loading}
+          min={1}
           max={montoPendiente}
           step="0.01"
-          disabled={loading}
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="0.00"
+          required
         />
+        <p className="text-xs text-slate-500 mt-1">Máximo: ${montoPendiente.toLocaleString('es-CO')}</p>
       </div>
 
       <div className={styles.formGroup}>

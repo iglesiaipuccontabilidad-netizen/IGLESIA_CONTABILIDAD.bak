@@ -3,11 +3,15 @@ import { Database } from '@/lib/database.types'
 import { MiembrosGrid } from '@/components/miembros/MiembrosGrid'
 import Link from 'next/link'
 import { VotoBase } from '@/types/miembros'
+import { requireAdminOrTesorero } from '@/lib/auth/permissions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function MiembrosPage() {
+  // Verificar que el usuario sea admin o tesorero
+  await requireAdminOrTesorero()
+  
   const supabase = await createClient();
 
   type MiembroRow = Database['public']['Tables']['miembros']['Row'];

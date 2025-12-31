@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Database } from '@/lib/database.types'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
+import { FormattedNumberInput } from '@/components/ui/FormattedNumberInput'
 
 interface PagoFormData {
   monto: string

@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase-client'
 import toast from 'react-hot-toast'
 import { Save, X } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
+import { FormattedNumberInput } from '@/components/ui/FormattedNumberInput'
 
 type Proposito = Database['public']['Tables']['propositos']['Row']
 type PropositoInsert = Database['public']['Tables']['propositos']['Insert']

@@ -1,6 +1,7 @@
 'use client'
 
 import { AuthProvider } from "@/lib/context/AuthContext";
+import { QueryProvider } from "@/components/providers/QueryProvider";
 import { Suspense } from "react";
 
 const SimpleLoader = () => (
@@ -18,8 +19,10 @@ export default function ClientProvider({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<SimpleLoader />}>
-      <AuthProvider>{children}</AuthProvider>
-    </Suspense>
+    <QueryProvider>
+      <Suspense fallback={<SimpleLoader />}>
+        <AuthProvider>{children}</AuthProvider>
+      </Suspense>
+    </QueryProvider>
   );
 }

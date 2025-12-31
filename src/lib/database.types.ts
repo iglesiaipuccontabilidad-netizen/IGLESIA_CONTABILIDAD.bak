@@ -349,6 +349,169 @@ export type Database = {
           },
         ]
       }
+      proyecto_productos: {
+        Row: {
+          id: string
+          proyecto_id: string
+          nombre: string
+          descripcion: string | null
+          precio_unitario: number
+          estado: string
+          created_at: string
+          updated_at: string
+          creado_por: string | null
+        }
+        Insert: {
+          id?: string
+          proyecto_id: string
+          nombre: string
+          descripcion?: string | null
+          precio_unitario: number
+          estado?: string
+          created_at?: string
+          updated_at?: string
+          creado_por?: string | null
+        }
+        Update: {
+          id?: string
+          proyecto_id?: string
+          nombre?: string
+          descripcion?: string | null
+          precio_unitario?: number
+          estado?: string
+          created_at?: string
+          updated_at?: string
+          creado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_productos_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_ventas: {
+        Row: {
+          id: string
+          proyecto_id: string
+          producto_id: string
+          comprador_nombre: string
+          comprador_telefono: string | null
+          comprador_email: string | null
+          comprador_notas: string | null
+          cantidad: number
+          precio_unitario: number
+          valor_total: number
+          monto_pagado: number
+          saldo_pendiente: number
+          estado: string
+          fecha_venta: string
+          created_at: string
+          updated_at: string
+          registrado_por: string | null
+        }
+        Insert: {
+          id?: string
+          proyecto_id: string
+          producto_id: string
+          comprador_nombre: string
+          comprador_telefono?: string | null
+          comprador_email?: string | null
+          comprador_notas?: string | null
+          cantidad: number
+          precio_unitario: number
+          valor_total: number
+          monto_pagado?: number
+          saldo_pendiente?: number
+          estado?: string
+          fecha_venta?: string
+          created_at?: string
+          updated_at?: string
+          registrado_por?: string | null
+        }
+        Update: {
+          id?: string
+          proyecto_id?: string
+          producto_id?: string
+          comprador_nombre?: string
+          comprador_telefono?: string | null
+          comprador_email?: string | null
+          comprador_notas?: string | null
+          cantidad?: number
+          precio_unitario?: number
+          valor_total?: number
+          monto_pagado?: number
+          saldo_pendiente?: number
+          estado?: string
+          fecha_venta?: string
+          created_at?: string
+          updated_at?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_ventas_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_ventas_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_pagos_ventas: {
+        Row: {
+          id: string
+          venta_id: string
+          monto: number
+          fecha_pago: string
+          metodo_pago: string | null
+          referencia: string | null
+          notas: string | null
+          created_at: string
+          registrado_por: string | null
+        }
+        Insert: {
+          id?: string
+          venta_id: string
+          monto: number
+          fecha_pago?: string
+          metodo_pago?: string | null
+          referencia?: string | null
+          notas?: string | null
+          created_at?: string
+          registrado_por?: string | null
+        }
+        Update: {
+          id?: string
+          venta_id?: string
+          monto?: number
+          fecha_pago?: string
+          metodo_pago?: string | null
+          referencia?: string | null
+          notas?: string | null
+          created_at?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_pagos_ventas_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_ventas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comite_votos: {
         Row: {
           comite_id: string
@@ -921,6 +1084,45 @@ export type Database = {
           recovery_token?: string | null
           role?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vista_resumen_ventas_proyecto: {
+        Row: {
+          proyecto_id: string | null
+          proyecto_nombre: string | null
+          total_ventas: number | null
+          productos_distintos: number | null
+          unidades_vendidas: number | null
+          valor_total_ventas: number | null
+          total_recaudado: number | null
+          total_pendiente: number | null
+          ventas_pagadas: number | null
+          ventas_pendientes: number | null
+        }
+        Insert: {
+          proyecto_id?: string | null
+          proyecto_nombre?: string | null
+          total_ventas?: number | null
+          productos_distintos?: number | null
+          unidades_vendidas?: number | null
+          valor_total_ventas?: number | null
+          total_recaudado?: number | null
+          total_pendiente?: number | null
+          ventas_pagadas?: number | null
+          ventas_pendientes?: number | null
+        }
+        Update: {
+          proyecto_id?: string | null
+          proyecto_nombre?: string | null
+          total_ventas?: number | null
+          productos_distintos?: number | null
+          unidades_vendidas?: number | null
+          valor_total_ventas?: number | null
+          total_recaudado?: number | null
+          total_pendiente?: number | null
+          ventas_pagadas?: number | null
+          ventas_pendientes?: number | null
         }
         Relationships: []
       }

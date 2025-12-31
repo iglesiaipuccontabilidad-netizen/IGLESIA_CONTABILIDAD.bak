@@ -189,29 +189,26 @@ export function RegistrarPagoModal({
             <label htmlFor="monto" className="block text-sm font-medium text-slate-700 mb-2">
               Monto a Pagar <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <input
-                {...register("monto")}
-                type="number"
-                id="monto"
-                step="0.01"
-                max={montoRestante}
-                placeholder="0"
-                className={`
-                  w-full pl-8 pr-4 py-2.5 rounded-lg border bg-white
-                  focus:outline-none focus:ring-2 focus:ring-emerald-500
-                  ${errors.monto ? "border-rose-300" : "border-slate-200"}
-                `}
-                disabled={isSubmitting}
-              />
-            </div>
+            <input
+              id="monto"
+              type="number"
+              {...register("monto", {
+                required: "El monto es requerido",
+                valueAsNumber: true,
+                min: { value: 1, message: "El monto debe ser mayor a 0" },
+                max: { value: montoRestante, message: `El monto no puede exceder $${montoRestante.toLocaleString('es-CO')}` },
+              })}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              placeholder="0"
+              disabled={isSubmitting}
+              max={montoRestante}
+            />
             {errors.monto && (
-              <p className="text-rose-500 text-xs mt-1">{errors.monto.message}</p>
+              <p className="text-xs text-rose-600 mt-1">{errors.monto.message}</p>
             )}
-            <p className="text-xs text-slate-500 mt-1">
-              Máximo: ${montoRestante.toLocaleString('es-CO')}
-            </p>
+            {!errors.monto && (
+              <p className="text-xs text-slate-500 mt-1">Máximo: ${montoRestante.toLocaleString('es-CO')}</p>
+            )}
           </div>
 
           {/* Fecha de Pago */}

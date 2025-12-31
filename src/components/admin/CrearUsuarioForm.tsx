@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import styles from '@/styles/components/CrearUsuarioForm.module.css'
 
 interface CrearUsuarioFormProps {
@@ -10,6 +10,7 @@ interface CrearUsuarioFormProps {
 const CrearUsuarioForm: React.FC<CrearUsuarioFormProps> = ({ onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -80,8 +81,10 @@ const CrearUsuarioForm: React.FC<CrearUsuarioFormProps> = ({ onSuccess }) => {
 
       console.log('Usuario creado exitosamente:', data)
       
-      // Resetear el formulario antes de llamar onSuccess
-      e.currentTarget.reset()
+      // Resetear el formulario usando ref
+      if (formRef.current) {
+        formRef.current.reset()
+      }
       
       // Mostrar mensaje especial si fue reactivado
       if (data.message) {
@@ -102,7 +105,7 @@ const CrearUsuarioForm: React.FC<CrearUsuarioFormProps> = ({ onSuccess }) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.formHeader}>
         <h2>Crear Nuevo Usuario</h2>
       </div>

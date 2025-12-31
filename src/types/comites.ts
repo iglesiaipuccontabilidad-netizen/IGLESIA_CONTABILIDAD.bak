@@ -42,6 +42,18 @@ export type ComiteGastoRow = Database['public']['Tables']['comite_gastos']['Row'
 export type ComiteGastoInsert = Database['public']['Tables']['comite_gastos']['Insert'];
 export type ComiteGastoUpdate = Database['public']['Tables']['comite_gastos']['Update'];
 
+export type ProyectoProductoRow = Database['public']['Tables']['proyecto_productos']['Row'];
+export type ProyectoProductoInsert = Database['public']['Tables']['proyecto_productos']['Insert'];
+export type ProyectoProductoUpdate = Database['public']['Tables']['proyecto_productos']['Update'];
+
+export type ProyectoVentaRow = Database['public']['Tables']['proyecto_ventas']['Row'];
+export type ProyectoVentaInsert = Database['public']['Tables']['proyecto_ventas']['Insert'];
+export type ProyectoVentaUpdate = Database['public']['Tables']['proyecto_ventas']['Update'];
+
+export type ProyectoPagoVentaRow = Database['public']['Tables']['proyecto_pagos_ventas']['Row'];
+export type ProyectoPagoVentaInsert = Database['public']['Tables']['proyecto_pagos_ventas']['Insert'];
+export type ProyectoPagoVentaUpdate = Database['public']['Tables']['proyecto_pagos_ventas']['Update'];
+
 // =========================================
 // Enums y Constantes
 // =========================================
@@ -57,6 +69,7 @@ export const COMITE_ROL = {
   LIDER: 'lider',
   TESORERO: 'tesorero',
   SECRETARIO: 'secretario',
+  VOCAL: 'vocal',
 } as const;
 
 export type ComiteRol = typeof COMITE_ROL[keyof typeof COMITE_ROL];
@@ -95,6 +108,30 @@ export const TIPO_OFRENDA = {
 } as const;
 
 export type TipoOfrenda = typeof TIPO_OFRENDA[keyof typeof TIPO_OFRENDA];
+
+export const PRODUCTO_ESTADOS = {
+  ACTIVO: 'activo',
+  INACTIVO: 'inactivo',
+} as const;
+
+export type ProductoEstado = typeof PRODUCTO_ESTADOS[keyof typeof PRODUCTO_ESTADOS];
+
+export const VENTA_ESTADOS = {
+  PENDIENTE: 'pendiente',
+  PAGADO: 'pagado',
+  CANCELADO: 'cancelado',
+} as const;
+
+export type VentaEstado = typeof VENTA_ESTADOS[keyof typeof VENTA_ESTADOS];
+
+export const METODO_PAGO_VENTA = {
+  EFECTIVO: 'efectivo',
+  TRANSFERENCIA: 'transferencia',
+  TARJETA: 'tarjeta',
+  OTRO: 'otro',
+} as const;
+
+export type MetodoPagoVenta = typeof METODO_PAGO_VENTA[keyof typeof METODO_PAGO_VENTA];
 
 // =========================================
 // Interfaces extendidas con datos relacionados
@@ -361,6 +398,78 @@ export interface ProyectosFiltros {
   comite_id: string;
   estado?: ProyectoEstado;
   search?: string;
+}
+
+// =========================================
+// DTOs para Productos y Ventas
+// =========================================
+
+/**
+ * DTO para crear un producto del proyecto
+ */
+export interface CreateProyectoProductoDTO {
+  proyecto_id: string;
+  nombre: string;
+  descripcion?: string;
+  precio_unitario: number;
+}
+
+/**
+ * DTO para crear una venta
+ */
+export interface CreateProyectoVentaDTO {
+  proyecto_id: string;
+  producto_id: string;
+  comprador_nombre: string;
+  comprador_telefono?: string;
+  comprador_email?: string;
+  comprador_notas?: string;
+  cantidad: number;
+  precio_unitario: number;  // Tomado del producto, pero puede ser diferente
+  fecha_venta?: string;
+}
+
+/**
+ * DTO para registrar un pago de venta
+ */
+export interface RegistrarPagoVentaDTO {
+  venta_id: string;
+  monto: number;
+  fecha_pago?: string;
+  metodo_pago?: MetodoPagoVenta;
+  referencia?: string;
+  notas?: string;
+}
+
+/**
+ * Interfaces extendidas con datos relacionados
+ */
+export interface ProyectoProducto extends ProyectoProductoRow {
+  // Agregar campos calculados si es necesario
+}
+
+export interface ProyectoVenta extends ProyectoVentaRow {
+  proyecto_productos?: ProyectoProductoRow;
+  proyecto_pagos_ventas?: ProyectoPagoVentaRow[];
+}
+
+export interface ProyectoPagoVenta extends ProyectoPagoVentaRow {
+  // Agregar campos calculados si es necesario
+}
+
+/**
+ * Resumen de ventas de un proyecto
+ */
+export interface ResumenVentasProyecto {
+  proyecto_id: string;
+  total_ventas: number;
+  total_unidades: number;
+  valor_total: number;
+  total_recaudado: number;
+  total_pendiente: number;
+  ventas_pagadas: number;
+  ventas_pendientes: number;
+  productos_distintos: number;
 }
 
 // =========================================

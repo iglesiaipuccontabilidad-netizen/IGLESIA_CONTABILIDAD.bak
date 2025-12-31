@@ -47,6 +47,9 @@ import type {
   RegistrarPagoDTO,
   RegistrarOfrendaDTO,
   RegistrarGastoDTO,
+  CreateProyectoProductoDTO,
+  CreateProyectoVentaDTO,
+  RegistrarPagoVentaDTO,
   ComiteFiltros,
   OperationResult,
 } from '@/types/comites';
@@ -104,20 +107,32 @@ async function verificarPermisoAdmin() {
  */
 async function verificarAccesoUsuarioComite(comiteId: string) {
   const { user, userData } = await verificarAutenticacion();
+  const supabase = await createClient();
+
+  console.log('🔍 Verificando acceso al comité:', {
+    userId: user.id,
+    comiteId,
+    rolGlobal: userData.rol,
+  });
 
   // Admin y tesorero general tienen acceso a todos los comités
   const rol = userData.rol || '';
   if (['admin', 'tesorero'].includes(rol)) {
+    console.log('✅ Acceso concedido (Admin/Tesorero global)');
     return { user, userData, rol: 'admin' as const };
   }
 
   // Verificar si el usuario pertenece al comité
-  const { data: acceso } = await verificarAccesoComite(user.id, comiteId);
+  const { data: acceso, error } = await verificarAccesoComite(user.id, comiteId, supabase);
+
+  console.log('🔍 Resultado verificarAccesoComite:', { acceso, error });
 
   if (!acceso) {
+    console.error('❌ No se encontró acceso al comité');
     throw new Error('No tienes acceso a este comité');
   }
 
+  console.log('✅ Acceso concedido con rol:', acceso.rol);
   return { user, userData, rol: acceso.rol };
 }
 
@@ -355,7 +370,7 @@ export async function asignarUsuarioComite(dto: AsignarUsuarioComiteDTO): Promis
       throw new Error('Comité, usuario y rol son requeridos');
     }
 
-    if (!['lider', 'tesorero', 'secretario'].includes(dto.rol)) {
+    if (!['lider', 'tesorero', 'secretario', 'vocal'].includes(dto.rol)) {
       throw new Error('Rol inválido');
     }
 
@@ -415,6 +430,45 @@ export async function asignarUsuarioComite(dto: AsignarUsuarioComiteDTO): Promis
     };
   } catch (error) {
     console.error('Error al asignar usuario al comité:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Actualiza el rol de un usuario en un comité
+ */
+export async function actualizarRolUsuarioComite(
+  comiteId: string, 
+  usuarioId: string, 
+  nuevoRol: string
+): Promise<OperationResult> {
+  try {
+    await verificarPermisoAdmin();
+    const supabase = await createClient();
+
+    // Actualizar el rol
+    const { error } = await supabase
+      .from('comite_usuarios')
+      .update({ rol: nuevoRol })
+      .eq('comite_id', comiteId)
+      .eq('usuario_id', usuarioId)
+      .eq('estado', 'activo'); // Solo actualizar usuarios activos
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath('/dashboard/comites');
+    revalidatePath(`/dashboard/comites/${comiteId}`);
+
+    return {
+      success: true,
+      message: 'Rol actualizado exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al actualizar rol del usuario:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',
@@ -827,6 +881,7 @@ export async function createComiteProyecto(dto: CreateComiteProyectoDTO): Promis
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${dto.comite_id}/proyectos`);
+    revalidatePath(`/dashboard/comites/${dto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${dto.comite_id}`);
 
     return {
@@ -910,6 +965,7 @@ export async function updateComiteProyecto(
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos`);
+    revalidatePath(`/dashboard/comites/${proyecto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${proyecto.comite_id}`);
 
     return {
@@ -964,6 +1020,7 @@ export async function deleteComiteProyecto(proyectoId: string): Promise<Operatio
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos`);
+    revalidatePath(`/dashboard/comites/${proyecto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${proyecto.comite_id}`);
 
     return {
@@ -1077,6 +1134,7 @@ export async function createComiteVoto(dto: CreateComiteVotoDTO): Promise<Operat
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${dto.comite_id}/votos`);
+    revalidatePath(`/dashboard/comites/${dto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${dto.comite_id}`);
 
     return {
@@ -1149,6 +1207,7 @@ export async function updateComiteVoto(
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${voto.comite_id}/votos`);
+    revalidatePath(`/dashboard/comites/${voto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${voto.comite_id}`);
 
     return {
@@ -1208,6 +1267,7 @@ export async function deleteComiteVoto(votoId: string): Promise<OperationResult>
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${voto.comite_id}/votos`);
+    revalidatePath(`/dashboard/comites/${voto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${voto.comite_id}`);
 
     return {
@@ -1296,6 +1356,7 @@ export async function registrarPagoComite(dto: RegistrarPagoDTO): Promise<Operat
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${voto.comite_id}/votos`);
+    revalidatePath(`/dashboard/comites/${voto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${voto.comite_id}`);
 
     return {
@@ -1323,8 +1384,8 @@ export async function registrarComiteOfrenda(dto: RegistrarOfrendaDTO): Promise<
   try {
     const { user, rol } = await verificarAccesoUsuarioComite(dto.comite_id);
 
-    // Solo tesorero puede registrar ofrendas
-    if (!['admin', 'tesorero'].includes(rol)) {
+    // Lider, tesorero o admin pueden registrar ofrendas
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
       throw new Error('No tienes permisos para registrar ofrendas');
     }
 
@@ -1373,6 +1434,7 @@ export async function registrarComiteOfrenda(dto: RegistrarOfrendaDTO): Promise<
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${dto.comite_id}/ofrendas`);
+    revalidatePath(`/dashboard/comites/${dto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${dto.comite_id}`);
 
     return {
@@ -1412,8 +1474,8 @@ export async function updateComiteOfrenda(
 
     const { rol } = await verificarAccesoUsuarioComite(ofrenda.comite_id);
 
-    // Solo tesorero puede editar ofrendas
-    if (!['admin', 'tesorero'].includes(rol)) {
+    // Líder y tesorero pueden editar ofrendas
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
       throw new Error('No tienes permisos para editar ofrendas');
     }
 
@@ -1443,6 +1505,7 @@ export async function updateComiteOfrenda(
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${ofrenda.comite_id}/ofrendas`);
+    revalidatePath(`/dashboard/comites/${ofrenda.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${ofrenda.comite_id}`);
 
     return {
@@ -1491,6 +1554,7 @@ export async function deleteComiteOfrenda(ofrendaId: string): Promise<OperationR
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${ofrenda.comite_id}/ofrendas`);
+    revalidatePath(`/dashboard/comites/${ofrenda.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${ofrenda.comite_id}`);
 
     return {
@@ -1543,8 +1607,8 @@ export async function registrarComiteGasto(dto: RegistrarGastoDTO): Promise<Oper
   try {
     const { user, rol } = await verificarAccesoUsuarioComite(dto.comite_id);
 
-    // Solo tesorero puede registrar gastos
-    if (!['admin', 'tesorero'].includes(rol)) {
+    // Líder y tesorero pueden registrar gastos
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
       throw new Error('No tienes permisos para registrar gastos');
     }
 
@@ -1594,6 +1658,7 @@ export async function registrarComiteGasto(dto: RegistrarGastoDTO): Promise<Oper
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${dto.comite_id}/gastos`);
+    revalidatePath(`/dashboard/comites/${dto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${dto.comite_id}`);
 
     return {
@@ -1630,8 +1695,8 @@ export async function updateComiteGasto(gastoId: string, dto: Partial<RegistrarG
 
     const { rol } = await verificarAccesoUsuarioComite(gasto.comite_id);
 
-    // Solo tesorero puede editar gastos
-    if (!['admin', 'tesorero'].includes(rol)) {
+    // Líder y tesorero pueden editar gastos
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
       throw new Error('No tienes permisos para editar gastos');
     }
 
@@ -1662,6 +1727,7 @@ export async function updateComiteGasto(gastoId: string, dto: Partial<RegistrarG
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${gasto.comite_id}/gastos`);
+    revalidatePath(`/dashboard/comites/${gasto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${gasto.comite_id}`);
 
     return {
@@ -1710,6 +1776,7 @@ export async function deleteComiteGasto(gastoId: string): Promise<OperationResul
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${gasto.comite_id}/gastos`);
+    revalidatePath(`/dashboard/comites/${gasto.comite_id}/dashboard`);
     revalidatePath(`/dashboard/comites/${gasto.comite_id}`);
 
     return {
@@ -1737,13 +1804,732 @@ export async function getGastosComite(comiteId: string): Promise<OperationResult
       .from('comite_gastos')
       .select('*')
       .eq('comite_id', comiteId)
-      .order('fecha', { ascending: false });
+      .order('fecha', { ascending: false});
 
     if (error) throw error;
 
     return { success: true, data: data || [] };
   } catch (error) {
     console.error('Error al obtener gastos del comité:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// =========================================
+// PRODUCTOS - CRUD COMPLETO (Sistema de Ventas)
+// =========================================
+
+/**
+ * Crea un nuevo producto del proyecto
+ */
+export async function createProyectoProducto(dto: CreateProyectoProductoDTO): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el proyecto para verificar acceso
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', dto.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const { user, rol } = await verificarAccesoUsuarioComite(proyecto.comite_id);
+
+    // Solo lider y tesorero pueden crear productos
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para crear productos');
+    }
+
+    // Validaciones
+    if (!dto.nombre || dto.nombre.trim().length === 0) {
+      throw new Error('El nombre del producto es requerido');
+    }
+
+    if (dto.precio_unitario <= 0) {
+      throw new Error('El precio debe ser mayor a cero');
+    }
+
+    // Crear producto
+    const { data, error } = await supabase
+      .from('proyecto_productos')
+      .insert({
+        proyecto_id: dto.proyecto_id,
+        nombre: dto.nombre.trim(),
+        descripcion: dto.descripcion?.trim() || null,
+        precio_unitario: dto.precio_unitario,
+        estado: 'activo',
+        creado_por: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos/${dto.proyecto_id}`);
+
+    return {
+      success: true,
+      data,
+      message: 'Producto creado exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al crear producto:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Actualiza un producto del proyecto
+ */
+export async function updateProyectoProducto(
+  productoId: string,
+  dto: Partial<CreateProyectoProductoDTO> & { estado?: 'activo' | 'inactivo' }
+): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el producto para verificar acceso
+    const { data: producto } = await supabase
+      .from('proyecto_productos')
+      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .eq('id', productoId)
+      .single();
+
+    if (!producto) {
+      throw new Error('Producto no encontrado');
+    }
+
+    const comiteId = (producto as any).proyecto?.comite_id;
+    const { rol } = await verificarAccesoUsuarioComite(comiteId);
+
+    // Solo lider y tesorero pueden editar productos
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para editar productos');
+    }
+
+    // Validaciones
+    if (dto.precio_unitario !== undefined && dto.precio_unitario <= 0) {
+      throw new Error('El precio debe ser mayor a cero');
+    }
+
+    // Actualizar producto
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (dto.nombre) updateData.nombre = dto.nombre.trim();
+    if (dto.descripcion !== undefined) updateData.descripcion = dto.descripcion?.trim() || null;
+    if (dto.precio_unitario !== undefined) updateData.precio_unitario = dto.precio_unitario;
+    if (dto.estado !== undefined) updateData.estado = dto.estado;
+
+    const { data, error } = await supabase
+      .from('proyecto_productos')
+      .update(updateData)
+      .eq('id', productoId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+
+    return {
+      success: true,
+      data,
+      message: 'Producto actualizado exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al actualizar producto:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Elimina un producto del proyecto
+ */
+export async function deleteProyectoProducto(productoId: string): Promise<OperationResult> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el producto para verificar acceso
+    const { data: producto } = await supabase
+      .from('proyecto_productos')
+      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .eq('id', productoId)
+      .single();
+
+    if (!producto) {
+      throw new Error('Producto no encontrado');
+    }
+
+    const comiteId = (producto as any).proyecto?.comite_id;
+    const { rol } = await verificarAccesoUsuarioComite(comiteId);
+
+    // Solo lider y tesorero pueden eliminar productos
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para eliminar productos');
+    }
+
+    // Verificar si tiene ventas asociadas
+    const { data: ventas } = await supabase
+      .from('proyecto_ventas')
+      .select('id')
+      .eq('producto_id', productoId)
+      .limit(1);
+
+    if (ventas && ventas.length > 0) {
+      throw new Error('No se puede eliminar un producto con ventas asociadas. Puedes desactivarlo en su lugar.');
+    }
+
+    // Eliminar producto
+    const { error } = await supabase
+      .from('proyecto_productos')
+      .delete()
+      .eq('id', productoId);
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+
+    return {
+      success: true,
+      message: 'Producto eliminado exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al eliminar producto:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Obtiene los productos de un proyecto
+ */
+export async function getProductosProyecto(proyectoId: string): Promise<OperationResult<any[]>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el proyecto para verificar acceso
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', proyectoId)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    await verificarAccesoUsuarioComite(proyecto.comite_id);
+
+    const { data, error } = await supabase
+      .from('proyecto_productos')
+      .select('*')
+      .eq('proyecto_id', proyectoId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('Error al obtener productos del proyecto:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// =========================================
+// VENTAS - CRUD COMPLETO (Sistema de Ventas)
+// =========================================
+
+/**
+ * Crea una nueva venta
+ */
+export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el proyecto para verificar acceso
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', dto.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const { user } = await verificarAccesoUsuarioComite(proyecto.comite_id);
+
+    // Validaciones
+    if (!dto.comprador_nombre || dto.comprador_nombre.trim().length === 0) {
+      throw new Error('El nombre del comprador es requerido');
+    }
+
+    if (dto.cantidad <= 0) {
+      throw new Error('La cantidad debe ser mayor a cero');
+    }
+
+    if (dto.precio_unitario <= 0) {
+      throw new Error('El precio debe ser mayor a cero');
+    }
+
+    // Verificar que el producto existe y pertenece al proyecto
+    const { data: producto } = await supabase
+      .from('proyecto_productos')
+      .select('id, proyecto_id, estado')
+      .eq('id', dto.producto_id)
+      .eq('proyecto_id', dto.proyecto_id)
+      .single();
+
+    if (!producto) {
+      throw new Error('Producto no encontrado en este proyecto');
+    }
+
+    if (producto.estado !== 'activo') {
+      throw new Error('El producto no está activo');
+    }
+
+    const valorTotal = dto.cantidad * dto.precio_unitario;
+
+    // Crear venta
+    const { data, error } = await supabase
+      .from('proyecto_ventas')
+      .insert({
+        proyecto_id: dto.proyecto_id,
+        producto_id: dto.producto_id,
+        comprador_nombre: dto.comprador_nombre.trim(),
+        comprador_telefono: dto.comprador_telefono?.trim() || null,
+        comprador_email: dto.comprador_email?.trim() || null,
+        comprador_notas: dto.comprador_notas?.trim() || null,
+        cantidad: dto.cantidad,
+        precio_unitario: dto.precio_unitario,
+        valor_total: valorTotal,
+        monto_pagado: 0,
+        estado: 'pendiente',
+        fecha_venta: dto.fecha_venta || new Date().toISOString().split('T')[0],
+        registrado_por: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos/${dto.proyecto_id}`);
+
+    return {
+      success: true,
+      data,
+      message: 'Venta registrada exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al crear venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Actualiza una venta
+ */
+export async function updateProyectoVenta(
+  ventaId: string,
+  dto: Partial<CreateProyectoVentaDTO> & { estado?: 'pendiente' | 'pagado' | 'cancelado' }
+): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener la venta para verificar acceso
+    const { data: venta } = await supabase
+      .from('proyecto_ventas')
+      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .eq('id', ventaId)
+      .single();
+
+    if (!venta) {
+      throw new Error('Venta no encontrada');
+    }
+
+    const comiteId = (venta as any).proyecto?.comite_id;
+    const { rol } = await verificarAccesoUsuarioComite(comiteId);
+
+    // Solo lider y tesorero pueden editar ventas
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para editar ventas');
+    }
+
+    // Actualizar venta
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (dto.comprador_nombre) updateData.comprador_nombre = dto.comprador_nombre.trim();
+    if (dto.comprador_telefono !== undefined) updateData.comprador_telefono = dto.comprador_telefono?.trim() || null;
+    if (dto.comprador_email !== undefined) updateData.comprador_email = dto.comprador_email?.trim() || null;
+    if (dto.comprador_notas !== undefined) updateData.comprador_notas = dto.comprador_notas?.trim() || null;
+    if (dto.estado !== undefined) updateData.estado = dto.estado;
+
+    // Si se actualiza cantidad o precio, recalcular valor_total
+    if (dto.cantidad !== undefined || dto.precio_unitario !== undefined) {
+      const ventaActual: any = venta;
+      const nuevaCantidad = dto.cantidad || ventaActual.cantidad;
+      const nuevoPrecio = dto.precio_unitario || ventaActual.precio_unitario;
+      
+      updateData.cantidad = nuevaCantidad;
+      updateData.precio_unitario = nuevoPrecio;
+      updateData.valor_total = nuevaCantidad * nuevoPrecio;
+    }
+
+    const { data, error } = await supabase
+      .from('proyecto_ventas')
+      .update(updateData)
+      .eq('id', ventaId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+
+    return {
+      success: true,
+      data,
+      message: 'Venta actualizada exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al actualizar venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Elimina una venta
+ */
+export async function deleteProyectoVenta(ventaId: string): Promise<OperationResult> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener la venta para verificar acceso
+    const { data: venta } = await supabase
+      .from('proyecto_ventas')
+      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .eq('id', ventaId)
+      .single();
+
+    if (!venta) {
+      throw new Error('Venta no encontrada');
+    }
+
+    const comiteId = (venta as any).proyecto?.comite_id;
+    const { rol } = await verificarAccesoUsuarioComite(comiteId);
+
+    // Solo lider y tesorero pueden eliminar ventas
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para eliminar ventas');
+    }
+
+    // Eliminar venta (los pagos se eliminan en cascada)
+    const { error } = await supabase
+      .from('proyecto_ventas')
+      .delete()
+      .eq('id', ventaId);
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+
+    return {
+      success: true,
+      message: 'Venta eliminada exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al eliminar venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Obtiene las ventas de un proyecto
+ */
+export async function getVentasProyecto(proyectoId: string): Promise<OperationResult<any[]>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el proyecto para verificar acceso
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', proyectoId)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    await verificarAccesoUsuarioComite(proyecto.comite_id);
+
+    const { data, error } = await supabase
+      .from('proyecto_ventas')
+      .select(`
+        *,
+        proyecto_productos (
+          id,
+          nombre,
+          precio_unitario
+        )
+      `)
+      .eq('proyecto_id', proyectoId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('Error al obtener ventas del proyecto:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+// =========================================
+// PAGOS DE VENTAS - CRUD COMPLETO
+// =========================================
+
+/**
+ * Registra un pago de venta
+ */
+export async function registrarPagoVenta(dto: RegistrarPagoVentaDTO): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener la venta para verificar acceso y validar
+    const { data: venta } = await supabase
+      .from('proyecto_ventas')
+      .select(`
+        *,
+        proyecto:comite_proyectos(comite_id)
+      `)
+      .eq('id', dto.venta_id)
+      .single();
+
+    if (!venta) {
+      throw new Error('Venta no encontrada');
+    }
+
+    if (venta.estado === 'cancelado') {
+      throw new Error('No se pueden registrar pagos en ventas canceladas');
+    }
+
+    const comiteId = (venta as any).proyecto?.comite_id;
+    const { user } = await verificarAccesoUsuarioComite(comiteId);
+
+    // Validaciones
+    if (dto.monto <= 0) {
+      throw new Error('El monto debe ser mayor a cero');
+    }
+
+    const saldoPendiente = venta.valor_total - venta.monto_pagado;
+    if (dto.monto > saldoPendiente) {
+      throw new Error(`El monto excede el saldo pendiente ($${saldoPendiente.toLocaleString('es-CO')})`);
+    }
+
+    // Registrar pago
+    const { data, error } = await supabase
+      .from('proyecto_pagos_ventas')
+      .insert({
+        venta_id: dto.venta_id,
+        monto: dto.monto,
+        fecha_pago: dto.fecha_pago || new Date().toISOString().split('T')[0],
+        metodo_pago: dto.metodo_pago || null,
+        referencia: dto.referencia?.trim() || null,
+        notas: dto.notas?.trim() || null,
+        registrado_por: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // El trigger actualiza automáticamente el monto_pagado y el estado
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+
+    return {
+      success: true,
+      data,
+      message: 'Pago registrado exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al registrar pago de venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Obtiene los pagos de una venta
+ */
+export async function getPagosVenta(ventaId: string): Promise<OperationResult<any[]>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener la venta para verificar acceso
+    const { data: venta } = await supabase
+      .from('proyecto_ventas')
+      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .eq('id', ventaId)
+      .single();
+
+    if (!venta) {
+      throw new Error('Venta no encontrada');
+    }
+
+    const comiteId = (venta as any).proyecto?.comite_id;
+    await verificarAccesoUsuarioComite(comiteId);
+
+    const { data, error } = await supabase
+      .from('proyecto_pagos_ventas')
+      .select('*')
+      .eq('venta_id', ventaId)
+      .order('fecha_pago', { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error('Error al obtener pagos de venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Elimina un pago de venta
+ */
+export async function deletePagoVenta(pagoId: string): Promise<OperationResult> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el pago para verificar acceso
+    const { data: pago } = await supabase
+      .from('proyecto_pagos_ventas')
+      .select(`
+        *,
+        venta:proyecto_ventas(
+          proyecto_id,
+          proyecto:comite_proyectos(comite_id)
+        )
+      `)
+      .eq('id', pagoId)
+      .single();
+
+    if (!pago) {
+      throw new Error('Pago no encontrado');
+    }
+
+    const comiteId = (pago as any).venta?.proyecto?.comite_id;
+    const { rol } = await verificarAccesoUsuarioComite(comiteId);
+
+    // Solo lider y tesorero pueden eliminar pagos
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para eliminar pagos');
+    }
+
+    // Eliminar pago (el trigger actualiza automáticamente el monto_pagado)
+    const { error } = await supabase
+      .from('proyecto_pagos_ventas')
+      .delete()
+      .eq('id', pagoId);
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+
+    return {
+      success: true,
+      message: 'Pago eliminado exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al eliminar pago de venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
+ * Obtiene el resumen de ventas de un proyecto
+ */
+export async function getResumenVentasProyecto(proyectoId: string): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener el proyecto para verificar acceso
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', proyectoId)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    await verificarAccesoUsuarioComite(proyecto.comite_id);
+
+    // Usar la vista creada en la migración
+    const { data, error } = await supabase
+      .from('vista_resumen_ventas_proyecto')
+      .select('*')
+      .eq('proyecto_id', proyectoId)
+      .single();
+
+    if (error) throw error;
+
+    return { success: true, data: data || null };
+  } catch (error) {
+    console.error('Error al obtener resumen de ventas:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',

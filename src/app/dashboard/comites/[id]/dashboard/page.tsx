@@ -14,6 +14,7 @@ import {
 import { BalanceCard } from '@/components/comites/BalanceCard'
 import { TransaccionesRecientes } from '@/components/comites/TransaccionesRecientes'
 import { VotosActivosComite } from '@/components/comites/VotosActivosComite'
+import { requireComiteAccess } from '@/lib/auth/comite-permissions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -30,50 +31,8 @@ export default async function DashboardComitePage({ params }: PageProps) {
   // Await params en Next.js 15+
   const { id } = await params
 
-  // Obtener el usuario actual
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return notFound()
-  }
-
-  // Obtener rol del usuario
-  const { data: userData } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  const isAdmin = userData?.rol === 'admin' || userData?.rol === 'tesorero'
-
-  // Verificar acceso al comité
-  let hasAccess = isAdmin
-  let rolEnComite = null
-
-  if (!isAdmin) {
-    const { data: comiteUsuario } = await supabase
-      .from('comite_usuarios')
-      .select('rol')
-      .eq('comite_id', id)
-      .eq('usuario_id', user.id)
-      .eq('estado', 'activo')
-      .single()
-
-    hasAccess = !!comiteUsuario
-    rolEnComite = comiteUsuario?.rol
-  }
-
-  if (!hasAccess) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-rose-50 text-rose-600 p-4 rounded-lg border border-rose-200">
-          No tienes acceso a este comité.
-        </div>
-      </div>
-    )
-  }
+  // Verificar acceso al comité (incluye validación de autenticación)
+  const access = await requireComiteAccess(id)
 
   // Obtener comité
   const { data: comite, error: comiteError } = await supabase
@@ -111,7 +70,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
   // TODO: Obtener votos activos (mock por ahora)
   const votosActivos: any[] = []
 
-  const canManage = isAdmin || rolEnComite === 'lider' || rolEnComite === 'tesorero'
+  const canManage = access.isAdmin || access.rolEnComite === 'lider' || access.rolEnComite === 'tesorero'
 
   return (
     <div className="container mx-auto px-4 py-8">

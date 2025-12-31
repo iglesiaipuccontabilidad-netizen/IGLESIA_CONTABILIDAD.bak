@@ -74,18 +74,27 @@ export default async function VotosComitePage({ params }: PageProps) {
     return notFound()
   }
 
-  // Obtener votos del comité con usuarios y proyectos
+  // Obtener votos del comité con miembros y proyectos
   const { data: votos, error: votosError } = await supabase
-    .from('votos')
+    .from('comite_votos')
     .select(`
       *,
-      usuarios (nombres, apellidos),
+      comite_miembros (
+        id,
+        nombres,
+        apellidos
+      ),
       comite_proyectos (nombre)
     `)
     .eq('comite_id', id)
     .order('created_at', { ascending: false })
 
-  if (votosError) {
+  // Ignorar errores vacíos {}
+  const isEmptyVotosError = votosError && 
+    typeof votosError === 'object' && 
+    Object.keys(votosError).length === 0
+  
+  if (votosError && !isEmptyVotosError) {
     console.error('Error al cargar votos:', votosError)
   }
 

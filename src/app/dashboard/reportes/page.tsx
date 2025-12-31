@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FileText, Download, FileSpreadsheet, TrendingUp } from 'lucide-react'
+import { FileText, Download, FileSpreadsheet, TrendingUp, ShoppingCart } from 'lucide-react'
 import ReportFilter, { FilterState } from '@/components/reportes/ReportFilter'
 import ReportTable from '@/components/reportes/ReportTable'
 import ReportActions from '@/components/reportes/ReportActions'
@@ -10,11 +10,13 @@ import { useReportesPagos } from '@/hooks/useReportesPagos'
 import { useReportesMiembros } from '@/hooks/useReportesMiembros'
 import { useReporteFinanciero } from '@/hooks/useReporteFinanciero'
 import { useGraficosReportes } from '@/hooks/useGraficosReportes'
+import { useReportesVentas } from '@/hooks/useReportesVentas'
 import ResumenFinanciero from '@/components/reportes/ResumenFinanciero'
 import DashboardFinancieroAvanzado from '@/components/reportes/DashboardFinancieroAvanzado'
 import GraficoPropositos from '@/components/reportes/GraficoPropositos'
 import GraficoEstadoVotos from '@/components/reportes/GraficoEstadoVotos'
 import GraficoTendenciaPagos from '@/components/reportes/GraficoTendenciaPagos'
+import VentasPorProducto from '@/components/reportes/VentasPorProducto'
 // Importaciones dinámicas para evitar errores si las dependencias no están instaladas
 const importPDFGenerators = async () => {
   try {
@@ -34,7 +36,7 @@ const importExcelExporters = async () => {
   }
 }
 
-type TipoReporte = 'votos' | 'miembros' | 'financiero' | 'pagos'
+type TipoReporte = 'votos' | 'miembros' | 'financiero' | 'pagos' | 'ventas'
 
 export default function ReportesPage() {
   const [tipoReporte, setTipoReporte] = useState<TipoReporte>('votos')
@@ -76,6 +78,12 @@ export default function ReportesPage() {
     fechaFin: filtros.fechaFin
   })
 
+  const ventasData = useReportesVentas({
+    busqueda: filtros.busqueda,
+    fechaInicio: filtros.fechaInicio,
+    fechaFin: filtros.fechaFin
+  })
+
   const reportes = [
     {
       id: 'votos' as TipoReporte,
@@ -83,6 +91,13 @@ export default function ReportesPage() {
       descripcion: 'Lista de votos con estado, monto total, recaudado y pendiente',
       icono: FileText,
       color: 'from-blue-500 to-cyan-500'
+    },
+    {
+      id: 'ventas' as TipoReporte,
+      titulo: 'Ventas por Producto',
+      descripcion: 'Análisis de ventas y recaudación por cada producto',
+      icono: ShoppingCart,
+      color: 'from-green-500 to-emerald-500'
     },
     {
       id: 'miembros' as TipoReporte,
@@ -190,7 +205,8 @@ export default function ReportesPage() {
                   (tipoReporte === 'votos' && votosData.loading) ||
                   (tipoReporte === 'pagos' && pagosData.loading) ||
                   (tipoReporte === 'miembros' && miembrosData.loading) ||
-                  (tipoReporte === 'financiero' && financieroData.loading)
+                  (tipoReporte === 'financiero' && financieroData.loading) ||
+                  (tipoReporte === 'ventas' && ventasData.loading)
                 }
                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
               >
@@ -203,7 +219,8 @@ export default function ReportesPage() {
                   (tipoReporte === 'votos' && votosData.loading) ||
                   (tipoReporte === 'pagos' && pagosData.loading) ||
                   (tipoReporte === 'miembros' && miembrosData.loading) ||
-                  (tipoReporte === 'financiero' && financieroData.loading)
+                  (tipoReporte === 'financiero' && financieroData.loading) ||
+                  (tipoReporte === 'ventas' && ventasData.loading)
                 }
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
               >
@@ -245,6 +262,9 @@ export default function ReportesPage() {
             loading={votosData.loading}
           />
         )
+
+      case 'ventas':
+        return <VentasPorProducto datos={ventasData.datos} loading={ventasData.loading} />
 
       case 'pagos':
         return (
@@ -352,6 +372,14 @@ export default function ReportesPage() {
           resultado = pdfModule.generarPDFVotos(votosData.data)
           break
 
+        case 'ventas':
+          if (ventasData.datos.length === 0) {
+            alert('No hay datos para exportar')
+            return
+          }
+          resultado = pdfModule.generarPDFVentas(ventasData.datos)
+          break
+
         case 'pagos':
           if (pagosData.data.length === 0) {
             alert('No hay datos para exportar')
@@ -410,6 +438,14 @@ export default function ReportesPage() {
             return
           }
           resultado = excelModule.exportarExcelVotos(votosData.data)
+          break
+
+        case 'ventas':
+          if (ventasData.datos.length === 0) {
+            alert('No hay datos para exportar')
+            return
+          }
+          resultado = excelModule.exportarExcelVentas(ventasData.datos)
           break
 
         case 'pagos':

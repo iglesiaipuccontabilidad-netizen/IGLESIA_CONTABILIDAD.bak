@@ -75,7 +75,7 @@ export function AsignarUsuarioModal({
       const result = await asignarUsuarioComite({
         comite_id: comiteId,
         usuario_id: data.usuario_id,
-        rol: data.rol as "lider" | "tesorero" | "secretario",
+        rol: data.rol as "lider" | "tesorero" | "secretario" | "vocal",
         fecha_ingreso: data.fecha_ingreso,
       })
 
@@ -184,6 +184,7 @@ export function AsignarUsuarioModal({
               <option value="lider">Líder</option>
               <option value="tesorero">Tesorero</option>
               <option value="secretario">Secretario</option>
+              <option value="vocal">Vocal</option>
             </select>
             {errors.rol && (
               <p className="text-rose-500 text-sm mt-1">{errors.rol.message}</p>
@@ -191,7 +192,8 @@ export function AsignarUsuarioModal({
             <p className="text-xs text-slate-500 mt-2">
               <strong>Líder:</strong> Gestiona todo el comité<br />
               <strong>Tesorero:</strong> Maneja la contabilidad<br />
-              <strong>Secretario:</strong> Acceso de solo lectura
+              <strong>Secretario:</strong> Maneja registros y actas<br />
+              <strong>Vocal:</strong> Acceso de participación
             </p>
           </div>
 

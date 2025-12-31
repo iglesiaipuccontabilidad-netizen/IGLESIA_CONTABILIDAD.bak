@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Users2, UserCog, Calendar, Activity } from "lucide-react"
+import { Users2, UserCog, Calendar, Activity, AlertTriangle, TrendingUp } from "lucide-react"
 import type { ComiteRow } from "@/types/comites"
 
 interface ComiteCardProps {
@@ -77,8 +77,25 @@ export function ComiteCard({ comite }: ComiteCardProps) {
         {typeof comite.balance !== 'undefined' && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Balance actual</span>
-              <span className="text-lg font-bold text-primary-600">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-slate-500" />
+                <span className="text-sm text-slate-600">Balance actual</span>
+                {comite.balance < 100000 && (
+                  <div className="group relative">
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      Balance bajo
+                    </div>
+                  </div>
+                )}
+              </div>
+              <span className={`text-lg font-bold transition-colors ${
+                comite.balance < 0 
+                  ? 'text-rose-600' 
+                  : comite.balance < 100000 
+                  ? 'text-amber-600' 
+                  : 'text-emerald-600'
+              }`}>
                 ${comite.balance.toLocaleString('es-CO', { minimumFractionDigits: 0 })}
               </span>
             </div>

@@ -6,15 +6,16 @@ import Link from "next/link"
 
 interface Voto {
   id: string
-  usuario_id: string
+  comite_miembro_id: string
   proyecto_id?: string
-  monto: number
+  monto_total: number
   monto_pagado: number
-  fecha_vencimiento: string
+  fecha_limite: string
   concepto?: string
   estado: string
   created_at: string
-  usuarios?: {
+  comite_miembros?: {
+    id: string
     nombres: string
     apellidos: string
   }
@@ -44,8 +45,8 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
 
   // Filtrar votos
   const votosFiltrados = votos.filter((voto) => {
-    const usuario = voto.usuarios
-    const nombreCompleto = `${usuario?.nombres || ''} ${usuario?.apellidos || ''}`.toLowerCase()
+    const miembro = voto.comite_miembros
+    const nombreCompleto = `${miembro?.nombres || ''} ${miembro?.apellidos || ''}`.toLowerCase()
     const concepto = voto.concepto?.toLowerCase() || ''
     const proyecto = voto.comite_proyectos?.nombre?.toLowerCase() || ''
     
@@ -54,7 +55,7 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
                        proyecto.includes(searchTerm.toLowerCase())
     
     // Determinar estado real (considerar vencimiento)
-    const isVencido = new Date(voto.fecha_vencimiento) < new Date()
+    const isVencido = new Date(voto.fecha_limite) < new Date()
     const estadoReal = voto.estado === 'activo' && isVencido ? 'vencido' : voto.estado
     
     const matchEstado = estadoFilter === "todos" || estadoReal === estadoFilter
@@ -67,7 +68,7 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
 
   // Calcular estadísticas
   const totalVotos = votosFiltrados.length
-  const totalMonto = votosFiltrados.reduce((sum, v) => sum + v.monto, 0)
+  const totalMonto = votosFiltrados.reduce((sum, v) => sum + v.monto_total, 0)
   const totalPagado = votosFiltrados.reduce((sum, v) => sum + v.monto_pagado, 0)
   const porcentajePagado = totalMonto > 0 ? (totalPagado / totalMonto) * 100 : 0
 
@@ -188,14 +189,14 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
                 {votosFiltrados.map((voto) => {
-                  const usuario = voto.usuarios
-                  const isVencido = new Date(voto.fecha_vencimiento) < new Date()
-                  const porcentajePagado = voto.monto > 0 ? (voto.monto_pagado / voto.monto) * 100 : 0
+                  const miembro = voto.comite_miembros
+                  const isVencido = new Date(voto.fecha_limite) < new Date()
+                  const porcentajePagado = voto.monto_total > 0 ? (voto.monto_pagado / voto.monto_total) * 100 : 0
                   const estadoReal = voto.estado === 'activo' && isVencido ? 'vencido' : voto.estado
                   
                   // Determinar si el vencimiento está cerca (7 días)
                   const diasParaVencer = Math.ceil(
-                    (new Date(voto.fecha_vencimiento).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                    (new Date(voto.fecha_limite).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                   )
                   const vencimientoCerca = diasParaVencer <= 7 && diasParaVencer > 0
 
@@ -206,7 +207,7 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
                           <User className="w-4 h-4 text-slate-400" />
                           <div>
                             <div className="text-sm font-medium text-slate-900">
-                              {usuario?.nombres} {usuario?.apellidos}
+                              {miembro?.nombres} {miembro?.apellidos}
                             </div>
                             {voto.concepto && (
                               <div className="text-xs text-slate-500 line-clamp-1">
@@ -227,7 +228,7 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
                       </td>
                       <td className="px-3 sm:px-6 py-2 sm:py-4">
                         <div className="text-sm font-semibold text-slate-900">
-                          ${voto.monto.toLocaleString('es-CO')}
+                          ${voto.monto_total.toLocaleString('es-CO')}
                         </div>
                       </td>
                       <td className="px-3 sm:px-6 py-2 sm:py-4">
@@ -247,7 +248,7 @@ export function VotosComiteTable({ votos, comiteId }: VotosComiteTableProps) {
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 text-slate-400" />
                           <span className={`text-sm ${isVencido ? 'text-rose-600 font-medium' : vencimientoCerca ? 'text-amber-600' : 'text-slate-600'}`}>
-                            {new Date(voto.fecha_vencimiento).toLocaleDateString('es-CO', {
+                            {new Date(voto.fecha_limite).toLocaleDateString('es-CO', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric'
