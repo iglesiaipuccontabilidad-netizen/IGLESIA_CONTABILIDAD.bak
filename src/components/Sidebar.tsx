@@ -28,7 +28,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose }: SidebarProps) {
   const pathname = usePathname()
-  const { member, isLoading } = useAuth()
+  const { member, isLoading, comitesUsuario } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
   // Efecto para manejar el scroll del body cuando el menú móvil está abierto
@@ -55,6 +55,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
     console.log('🔍 SIDEBAR - Email:', member?.email)
     console.log('🔍 SIDEBAR - Estado:', member?.estado)
     console.log('🔍 SIDEBAR - isLoading:', isLoading)
+    console.log('🔍 SIDEBAR - comitesUsuario:', comitesUsuario)
+    console.log('🔍 SIDEBAR - comitesUsuario length:', comitesUsuario?.length)
     console.log('═══════════════════════════════════')
     
     const sections: MenuSection[] = [
@@ -109,8 +111,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
       }
     ]
 
-    // Solo mostrar la sección de Administración si el usuario es admin
-    if (member?.rol === 'admin') {
+    // Solo mostrar la sección de Administración si el usuario es admin o tesorero global
+    if (member?.rol === 'admin' || member?.rol === 'tesorero') {
       console.log('✅ Agregando sección de Administración')
       sections.push({
         title: "Administración",
@@ -132,12 +134,24 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           }
         ]
       })
+    } else if (comitesUsuario && comitesUsuario.length > 0) {
+      // Si el usuario no es admin pero tiene comités asignados, mostrar sus comités
+      console.log('✅ Agregando sección Mis Comités para usuario con comités asignados:', comitesUsuario)
+      sections.push({
+        title: "Mis Comités",
+        items: comitesUsuario.map(comite => ({
+          href: `/dashboard/comites/${comite.comite_id}`,
+          label: comite.comite_nombre,
+          icon: Users,
+          description: `Rol: ${comite.rol_en_comite}`
+        }))
+      })
     } else {
-      console.log('❌ No se agrega Administración - Rol actual:', member?.rol)
+      console.log('❌ No se agrega Administración ni Comités - Rol actual:', member?.rol)
     }
 
     return sections
-  }, [member?.rol, member?.email])
+  }, [member?.rol, member?.email, comitesUsuario])
 
   const initials = React.useMemo(() => {
     if (!member?.email) return "IP"

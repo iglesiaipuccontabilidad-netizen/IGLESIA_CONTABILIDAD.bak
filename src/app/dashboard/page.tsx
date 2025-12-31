@@ -6,6 +6,7 @@ import DashboardCards from '@/components/dashboard/DashboardCards'
 import { Database } from '@/lib/database.types'
 import { ArrowUpRight, Calendar, Target, TrendingUp, LogOut } from 'lucide-react'
 import LogoutButton from '@/components/LogoutButton'
+import { ComiteUserRedirect } from '@/components/ComiteUserRedirect'
 
 interface DashboardStats {
   total_comprometido: number
@@ -148,6 +149,9 @@ export default async function DashboardPage() {
 
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+        {/* Componente para redirigir usuarios de comité */}
+        <ComiteUserRedirect />
+        
         {/* Decoraciones de fondo mejoradas */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary-400/15 to-blue-400/15 rounded-full blur-3xl"></div>

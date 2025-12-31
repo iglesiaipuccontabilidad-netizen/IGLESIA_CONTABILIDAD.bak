@@ -12,22 +12,32 @@ type MemberType = {
   estado: Database['public']['Enums']['estado_usuario']
 }
 
+type ComiteUsuarioType = {
+  comite_id: string
+  comite_nombre: string
+  rol_en_comite: string
+  estado: string
+}
+
 type AuthContextType = {
   user: User | null
   isLoading: boolean
   member: MemberType | null
+  comitesUsuario: ComiteUsuarioType[]
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   member: null,
+  comitesUsuario: [],
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [member, setMember] = useState<MemberType | null>(null)
+  const [comitesUsuario, setComitesUsuario] = useState<ComiteUsuarioType[]>([])
   
   // Crear el cliente fuera del efecto para evitar recreaciones
   const supabase = useMemo(() => createClient(), [])
@@ -92,6 +102,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           memberLoaded = true // Marcar como cargado
           console.log('✅ Member actualizado en el estado de React')
           
+          // Cargar los comités del usuario
+          await loadComitesUsuario(userId)
+          
           // Configurar realtime subscription para cambios en este usuario
           setupRealtimeSubscription(userId)
         } else {
@@ -122,6 +135,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         if (mounted) setMember(null)
+      }
+    }
+
+    // Cargar los comités asignados al usuario
+    async function loadComitesUsuario(userId: string) {
+      console.log('🏢 Cargando comités del usuario:', userId)
+      
+      try {
+        const { data, error } = await supabase
+          .from('comite_usuarios')
+          .select(`
+            comite_id,
+            rol,
+            estado,
+            comites:comite_id (
+              id,
+              nombre
+            )
+          `)
+          .eq('usuario_id', userId)
+          .eq('estado', 'activo')
+        
+        if (error) {
+          console.error('❌ Error al cargar comités del usuario:', error)
+          setComitesUsuario([])
+          return
+        }
+        
+        // Transformar los datos al formato esperado
+        const comites: ComiteUsuarioType[] = (data || []).map((cu: any) => ({
+          comite_id: cu.comite_id,
+          comite_nombre: cu.comites?.nombre || 'Sin nombre',
+          rol_en_comite: cu.rol,
+          estado: cu.estado
+        }))
+        
+        console.log('✅ Comités del usuario cargados:', comites)
+        setComitesUsuario(comites)
+      } catch (error) {
+        console.error('❌ Excepción al cargar comités:', error)
+        setComitesUsuario([])
       }
     }
 
@@ -254,6 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     member,
+    comitesUsuario,
   }
 
   return (

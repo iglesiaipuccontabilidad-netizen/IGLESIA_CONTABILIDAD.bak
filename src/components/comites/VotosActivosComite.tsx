@@ -23,7 +23,7 @@ interface VotosActivosComiteProps {
 export function VotosActivosComite({ votos, comiteId, isLoading = false }: VotosActivosComiteProps) {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <div className="h-6 bg-slate-200 rounded w-40 mb-4 animate-pulse"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -39,7 +39,7 @@ export function VotosActivosComite({ votos, comiteId, isLoading = false }: Votos
 
   if (votos.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">
           Votos Activos
         </h3>
