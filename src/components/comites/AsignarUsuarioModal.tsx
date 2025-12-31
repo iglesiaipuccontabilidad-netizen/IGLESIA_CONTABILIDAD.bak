@@ -18,12 +18,14 @@ type AsignarFormData = z.infer<typeof asignarSchema>
 
 interface AsignarUsuarioModalProps {
   comiteId: string
+  isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
 }
 
 export function AsignarUsuarioModal({
   comiteId,
+  isOpen,
   onClose,
   onSuccess,
 }: AsignarUsuarioModalProps) {
@@ -61,8 +63,9 @@ export function AsignarUsuarioModal({
         setLoadingUsuarios(false)
       }
     }
+    
     loadUsuarios()
-  }, [])
+  }, [isOpen])
 
   const onSubmit = async (data: AsignarFormData) => {
     setIsSubmitting(true)
@@ -93,6 +96,8 @@ export function AsignarUsuarioModal({
       setIsSubmitting(false)
     }
   }
+
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

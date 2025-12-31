@@ -13,6 +13,7 @@ interface PageProps {
 }
 
 export default async function OfrendasComitePage({ params }: PageProps) {
+  const { id } = await params
   const supabase = await createClient()
 
   // Obtener el usuario actual
@@ -41,7 +42,7 @@ export default async function OfrendasComitePage({ params }: PageProps) {
     const { data: comiteUsuario } = await supabase
       .from('comite_usuarios')
       .select('rol')
-      .eq('comite_id', params.id)
+      .eq('comite_id', id)
       .eq('usuario_id', user.id)
       .eq('estado', 'activo')
       .single()
@@ -64,7 +65,7 @@ export default async function OfrendasComitePage({ params }: PageProps) {
   const { data: comite, error: comiteError } = await supabase
     .from('comites')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (comiteError || !comite) {
@@ -76,7 +77,7 @@ export default async function OfrendasComitePage({ params }: PageProps) {
   const { data: ofrendas, error: ofrendasError } = await supabase
     .from('comite_ofrendas')
     .select('*')
-    .eq('comite_id', params.id)
+    .eq('comite_id', id)
     .order('fecha', { ascending: false })
 
   if (ofrendasError) {
@@ -94,7 +95,7 @@ export default async function OfrendasComitePage({ params }: PageProps) {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href={`/dashboard/comites/${params.id}/dashboard`}
+          href={`/dashboard/comites/${id}/dashboard`}
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -116,7 +117,7 @@ export default async function OfrendasComitePage({ params }: PageProps) {
 
           {canManage && (
             <Link
-              href={`/dashboard/comites/${params.id}/ofrendas/nueva`}
+              href={`/dashboard/comites/${id}/ofrendas/nueva`}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
             >
               <Plus className="w-5 h-5" />
@@ -167,7 +168,7 @@ export default async function OfrendasComitePage({ params }: PageProps) {
           </p>
           {canManage && (
             <Link
-              href={`/dashboard/comites/${params.id}/ofrendas/nueva`}
+              href={`/dashboard/comites/${id}/ofrendas/nueva`}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
             >
               <Plus className="w-5 h-5" />

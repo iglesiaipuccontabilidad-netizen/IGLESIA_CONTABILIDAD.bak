@@ -34,7 +34,6 @@ export function MiembrosComiteClient({ comite, miembros, canEdit }: MiembrosComi
     }
 
     // TODO: Implementar eliminación (necesita action del backend)
-    console.log("Eliminar miembro:", miembro.id)
   }
 
   return (

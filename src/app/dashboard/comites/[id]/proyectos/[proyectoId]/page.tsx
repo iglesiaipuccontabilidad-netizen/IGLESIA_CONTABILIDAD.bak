@@ -24,6 +24,7 @@ interface PageProps {
 }
 
 export default async function DetalleProyectoPage({ params }: PageProps) {
+  const { id, proyectoId } = await params
   const supabase = await createClient()
 
   // Obtener el usuario actual
@@ -52,7 +53,7 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
     const { data: comiteUsuario } = await supabase
       .from('comite_usuarios')
       .select('rol')
-      .eq('comite_id', params.id)
+      .eq('comite_id', id)
       .eq('usuario_id', user.id)
       .eq('estado', 'activo')
       .single()
@@ -75,8 +76,8 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
   const { data: proyecto, error: proyectoError } = await supabase
     .from('comite_proyectos')
     .select('*, comites(nombre)')
-    .eq('id', params.proyectoId)
-    .eq('comite_id', params.id)
+    .eq('id', proyectoId)
+    .eq('comite_id', id)
     .single()
 
   if (proyectoError || !proyecto) {
@@ -91,7 +92,7 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
       *,
       usuarios (nombres, apellidos)
     `)
-    .eq('proyecto_id', params.proyectoId)
+    .eq('proyecto_id', proyectoId)
     .order('created_at', { ascending: false })
 
   if (votosError) {
@@ -114,7 +115,7 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href={`/dashboard/comites/${params.id}/proyectos`}
+          href={`/dashboard/comites/${id}/proyectos`}
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -147,7 +148,7 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
 
           {canManage && (
             <Link
-              href={`/dashboard/comites/${params.id}/proyectos/${params.proyectoId}/editar`}
+              href={`/dashboard/comites/${id}/proyectos/${proyectoId}/editar`}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
             >
               <Edit className="w-5 h-5" />

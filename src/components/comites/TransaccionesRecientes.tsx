@@ -19,7 +19,7 @@ interface TransaccionesRecientesProps {
 export function TransaccionesRecientes({ transacciones, isLoading = false }: TransaccionesRecientesProps) {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <div className="h-6 bg-slate-200 rounded w-48 mb-4 animate-pulse"></div>
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
@@ -39,7 +39,7 @@ export function TransaccionesRecientes({ transacciones, isLoading = false }: Tra
 
   if (transacciones.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-slate-900 mb-4">
           Últimas Transacciones
         </h3>

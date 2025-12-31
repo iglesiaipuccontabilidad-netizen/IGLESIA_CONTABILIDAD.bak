@@ -314,6 +314,16 @@
   .mobile-spacing {
     @apply space-y-4;
   }
+  
+  /* Mejorar cards en móviles */
+  .card-padding {
+    @apply p-4;
+  }
+  
+  /* Mejorar texto en móviles */
+  .mobile-text {
+    @apply text-sm leading-relaxed;
+  }
 }
 
 @media (max-width: 480px) {
@@ -331,5 +341,10 @@
   
   button {
     min-height: 40px;
+  }
+  
+  /* Reducir padding en móviles muy pequeños */
+  .card-padding {
+    @apply p-3;
   }
 }

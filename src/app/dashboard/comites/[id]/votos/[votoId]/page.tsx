@@ -25,6 +25,7 @@ interface PageProps {
 }
 
 export default async function DetalleVotoPage({ params }: PageProps) {
+  const { id, votoId } = await params
   const supabase = await createClient()
 
   // Obtener el usuario actual
@@ -53,7 +54,7 @@ export default async function DetalleVotoPage({ params }: PageProps) {
     const { data: comiteUsuario } = await supabase
       .from('comite_usuarios')
       .select('rol')
-      .eq('comite_id', params.id)
+      .eq('comite_id', id)
       .eq('usuario_id', user.id)
       .eq('estado', 'activo')
       .single()
@@ -81,8 +82,8 @@ export default async function DetalleVotoPage({ params }: PageProps) {
       comite_miembros(nombres, apellidos),
       comite_proyectos(nombre)
     `)
-    .eq('id', params.votoId)
-    .eq('comite_id', params.id)
+    .eq('id', votoId)
+    .eq('comite_id', id)
     .single()
 
   if (votoError || !voto) {
@@ -94,7 +95,7 @@ export default async function DetalleVotoPage({ params }: PageProps) {
   const { data: pagos, error: pagosError } = await supabase
     .from('comite_pagos')
     .select('*')
-    .eq('voto_id', params.votoId)
+    .eq('voto_id', votoId)
     .order('fecha_pago', { ascending: false })
 
   if (pagosError) {
@@ -124,7 +125,7 @@ export default async function DetalleVotoPage({ params }: PageProps) {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href={`/dashboard/comites/${params.id}/votos`}
+          href={`/dashboard/comites/${id}/votos`}
           className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -163,7 +164,7 @@ export default async function DetalleVotoPage({ params }: PageProps) {
 
           {canManage && estadoReal !== 'completado' && (
             <Link
-              href={`/dashboard/comites/${params.id}/votos/${params.votoId}/editar`}
+              href={`/dashboard/comites/${id}/votos/${votoId}/editar`}
               className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
             >
               <Edit className="w-5 h-5" />
@@ -306,7 +307,7 @@ export default async function DetalleVotoPage({ params }: PageProps) {
               <div>
                 <p className="text-xs text-slate-500">Proyecto Asociado</p>
                 <Link
-                  href={`/dashboard/comites/${params.id}/proyectos/${voto.proyecto_id}`}
+                  href={`/dashboard/comites/${id}/proyectos/${voto.proyecto_id}`}
                   className="text-sm font-medium text-purple-600 hover:text-purple-700 inline-flex items-center gap-1 transition-colors"
                 >
                   <Target className="w-4 h-4" />
@@ -336,8 +337,8 @@ export default async function DetalleVotoPage({ params }: PageProps) {
 
       {/* Historial de Pagos */}
       <HistorialPagosClient
-        votoId={params.votoId}
-        comiteId={params.id}
+        votoId={votoId}
+        comiteId={id}
         pagos={pagos || []}
         montoTotal={voto.monto_total}
         montoPagado={voto.recaudado}

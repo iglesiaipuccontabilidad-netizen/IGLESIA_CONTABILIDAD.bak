@@ -20,7 +20,7 @@ export function ComiteCard({ comite }: ComiteCardProps) {
       href={`/dashboard/comites/${comite.id}`}
       className="block group"
     >
-      <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">

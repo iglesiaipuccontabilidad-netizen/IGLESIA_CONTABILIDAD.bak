@@ -13,6 +13,9 @@ interface PageProps {
 
 export default async function MiembrosComitePage({ params }: PageProps) {
   const supabase = await createClient()
+  
+  // Await params en Next.js 15+
+  const { id } = await params
 
   // Obtener el usuario actual
   const {
@@ -38,7 +41,7 @@ export default async function MiembrosComitePage({ params }: PageProps) {
     const { data: comiteUsuario } = await supabase
       .from('comite_usuarios')
       .select('rol')
-      .eq('comite_id', params.id)
+      .eq('comite_id', id)
       .eq('usuario_id', user.id)
       .eq('estado', 'activo')
       .single()
@@ -60,7 +63,7 @@ export default async function MiembrosComitePage({ params }: PageProps) {
   const { data: comite, error: comiteError } = await supabase
     .from('comites')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (comiteError || !comite) {
@@ -72,7 +75,7 @@ export default async function MiembrosComitePage({ params }: PageProps) {
   const { data: miembros, error: miembrosError } = await supabase
     .from('comite_miembros')
     .select('*')
-    .eq('comite_id', params.id)
+    .eq('comite_id', id)
     .order('apellidos', { ascending: true })
     .order('nombres', { ascending: true })
 
@@ -93,7 +96,7 @@ export default async function MiembrosComitePage({ params }: PageProps) {
     const { data: comiteUsuario } = await supabase
       .from('comite_usuarios')
       .select('rol')
-      .eq('comite_id', params.id)
+      .eq('comite_id', id)
       .eq('usuario_id', user.id)
       .eq('estado', 'activo')
       .single()

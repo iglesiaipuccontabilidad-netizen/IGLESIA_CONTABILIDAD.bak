@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let realtimeSubscription: any = null // Para el listener en tiempo real
 
     async function loadMemberData(userId: string, retryCount = 0) {
+      console.log('🔵 loadMemberData llamada con userId:', userId, 'memberLoaded:', memberLoaded)
+      
       if (memberLoaded) {
         console.log('⚠️ Member ya fue cargado, saltando...')
         return
@@ -210,9 +212,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('✅ Usuario autenticado:', session.user.email)
             setUser(session.user)
             
-            // Cargar datos del usuario
-            await loadMemberData(session.user.id)
-            setIsLoading(false)
+            // Cargar datos del usuario y esperar a que termine
+            try {
+              await loadMemberData(session.user.id)
+            } catch (error) {
+              console.error('❌ Error al cargar member data:', error)
+            } finally {
+              // Solo marcar como no loading después de intentar cargar
+              setIsLoading(false)
+            }
           } else {
             setIsLoading(false)
           }
@@ -247,13 +255,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       initialize()
     }
 
-    // Timeout de seguridad reducido
+    // Timeout de seguridad aumentado a 5 segundos
     const timeoutId = setTimeout(() => {
-      if (mounted && isLoading) {
-        console.warn('⚠️ Timeout en inicialización de auth (2s), deteniendo carga')
+      if (mounted && isLoading && !memberLoaded) {
+        console.warn('⚠️ Timeout en inicialización de auth (5s), deteniendo carga')
         setIsLoading(false)
       }
-    }, 2000)
+    }, 5000)
 
     return () => {
       mounted = false

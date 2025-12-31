@@ -26,6 +26,9 @@ interface PageProps {
 
 export default async function DashboardComitePage({ params }: PageProps) {
   const supabase = await createClient()
+  
+  // Await params en Next.js 15+
+  const { id } = await params
 
   // Obtener el usuario actual
   const {
@@ -53,7 +56,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
     const { data: comiteUsuario } = await supabase
       .from('comite_usuarios')
       .select('rol')
-      .eq('comite_id', params.id)
+      .eq('comite_id', id)
       .eq('usuario_id', user.id)
       .eq('estado', 'activo')
       .single()
@@ -76,7 +79,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
   const { data: comite, error: comiteError } = await supabase
     .from('comites')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (comiteError || !comite) {
@@ -86,7 +89,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
 
   // Obtener balance usando la función SQL
   const { data: balanceData } = await supabase.rpc('obtener_balance_comite', {
-    p_comite_id: params.id,
+    p_comite_id: id,
   })
 
   const balance = (Array.isArray(balanceData) ? balanceData[0] : balanceData) as { balance: number; total_ingresos: number; total_egresos: number } || { balance: 0, total_ingresos: 0, total_egresos: 0 }
@@ -97,9 +100,9 @@ export default async function DashboardComitePage({ params }: PageProps) {
     { count: totalVotos },
     { count: totalMiembros }
   ] = await Promise.all([
-    supabase.from('comite_proyectos').select('*', { count: 'exact', head: true }).eq('comite_id', params.id),
-    supabase.from('comite_votos').select('*', { count: 'exact', head: true }).eq('comite_id', params.id).eq('estado', 'activo'),
-    supabase.from('comite_miembros').select('*', { count: 'exact', head: true }).eq('comite_id', params.id).eq('estado', 'activo')
+    supabase.from('comite_proyectos').select('*', { count: 'exact', head: true }).eq('comite_id', id),
+    supabase.from('comite_votos').select('*', { count: 'exact', head: true }).eq('comite_id', id).eq('estado', 'activo'),
+    supabase.from('comite_miembros').select('*', { count: 'exact', head: true }).eq('comite_id', id).eq('estado', 'activo')
   ])
 
   // TODO: Obtener transacciones recientes (mock por ahora)
@@ -145,7 +148,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <Link
-          href={`/dashboard/comites/${params.id}/proyectos`}
+          href={`/dashboard/comites/${id}/proyectos`}
           className="bg-white rounded-xl border border-slate-200 p-6 hover:border-primary-300 hover:shadow-md transition-all"
         >
           <div className="flex items-center justify-between">
@@ -160,7 +163,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
         </Link>
 
         <Link
-          href={`/dashboard/comites/${params.id}/votos`}
+          href={`/dashboard/comites/${id}/votos`}
           className="bg-white rounded-xl border border-slate-200 p-6 hover:border-primary-300 hover:shadow-md transition-all"
         >
           <div className="flex items-center justify-between">
@@ -175,7 +178,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
         </Link>
 
         <Link
-          href={`/dashboard/comites/${params.id}/miembros`}
+          href={`/dashboard/comites/${id}/miembros`}
           className="bg-white rounded-xl border border-slate-200 p-6 hover:border-primary-300 hover:shadow-md transition-all"
         >
           <div className="flex items-center justify-between">
@@ -199,7 +202,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Link
-              href={`/dashboard/comites/${params.id}/ofrendas/nueva`}
+              href={`/dashboard/comites/${id}/ofrendas/nueva`}
               className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
             >
               <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -209,7 +212,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
             </Link>
 
             <Link
-              href={`/dashboard/comites/${params.id}/gastos/nuevo`}
+              href={`/dashboard/comites/${id}/gastos/nuevo`}
               className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
             >
               <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center">
@@ -219,7 +222,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
             </Link>
 
             <Link
-              href={`/dashboard/comites/${params.id}/votos/nuevo`}
+              href={`/dashboard/comites/${id}/votos/nuevo`}
               className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
             >
               <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
@@ -229,7 +232,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
             </Link>
 
             <Link
-              href={`/dashboard/comites/${params.id}/proyectos/nuevo`}
+              href={`/dashboard/comites/${id}/proyectos/nuevo`}
               className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
             >
               <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
@@ -244,7 +247,7 @@ export default async function DashboardComitePage({ params }: PageProps) {
       {/* Grid de Información */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Votos Activos */}
-        <VotosActivosComite votos={votosActivos} comiteId={params.id} />
+        <VotosActivosComite votos={votosActivos} comiteId={id} />
 
         {/* Transacciones Recientes */}
         <TransaccionesRecientes transacciones={transaccionesRecientes} />

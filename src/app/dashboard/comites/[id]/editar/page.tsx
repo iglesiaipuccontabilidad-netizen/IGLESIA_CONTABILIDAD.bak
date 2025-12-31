@@ -13,6 +13,9 @@ interface PageProps {
 
 export default async function EditarComitePage({ params }: PageProps) {
   const supabase = await createClient()
+  
+  // Await params en Next.js 15+
+  const { id } = await params
 
   // Verificar autenticación y permisos
   const {
@@ -45,7 +48,7 @@ export default async function EditarComitePage({ params }: PageProps) {
   const { data: comite, error } = await supabase
     .from('comites')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !comite) {

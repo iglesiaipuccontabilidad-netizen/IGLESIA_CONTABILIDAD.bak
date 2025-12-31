@@ -12,6 +12,7 @@ import {
   Plus,
   DollarSign,
 } from 'lucide-react'
+import { UsuariosComiteSection } from '@/components/comites/UsuariosComiteSection'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -24,6 +25,9 @@ interface PageProps {
 
 export default async function ComiteDetallePage({ params }: PageProps) {
   const supabase = await createClient()
+  
+  // Await params en Next.js 15+
+  const { id } = await params
 
   // Obtener el usuario actual
   const {
@@ -47,7 +51,7 @@ export default async function ComiteDetallePage({ params }: PageProps) {
   const { data: comite, error } = await supabase
     .from('comites')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !comite) {
@@ -60,9 +64,9 @@ export default async function ComiteDetallePage({ params }: PageProps) {
     .from('comite_usuarios')
     .select(`
       *,
-      usuario:usuarios(id, nombres, apellidos, email)
+      usuario:usuarios(id, email, rol)
     `)
-    .eq('comite_id', params.id)
+    .eq('comite_id', id)
     .eq('estado', 'activo')
     .order('fecha_ingreso', { ascending: false })
 
@@ -70,13 +74,13 @@ export default async function ComiteDetallePage({ params }: PageProps) {
   const { data: miembros } = await supabase
     .from('comite_miembros')
     .select('*')
-    .eq('comite_id', params.id)
+    .eq('comite_id', id)
     .eq('estado', 'activo')
     .order('apellidos', { ascending: true })
 
   // Obtener balance del comité (usando la función SQL)
   const { data: balanceData } = await supabase.rpc('obtener_balance_comite', {
-    p_comite_id: params.id,
+    p_comite_id: id,
   })
 
   const balance = (Array.isArray(balanceData) ? balanceData[0] : balanceData) as { balance: number; total_ingresos: number; total_egresos: number } || { balance: 0, total_ingresos: 0, total_egresos: 0 }
@@ -130,7 +134,7 @@ export default async function ComiteDetallePage({ params }: PageProps) {
           {isAdmin && (
             <div className="flex gap-2">
               <Link
-                href={`/dashboard/comites/${params.id}/editar`}
+                href={`/dashboard/comites/${id}/editar`}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 <Edit className="w-4 h-4" />
@@ -185,76 +189,11 @@ export default async function ComiteDetallePage({ params }: PageProps) {
       </div>
 
       {/* Usuarios del Comité */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
-            <UserCog className="w-5 h-5 text-primary-600" />
-            Usuarios del Sistema ({usuarios?.length ?? 0})
-          </h2>
-          {isAdmin && (
-            <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-50 text-primary-600 hover:bg-primary-100 transition-colors text-sm font-medium">
-              <Plus className="w-4 h-4" />
-              Asignar Usuario
-            </button>
-          )}
-        </div>
-
-        {!usuarios || usuarios.length === 0 ? (
-          <div className="text-center py-8 text-slate-500">
-            <UserCog className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-            <p>No hay usuarios asignados a este comité</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {usuarios.map((cu: any) => (
-              <div
-                key={cu.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <span className="text-primary-700 font-semibold text-sm">
-                      {cu.usuario?.nombres?.charAt(0) ?? ''}
-                      {cu.usuario?.apellidos?.charAt(0) ?? ''}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-slate-900">
-                      {cu.usuario?.nombres} {cu.usuario?.apellidos}
-                    </p>
-                    <p className="text-sm text-slate-500">{cu.usuario?.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`
-                    px-3 py-1 rounded-full text-xs font-medium
-                    ${
-                      cu.rol === 'lider'
-                        ? 'bg-purple-50 text-purple-700'
-                        : cu.rol === 'tesorero'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-slate-50 text-slate-700'
-                    }
-                  `}
-                  >
-                    {cu.rol === 'lider'
-                      ? 'Líder'
-                      : cu.rol === 'tesorero'
-                      ? 'Tesorero'
-                      : 'Secretario'}
-                  </span>
-                  {isAdmin && (
-                    <button className="text-rose-500 hover:text-rose-700 p-2">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <UsuariosComiteSection 
+        comiteId={id}
+        usuarios={usuarios}
+        isAdmin={isAdmin}
+      />
 
       {/* Miembros del Comité */}
       <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -264,7 +203,7 @@ export default async function ComiteDetallePage({ params }: PageProps) {
             Miembros del Comité ({miembros?.length ?? 0})
           </h2>
           <Link
-            href={`/dashboard/comites/${params.id}/miembros`}
+            href={`/dashboard/comites/${id}/miembros`}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-50 text-cyan-600 hover:bg-cyan-100 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
@@ -294,7 +233,7 @@ export default async function ComiteDetallePage({ params }: PageProps) {
             ))}
             {miembros.length > 6 && (
               <Link
-                href={`/dashboard/comites/${params.id}/miembros`}
+                href={`/dashboard/comites/${id}/miembros`}
                 className="p-4 rounded-lg border border-slate-200 hover:border-primary-200 hover:bg-primary-50 transition-colors flex items-center justify-center text-primary-600 font-medium"
               >
                 Ver todos ({miembros.length})

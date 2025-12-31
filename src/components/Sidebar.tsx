@@ -282,15 +282,24 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
             <p className={styles.profileName}>{member?.email?.split('@')[0] ?? "Usuario"}</p>
             <span className={styles.profileRole}>
               {(() => {
+                const displayValue = isLoading 
+                  ? "Cargando..." 
+                  : member?.rol 
+                    ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) 
+                    : "Sin rol"
+                
                 console.log('🎯 RENDERIZANDO ROL:', {
                   isLoading,
                   memberExists: !!member,
+                  memberIsNull: member === null,
+                  memberIsUndefined: member === undefined,
                   rol: member?.rol,
                   rolType: typeof member?.rol,
                   rolTruthy: !!member?.rol,
-                  displayValue: isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Pendiente")
+                  displayValue
                 })
-                return isLoading ? "Cargando..." : (member?.rol ? member.rol.charAt(0).toUpperCase() + member.rol.slice(1) : "Pendiente")
+                
+                return displayValue
               })()}
             </span>
           </div>
