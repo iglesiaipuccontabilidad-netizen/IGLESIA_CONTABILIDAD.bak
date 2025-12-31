@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
@@ -47,118 +47,118 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Crear el cliente fuera del efecto para evitar recreaciones
   const supabase = useMemo(() => createClient(), [])
 
-  // Optimización: Usar useCallback para funciones que se pasan como dependencias
-  const loadComitesUsuario = useCallback(async (userId: string) => {
-    if (!mountedRef.current) return
-    
-    try {
-      const { data, error } = await supabase
-        .from('comite_usuarios')
-        .select(`
-          comite_id,
-          rol,
-          estado,
-          comites:comite_id (
-            id,
-            nombre
-          )
-        `)
-        .eq('usuario_id', userId)
-        .eq('estado', 'activo')
-        .abortSignal(AbortSignal.timeout(5000))
-      
-      if (error) {
-        if (error.code !== 'TIMEOUT') {
-          console.error('Error al cargar comités:', error.message)
-        }
-        if (mountedRef.current) setComitesUsuario([])
-        return
-      }
-      
-      const comites: ComiteUsuarioType[] = (data || []).map((cu: any) => ({
-        comite_id: cu.comite_id,
-        comite_nombre: cu.comites?.nombre || 'Sin nombre',
-        rol_en_comite: cu.rol,
-        estado: cu.estado
-      }))
-      
-      if (mountedRef.current) {
-        setComitesUsuario(comites)
-      }
-    } catch (error) {
-      console.error('Excepción al cargar comités:', error instanceof Error ? error.message : 'Error desconocido')
-      if (mountedRef.current) setComitesUsuario([])
-    }
-  }, [supabase])
-
-  const setupRealtimeSubscription = useCallback((userId: string) => {
-    if (realtimeSubscriptionRef.current) {
-      realtimeSubscriptionRef.current.unsubscribe()
-    }
-    
-    realtimeSubscriptionRef.current = supabase
-      .channel(`usuarios:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'usuarios',
-          filter: `id=eq.${userId}`
-        },
-        (payload: any) => {
-          if (payload.new && mountedRef.current) {
-            setMember({
-              id: payload.new.id,
-              email: payload.new.email,
-              rol: payload.new.rol,
-              estado: payload.new.estado
-            })
-          }
-        }
-      )
-      .subscribe()
-  }, [supabase])
-
-  const loadMemberData = useCallback(async (userId: string) => {
-    if (!userId || !mountedRef.current || memberLoadedRef.current) return
-    
-    memberLoadedRef.current = true
-    
-    try {
-      const { data: memberData, error: memberError } = await supabase
-        .from('usuarios')
-        .select('id, email, rol, estado')
-        .eq('id', userId)
-        .abortSignal(AbortSignal.timeout(8000))
-        .maybeSingle()
-      
-      const isEmptyError = memberError && 
-        typeof memberError === 'object' && 
-        Object.keys(memberError).length === 0
-      
-      if (memberData && mountedRef.current) {
-        setMember(memberData)
-        await loadComitesUsuario(userId)
-        setupRealtimeSubscription(userId)
-      } else if (memberError && !isEmptyError) {
-        if (memberError.code === 'TIMEOUT') {
-          console.warn('⚠️ Timeout en consulta de usuarios. Ejecuta la migración de optimización.')
-        } else {
-          console.error('Error al cargar usuario:', memberError.message)
-        }
-        if (mountedRef.current) setMember(null)
-      }
-    } catch (error) {
-      console.error('Excepción al cargar datos:', error instanceof Error ? error.message : 'Error desconocido')
-      if (mountedRef.current) setMember(null)
-    } finally {
-      if (mountedRef.current) setIsLoading(false)
-    }
-  }, [supabase, loadComitesUsuario, setupRealtimeSubscription])
-
   useEffect(() => {
     mountedRef.current = true
+    
+    // Funciones internas para evitar dependencias circulares
+    async function loadComitesUsuario(userId: string) {
+      if (!mountedRef.current) return
+      
+      try {
+        const { data, error } = await supabase
+          .from('comite_usuarios')
+          .select(`
+            comite_id,
+            rol,
+            estado,
+            comites:comite_id (
+              id,
+              nombre
+            )
+          `)
+          .eq('usuario_id', userId)
+          .eq('estado', 'activo')
+          .abortSignal(AbortSignal.timeout(5000))
+        
+        if (error) {
+          if (error.code !== 'TIMEOUT') {
+            console.error('Error al cargar comités:', error.message)
+          }
+          if (mountedRef.current) setComitesUsuario([])
+          return
+        }
+        
+        const comites: ComiteUsuarioType[] = (data || []).map((cu: any) => ({
+          comite_id: cu.comite_id,
+          comite_nombre: cu.comites?.nombre || 'Sin nombre',
+          rol_en_comite: cu.rol,
+          estado: cu.estado
+        }))
+        
+        if (mountedRef.current) {
+          setComitesUsuario(comites)
+        }
+      } catch (error) {
+        console.error('Excepción al cargar comités:', error instanceof Error ? error.message : 'Error desconocido')
+        if (mountedRef.current) setComitesUsuario([])
+      }
+    }
+
+    function setupRealtimeSubscription(userId: string) {
+      if (realtimeSubscriptionRef.current) {
+        realtimeSubscriptionRef.current.unsubscribe()
+      }
+      
+      realtimeSubscriptionRef.current = supabase
+        .channel(`usuarios:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'usuarios',
+            filter: `id=eq.${userId}`
+          },
+          (payload: any) => {
+            if (payload.new && mountedRef.current) {
+              setMember({
+                id: payload.new.id,
+                email: payload.new.email,
+                rol: payload.new.rol,
+                estado: payload.new.estado
+              })
+            }
+          }
+        )
+        .subscribe()
+    }
+
+    async function loadMemberData(userId: string) {
+      if (!userId || !mountedRef.current || memberLoadedRef.current) return
+      
+      memberLoadedRef.current = true
+      
+      try {
+        const { data: memberData, error: memberError } = await supabase
+          .from('usuarios')
+          .select('id, email, rol, estado')
+          .eq('id', userId)
+          .abortSignal(AbortSignal.timeout(8000))
+          .maybeSingle()
+        
+        const isEmptyError = memberError && 
+          typeof memberError === 'object' && 
+          Object.keys(memberError).length === 0
+        
+        if (memberData && mountedRef.current) {
+          setMember(memberData)
+          await loadComitesUsuario(userId)
+          setupRealtimeSubscription(userId)
+        } else if (memberError && !isEmptyError) {
+          if (memberError.code === 'TIMEOUT') {
+            console.warn('⚠️ Timeout en consulta de usuarios. Ejecuta la migración de optimización.')
+          } else {
+            console.error('Error al cargar usuario:', memberError.message)
+          }
+          if (mountedRef.current) setMember(null)
+        }
+      } catch (error) {
+        console.error('Excepción al cargar datos:', error instanceof Error ? error.message : 'Error desconocido')
+        if (mountedRef.current) setMember(null)
+      } finally {
+        if (mountedRef.current) setIsLoading(false)
+      }
+    }
     
     // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -214,11 +214,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Timeout de seguridad
     const timeoutId = setTimeout(() => {
-      if (mountedRef.current && !memberLoadedRef.current) {
-        console.warn('Timeout en inicialización de auth (5s)')
+      if (mountedRef.current && isLoading) {
+        console.warn('Timeout en inicialización de auth (10s)')
         setIsLoading(false)
       }
-    }, 5000)
+    }, 10000)
 
     return () => {
       mountedRef.current = false
@@ -230,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         realtimeSubscriptionRef.current = null
       }
     }
-  }, [supabase, loadMemberData])
+  }, [supabase])
 
   const value = useMemo(() => ({
     user,
