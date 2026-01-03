@@ -73,7 +73,7 @@ export function ComiteOfrendaForm({
     handleSubmit,
     formState: { errors },
   } = useForm<OfrendaFormData>({
-    // // resolver: zodResolver(ofrendaSchema), // Temporalmente deshabilitado
+    resolver: zodResolver(ofrendaSchema), // Validaciones habilitadas
     defaultValues: initialData || {
       monto: "",
       fecha_ofrenda: new Date().toISOString().split('T')[0],
@@ -84,6 +84,7 @@ export function ComiteOfrendaForm({
   })
 
   const onSubmit = async (data: OfrendaFormData) => {
+    console.log('🔍 ComiteOfrendaForm - onSubmit llamado con data:', data)
     setIsSubmitting(true)
     setError(null)
 
@@ -97,7 +98,7 @@ export function ComiteOfrendaForm({
       // Preparar datos - mapear a RegistrarOfrendaDTO
       const payload = {
         comite_id: comiteId,
-        monto: parseFloat(data.monto),
+        monto: parseFloat(data.monto.replace(/[^\d]/g, '')), // Limpiar formato de número
         fecha: data.fecha_ofrenda,
         tipo: data.tipo_ofrenda,
         concepto: data.concepto || "Ofrenda general",
@@ -148,14 +149,9 @@ export function ComiteOfrendaForm({
         <label htmlFor="monto" className="block text-sm font-medium text-slate-700 mb-2">
           Monto <span className="text-emerald-500">*</span>
         </label>
-        <input
+        <FormattedNumberInput
           id="monto"
-          type="number"
-          {...register("monto", {
-            required: "El monto es requerido",
-            valueAsNumber: true,
-            min: { value: 1, message: "El monto debe ser mayor a 0" },
-          })}
+          {...register("monto")}
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           placeholder="0"
           disabled={isSubmitting}

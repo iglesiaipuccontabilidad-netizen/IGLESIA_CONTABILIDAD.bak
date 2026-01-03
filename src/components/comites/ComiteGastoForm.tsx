@@ -46,8 +46,8 @@ export function ComiteGastoForm({
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    // resolver: zodResolver(gastoSchema),
+  } = useForm<GastoFormData>({
+    resolver: zodResolver(gastoSchema),
     defaultValues: {
       monto: initialData?.monto || "",
       fecha_gasto: initialData?.fecha_gasto || new Date().toISOString().split('T')[0],
@@ -67,11 +67,12 @@ export function ComiteGastoForm({
     try {
       const montoGasto = parseFloat(data.monto)
       
-      // Validar que el gasto no supere el balance disponible
+      // Advertir si el gasto supera el balance disponible (pero permitirlo)
       if (!gastoId && balanceDisponible !== undefined && montoGasto > balanceDisponible) {
-        throw new Error(
-          `El gasto ($${montoGasto.toLocaleString('es-CO')}) supera el balance disponible ($${balanceDisponible.toLocaleString('es-CO')})`
+        setWarning(
+          `⚠️ Advertencia: El gasto ($${montoGasto.toLocaleString('es-CO')}) supera el balance disponible ($${balanceDisponible.toLocaleString('es-CO')}). El comité quedará en déficit.`
         )
+        // Permitir que continúe pero mostrar advertencia
       }
       
       // Preparar datos

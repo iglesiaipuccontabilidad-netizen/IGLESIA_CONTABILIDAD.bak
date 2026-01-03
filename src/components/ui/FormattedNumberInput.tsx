@@ -59,13 +59,23 @@ export const FormattedNumberInput = forwardRef<HTMLInputElement, FormattedNumber
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const rawValue = e.target.value
       setDisplayValue(rawValue)
-      onChange?.(rawValue)
+      // Pasar el evento completo para compatibilidad con react-hook-form
+      onChange?.(e)
     }
 
     const handleQuickAmount = (amount: number) => {
       const strAmount = amount.toString()
       setDisplayValue(strAmount)
-      onChange?.(strAmount)
+      // Crear un evento sintético para compatibilidad con react-hook-form
+      if (onChange) {
+        const syntheticEvent = {
+          target: {
+            name: props.name || '',
+            value: strAmount
+          }
+        } as React.ChangeEvent<HTMLInputElement>
+        onChange(syntheticEvent)
+      }
     }
 
     const numValue = parseFloat(displayValue) || 0
