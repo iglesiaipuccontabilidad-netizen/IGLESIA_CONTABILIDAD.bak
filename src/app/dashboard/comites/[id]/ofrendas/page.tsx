@@ -66,6 +66,12 @@ export default async function OfrendasComitePage({ params }: PageProps) {
   const montoTotal = ofrendasConProyecto.reduce((sum, o) => sum + o.monto, 0)
 
   const canManage = isAdmin || rolEnComite === 'lider' || rolEnComite === 'tesorero'
+  
+  // Debug: Ver permisos en consola del servidor
+  console.log('🔐 Permisos de usuario:')
+  console.log('  - isAdmin:', isAdmin)
+  console.log('  - rolEnComite:', rolEnComite)
+  console.log('  - canManage:', canManage)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
@@ -142,7 +148,12 @@ export default async function OfrendasComitePage({ params }: PageProps) {
         <OfrendasStats ofrendas={ofrendasConProyecto} />
 
         {/* Lista de Ofrendas con filtros */}
-        <OfrendasList ofrendas={ofrendasConProyecto} comiteId={id} />
+        <OfrendasList 
+          ofrendas={ofrendasConProyecto} 
+          comiteId={id}
+          canManage={canManage}
+          isAdmin={isAdmin}
+        />
       </div>
     </div>
   )

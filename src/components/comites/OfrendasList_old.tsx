@@ -1,10 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { Calendar, DollarSign, Tag, FileText, TrendingUp, FolderOpen, Eye, Edit, Trash2 } from "lucide-react"
+import { Calendar, DollarSign, Tag, FileText, TrendingUp, FolderOpen } from "lucide-react"
 import { FiltersBar, type FilterValues } from "./FiltersBar"
-import Link from "next/link"
-import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal"
 
 interface ExtendedFilterValues extends FilterValues {
   proyecto?: string
@@ -28,8 +26,6 @@ interface Ofrenda {
 interface OfrendasListProps {
   ofrendas: Ofrenda[]
   comiteId: string
-  canManage?: boolean
-  isAdmin?: boolean
 }
 
 const tipoLabels: Record<string, string> = {
@@ -46,14 +42,9 @@ const tipoColors: Record<string, string> = {
   otro: "bg-slate-50 text-slate-700 border-slate-200",
 }
 
-export function OfrendasList({ ofrendas, comiteId, canManage = false, isAdmin = false }: OfrendasListProps) {
-  console.log('🎯 OfrendasList - Props recibidos:', { canManage, isAdmin, totalOfrendas: ofrendas?.length || 0 })
-  
+export function OfrendasList({ ofrendas, comiteId }: OfrendasListProps) {
   const [filters, setFilters] = useState<ExtendedFilterValues>({})
   const [proyectos, setProyectos] = useState<any[]>([])
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [ofrendaToDelete, setOfrendaToDelete] = useState<string | null>(null)
 
   // Cargar proyectos del comité
   useEffect(() => {
@@ -77,44 +68,6 @@ export function OfrendasList({ ofrendas, comiteId, canManage = false, isAdmin = 
     { label: "Primicia", value: "primicia" },
     { label: "Otro", value: "otro" },
   ]
-
-  const handleDeleteClick = (ofrendaId: string) => {
-    setOfrendaToDelete(ofrendaId)
-    setShowDeleteModal(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!ofrendaToDelete) return
-
-    setDeletingId(ofrendaToDelete)
-    try {
-      console.log('🗑️ Intentando eliminar ofrenda:', ofrendaToDelete)
-      const { deleteComiteOfrenda } = await import("@/app/actions/comites-actions")
-      const result = await deleteComiteOfrenda(ofrendaToDelete)
-      
-      console.log('📥 Resultado de eliminación:', result)
-      
-      if (result.success) {
-        setShowDeleteModal(false)
-        alert('✅ Ofrenda eliminada exitosamente')
-        window.location.reload()
-      } else {
-        console.error('❌ Error del servidor:', result.error)
-        alert(`❌ Error: ${result.error || 'No se pudo eliminar la ofrenda'}`)
-      }
-    } catch (error) {
-      console.error('❌ Error crítico:', error)
-      alert(`❌ Error crítico: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-    } finally {
-      setDeletingId(null)
-      setOfrendaToDelete(null)
-    }
-  }
-
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false)
-    setOfrendaToDelete(null)
-  }
 
   // Aplicar filtros
   const ofrendasFiltradas = useMemo(() => {
@@ -325,9 +278,8 @@ export function OfrendasList({ ofrendas, comiteId, canManage = false, isAdmin = 
                 </div>
               </div>
 
-              {/* Monto y acciones */}
-              <div className="flex items-center justify-between lg:justify-end gap-6">
-                {/* Monto destacado */}
+              {/* Monto destacado */}
+              <div className="flex items-center justify-end lg:justify-center">
                 <div className="text-right lg:text-center">
                   <p className="text-xs font-medium text-slate-500 mb-1">Monto</p>
                   <div className="relative">
@@ -336,51 +288,6 @@ export function OfrendasList({ ofrendas, comiteId, canManage = false, isAdmin = 
                       ${ofrenda.monto.toLocaleString("es-CO")}
                     </p>
                   </div>
-                </div>
-
-                {/* Botones de acción */}
-                <div className="flex items-center gap-2">
-                  {/* Ver detalle */}
-                  <Link
-                    href={`/dashboard/comites/${comiteId}/ofrendas/${ofrenda.id}`}
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all duration-200 border border-blue-200 hover:border-blue-300 hover:scale-110"
-                    title="Ver detalle"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Link>
-
-                  {/* Editar - solo si tiene permisos */}
-                  {canManage && (
-                    <Link
-                      href={`/dashboard/comites/${comiteId}/ofrendas/${ofrenda.id}/editar`}
-                      className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-all duration-200 border border-amber-200 hover:border-amber-300 hover:scale-110"
-                      title="Editar"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Link>
-                  )}
-
-                  {/* Eliminar - solo si tiene permisos */}
-                  {canManage && (
-                    <button
-                      onClick={() => {
-                        console.log('🗑️ Click en botón eliminar - Ofrenda ID:', ofrenda.id)
-                        handleDeleteClick(ofrenda.id)
-                      }}
-                      disabled={deletingId === ofrenda.id}
-                      className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all duration-200 border border-rose-200 hover:border-rose-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Eliminar"
-                    >
-                      {deletingId === ofrenda.id ? (
-                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
@@ -412,18 +319,6 @@ export function OfrendasList({ ofrendas, comiteId, canManage = false, isAdmin = 
           </div>
         </div>
       )}
-
-      {/* Modal de confirmación */}
-      <ConfirmDeleteModal
-        isOpen={showDeleteModal}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        title="¿Eliminar ofrenda?"
-        message="Esta ofrenda será eliminada permanentemente. Esta acción no se puede deshacer."
-        confirmText="Sí, eliminar"
-        cancelText="Cancelar"
-        isDeleting={deletingId !== null}
-      />
     </div>
   )
 }

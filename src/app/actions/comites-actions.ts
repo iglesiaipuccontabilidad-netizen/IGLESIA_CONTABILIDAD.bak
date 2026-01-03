@@ -1542,9 +1542,9 @@ export async function deleteComiteOfrenda(ofrendaId: string): Promise<OperationR
 
     const { rol } = await verificarAccesoUsuarioComite(ofrenda.comite_id);
 
-    // Solo admin puede eliminar ofrendas
-    if (rol !== 'admin') {
-      throw new Error('Solo administradores pueden eliminar ofrendas');
+    // Líder, tesorero y admin pueden eliminar ofrendas
+    if (!['admin', 'lider', 'tesorero'].includes(rol)) {
+      throw new Error('No tienes permisos para eliminar ofrendas');
     }
 
     // Eliminar ofrenda
