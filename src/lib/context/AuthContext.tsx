@@ -25,11 +25,6 @@ const AuthContext = createContext<AuthContextType>({
   comitesUsuario: [],
 })
 
-// Almacenar en memoria para evitar queries repetidas
-const roleCache = new Map<string, { rol: string | null; timestamp: number }>()
-const comitesCache = new Map<string, { comites: any[]; timestamp: number }>()
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -39,16 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true)
   const supabase = getSupabaseBrowserClient()
 
-  // Cargar el rol del usuario
+  // Cargar el rol del usuario - SIN CACHÉ para siempre obtener datos frescos
   const loadUserRole = async (userId: string) => {
-    // Verificar caché
-    const cached = roleCache.get(userId)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.rol
-    }
-
     try {
-      // Query simple y rápido solo del rol
       const { data, error } = await supabase
         .from('usuarios')
         .select('rol')
@@ -60,26 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null
       }
 
-      const rol = data?.rol || null
-      // Cachear el resultado
-      roleCache.set(userId, { rol, timestamp: Date.now() })
-      return rol
+      return data?.rol || null
     } catch (err) {
       console.error('Error en loadUserRole:', err)
       return null
     }
   }
 
-  // Cargar los comités del usuario
+  // Cargar los comités del usuario - SIN CACHÉ para siempre obtener datos frescos
   const loadUserComites = async (userId: string) => {
-    // Verificar caché
-    const cached = comitesCache.get(userId)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.comites
-    }
-
     try {
-      // Query para obtener los comités del usuario
       const { data, error } = await supabase
         .from('comite_usuarios')
         .select(`
@@ -98,10 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return []
       }
 
-      const comites = data || []
-      // Cachear el resultado
-      comitesCache.set(userId, { comites, timestamp: Date.now() })
-      return comites
+      return data || []
     } catch (err) {
       console.error('Error en loadUserComites:', err)
       return []
@@ -113,17 +88,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     async function initializeAuth() {
       try {
-        // Obtener sesión actual - esto es rápido y no requiere query
+        setIsLoading(true)
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session?.user && mountedRef.current) {
           setUser(session.user)
           
-          // Cargar el rol de forma asíncrona sin bloquear
-          const rol = await loadUserRole(session.user.id)
-          
-          // Cargar los comités del usuario en paralelo
-          const comites = await loadUserComites(session.user.id)
+          // Cargar el rol y comités en paralelo
+          const [rol, comites] = await Promise.all([
+            loadUserRole(session.user.id),
+            loadUserComites(session.user.id)
+          ])
           
           if (mountedRef.current) {
             setMember({
@@ -145,31 +120,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initializeAuth()
 
-    // Escuchar cambios de autenticación
+    // Escuchar cambios de autenticación - Mejor práctica de Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mountedRef.current) return
 
-        if (session?.user) {
-          setUser(session.user)
-          
-          // Cargar el rol y comités de forma asíncrona
-          const rol = await loadUserRole(session.user.id)
-          const comites = await loadUserComites(session.user.id)
-          
-          if (mountedRef.current) {
-            setMember({
-              id: session.user.id,
-              email: session.user.email ?? null,
-              rol: rol
-            })
-            setComitesUsuario(comites)
+        console.log('🔄 Auth state changed:', event)
+
+        // Refrescar datos del usuario cuando cambia la sesión
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          if (session?.user) {
+            setUser(session.user)
+            
+            // Refetch completo de datos frescos
+            const [rol, comites] = await Promise.all([
+              loadUserRole(session.user.id),
+              loadUserComites(session.user.id)
+            ])
+            
+            if (mountedRef.current) {
+              setMember({
+                id: session.user.id,
+                email: session.user.email ?? null,
+                rol: rol
+              })
+              setComitesUsuario(comites)
+            }
           }
-        } else {
+        } else if (event === 'SIGNED_OUT') {
+          // Limpiar todos los datos al cerrar sesión
           setUser(null)
           setMember(null)
           setComitesUsuario([])
         }
+        
         setIsLoading(false)
       }
     )
