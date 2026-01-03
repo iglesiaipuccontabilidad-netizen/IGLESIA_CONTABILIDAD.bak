@@ -1,29 +1,21 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase-client'
-import type { Database } from '@/lib/database.types'
 
 type MemberType = {
   id: string
   email: string | null
   rol: string | null
-  estado: Database['public']['Enums']['estado_usuario']
-}
-
-type ComiteUsuarioType = {
-  comite_id: string
-  comite_nombre: string
-  rol_en_comite: string
-  estado: string
+  estado?: string | null
 }
 
 type AuthContextType = {
   user: User | null
   isLoading: boolean
   member: MemberType | null
-  comitesUsuario: ComiteUsuarioType[]
+  comitesUsuario: any[]
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -33,236 +25,168 @@ const AuthContext = createContext<AuthContextType>({
   comitesUsuario: [],
 })
 
+// Almacenar en memoria para evitar queries repetidas
+const roleCache = new Map<string, { rol: string | null; timestamp: number }>()
+const comitesCache = new Map<string, { comites: any[]; timestamp: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutos
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [member, setMember] = useState<MemberType | null>(null)
-  const [comitesUsuario, setComitesUsuario] = useState<ComiteUsuarioType[]>([])
+  const [comitesUsuario, setComitesUsuario] = useState<any[]>([])
   
-  // Refs para evitar múltiples llamadas
-  const memberLoadedRef = useRef(false)
   const mountedRef = useRef(true)
-  const realtimeSubscriptionRef = useRef<any>(null)
-  
-  // Usar cliente singleton para evitar recreaciones
   const supabase = getSupabaseBrowserClient()
+
+  // Cargar el rol del usuario
+  const loadUserRole = async (userId: string) => {
+    // Verificar caché
+    const cached = roleCache.get(userId)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.rol
+    }
+
+    try {
+      // Query simple y rápido solo del rol
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('rol')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error cargando rol:', error)
+        return null
+      }
+
+      const rol = data?.rol || null
+      // Cachear el resultado
+      roleCache.set(userId, { rol, timestamp: Date.now() })
+      return rol
+    } catch (err) {
+      console.error('Error en loadUserRole:', err)
+      return null
+    }
+  }
+
+  // Cargar los comités del usuario
+  const loadUserComites = async (userId: string) => {
+    // Verificar caché
+    const cached = comitesCache.get(userId)
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.comites
+    }
+
+    try {
+      // Query para obtener los comités del usuario
+      const { data, error } = await supabase
+        .from('comite_usuarios')
+        .select(`
+          comite_id,
+          rol,
+          estado,
+          comites:comite_id (
+            nombre,
+            descripcion
+          )
+        `)
+        .eq('usuario_id', userId)
+      
+      if (error) {
+        console.error('Error cargando comités del usuario:', error)
+        return []
+      }
+
+      const comites = data || []
+      // Cachear el resultado
+      comitesCache.set(userId, { comites, timestamp: Date.now() })
+      return comites
+    } catch (err) {
+      console.error('Error en loadUserComites:', err)
+      return []
+    }
+  }
 
   useEffect(() => {
     mountedRef.current = true
     
-    // Funciones internas para evitar dependencias circulares
-    async function loadComitesUsuario(userId: string) {
-      if (!mountedRef.current) return
-      
+    async function initializeAuth() {
       try {
-        const { data, error } = await supabase
-          .from('comite_usuarios')
-          .select(`
-            comite_id,
-            rol,
-            estado,
-            comites:comite_id (
-              id,
-              nombre
-            )
-          `)
-          .eq('usuario_id', userId)
-          .eq('estado', 'activo')
-          .abortSignal(AbortSignal.timeout(5000))
+        // Obtener sesión actual - esto es rápido y no requiere query
+        const { data: { session } } = await supabase.auth.getSession()
         
-        if (error) {
-          if (error.code !== 'TIMEOUT') {
-            console.error('Error al cargar comités:', error.message)
+        if (session?.user && mountedRef.current) {
+          setUser(session.user)
+          
+          // Cargar el rol de forma asíncrona sin bloquear
+          const rol = await loadUserRole(session.user.id)
+          
+          // Cargar los comités del usuario en paralelo
+          const comites = await loadUserComites(session.user.id)
+          
+          if (mountedRef.current) {
+            setMember({
+              id: session.user.id,
+              email: session.user.email ?? null,
+              rol: rol
+            })
+            setComitesUsuario(comites)
           }
-          if (mountedRef.current) setComitesUsuario([])
-          return
-        }
-        
-        const comites: ComiteUsuarioType[] = (data || []).map((cu: any) => ({
-          comite_id: cu.comite_id,
-          comite_nombre: cu.comites?.nombre || 'Sin nombre',
-          rol_en_comite: cu.rol,
-          estado: cu.estado
-        }))
-        
-        if (mountedRef.current) {
-          setComitesUsuario(comites)
         }
       } catch (error) {
-        console.error('Excepción al cargar comités:', error instanceof Error ? error.message : 'Error desconocido')
-        if (mountedRef.current) setComitesUsuario([])
-      }
-    }
-
-    function setupRealtimeSubscription(userId: string) {
-      if (realtimeSubscriptionRef.current) {
-        realtimeSubscriptionRef.current.unsubscribe()
-      }
-      
-      realtimeSubscriptionRef.current = supabase
-        .channel(`usuarios:${userId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'usuarios',
-            filter: `id=eq.${userId}`
-          },
-          (payload: any) => {
-            if (payload.new && mountedRef.current) {
-              setMember({
-                id: payload.new.id,
-                email: payload.new.email,
-                rol: payload.new.rol,
-                estado: payload.new.estado
-              })
-            }
-          }
-        )
-        .subscribe()
-    }
-
-    async function loadMemberData(userId: string) {
-      if (!userId || !mountedRef.current || memberLoadedRef.current) return
-      
-      console.log('🔄 AuthContext - Cargando datos de usuario:', userId)
-      
-      try {
-        const { data: memberData, error: memberError } = await supabase
-          .from('usuarios')
-          .select('id, email, rol, estado')
-          .eq('id', userId)
-          .abortSignal(AbortSignal.timeout(8000))
-          .maybeSingle()
-        
-        console.log('📊 AuthContext - Resultado query:', { memberData, memberError })
-        
-        const isEmptyError = memberError && 
-          typeof memberError === 'object' && 
-          Object.keys(memberError).length === 0
-        
-        if (memberData && mountedRef.current) {
-          console.log('✅ AuthContext - Usuario cargado exitosamente:', memberData)
-          memberLoadedRef.current = true // ✅ Solo marcar como cargado si fue exitoso
-          setMember(memberData)
-          await loadComitesUsuario(userId)
-          setupRealtimeSubscription(userId)
-        } else if (memberError && !isEmptyError) {
-          if (memberError.code === 'TIMEOUT') {
-            console.warn('⚠️ Timeout en consulta de usuarios. Ejecuta la migración de optimización.')
-          } else {
-            console.error('❌ Error al cargar usuario:', memberError.message, memberError)
-          }
-          if (mountedRef.current) setMember(null)
-          memberLoadedRef.current = false // ❌ Permitir reintentar si falla
-        } else if (!memberData) {
-          console.warn('⚠️ No se encontró usuario con ID:', userId)
-          if (mountedRef.current) setMember(null)
-          memberLoadedRef.current = false // ❌ Permitir reintentar si no hay datos
-        }
-      } catch (error) {
-        console.error('💥 Excepción al cargar datos:', error instanceof Error ? error.message : 'Error desconocido', error)
-        if (mountedRef.current) setMember(null)
-        memberLoadedRef.current = false // ❌ Permitir reintentar si hay excepción
+        console.error('Error inicializando auth:', error)
       } finally {
         if (mountedRef.current) {
-          console.log('✔️ AuthContext - Finalizando carga, isLoading = false')
           setIsLoading(false)
         }
       }
     }
-    
+
+    initializeAuth()
+
     // Escuchar cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mountedRef.current) return
 
-        if (event === 'SIGNED_OUT') {
+        if (session?.user) {
+          setUser(session.user)
+          
+          // Cargar el rol y comités de forma asíncrona
+          const rol = await loadUserRole(session.user.id)
+          const comites = await loadUserComites(session.user.id)
+          
+          if (mountedRef.current) {
+            setMember({
+              id: session.user.id,
+              email: session.user.email ?? null,
+              rol: rol
+            })
+            setComitesUsuario(comites)
+          }
+        } else {
           setUser(null)
           setMember(null)
           setComitesUsuario([])
-          setIsLoading(false)
-          memberLoadedRef.current = false
-          
-          if (realtimeSubscriptionRef.current) {
-            realtimeSubscriptionRef.current.unsubscribe()
-            realtimeSubscriptionRef.current = null
-          }
-          return
         }
-
-        if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && !memberLoadedRef.current)) {
-          if (session?.user) {
-            setUser(session.user)
-            await loadMemberData(session.user.id)
-          } else {
-            setIsLoading(false)
-          }
-        }
+        setIsLoading(false)
       }
     )
 
-    // Inicialización: Verificar usuario solo si no se ha cargado
-    const initialize = async () => {
-      if (!mountedRef.current || memberLoadedRef.current) return
-      
-      try {
-        const { data: { user: authUser }, error } = await supabase.auth.getUser()
-        
-        if (!error && authUser && mountedRef.current && !memberLoadedRef.current) {
-          setUser(authUser)
-          await loadMemberData(authUser.id)
-        } else if (!authUser) {
-          setIsLoading(false)
-        }
-      } catch (error) {
-        console.error('Error en inicialización:', error instanceof Error ? error.message : 'Error desconocido')
-        if (mountedRef.current) setIsLoading(false)
-      }
-    }
-
-    // Solo inicializar una vez al montar
-    initialize()
-
-    // Timeout de seguridad
-    const timeoutId = setTimeout(() => {
-      if (mountedRef.current && isLoading) {
-        console.warn('Timeout en inicialización de auth (10s)')
-        setIsLoading(false)
-      }
-    }, 10000)
-
     return () => {
       mountedRef.current = false
-      clearTimeout(timeoutId)
-      subscription.unsubscribe()
-      
-      if (realtimeSubscriptionRef.current) {
-        realtimeSubscriptionRef.current.unsubscribe()
-        realtimeSubscriptionRef.current = null
-      }
+      subscription?.unsubscribe()
     }
-  }, []) // Cliente singleton, no necesita dependencias
-
-  const value = useMemo(() => ({
-    user,
-    isLoading,
-    member,
-    comitesUsuario,
-  }), [user, isLoading, member, comitesUsuario])
+  }, [supabase])
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, isLoading, member, comitesUsuario }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+export function useAuth() {
+  return useContext(AuthContext)
 }

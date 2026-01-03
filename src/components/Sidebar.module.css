@@ -17,7 +17,7 @@
 }
 
 .brandText {
-  @apply flex flex-col gap-0.5 flex-1 min-w-0;
+  @apply flex flex-col gap-1 flex-1 min-w-0;
 }
 
 .brandName {
@@ -83,7 +83,7 @@
 }
 
 .linkContent {
-  @apply flex-1 min-w-0 flex flex-col gap-0.5;
+  @apply flex-1 min-w-0 flex flex-col gap-1;
 }
 
 .linkLabel {
@@ -212,12 +212,122 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .sidebar {
+    @apply w-64;
+  }
+}
+
 @media (max-width: 768px) {
   .sidebar {
-    @apply transform -translate-x-full transition-transform duration-300;
+    @apply w-72 transform -translate-x-full transition-transform duration-300;
   }
 
   .sidebar.mobileVisible {
     @apply translate-x-0;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Very small phones - reduce dimensions significantly */
+  .sidebar {
+    @apply w-screen transform -translate-x-full transition-transform duration-300;
+    max-width: calc(100vw - 60px);
+  }
+
+  .sidebar.mobileVisible {
+    @apply translate-x-0;
+  }
+
+  /* Reduce padding in brand row */
+  .brandRow {
+    @apply p-3 gap-2;
+  }
+
+  /* Reduce logo size */
+  .logo {
+    @apply w-10 h-10 text-base;
+  }
+
+  /* Reduce brand text sizes */
+  .brandName {
+    @apply text-xs;
+  }
+
+  .brandDescription {
+    @apply text-xs;
+    font-size: 0.625rem;
+  }
+
+  /* Reduce section margins */
+  .section {
+    @apply mb-4;
+  }
+
+  .sectionTitle {
+    @apply text-xs px-3 mb-2;
+    font-size: 0.625rem;
+  }
+
+  .navList {
+    @apply px-2 space-y-1;
+  }
+
+  /* Reduce nav link padding */
+  .navLink {
+    @apply px-3 py-2 text-xs rounded-md;
+  }
+
+  .linkContent {
+    @apply gap-0.5;
+    gap: 0.125rem;
+  }
+
+  .linkLabel {
+    @apply text-xs;
+  }
+
+  .linkDescription {
+    @apply text-xs;
+    font-size: 0.625rem;
+    display: none;
+  }
+
+  /* Reduce icon size */
+  .icon {
+    @apply w-4 h-4;
+  }
+
+  /* Reduce sub-nav link padding */
+  .subNavLink {
+    @apply px-3 py-1 pl-10 text-xs;
+    font-size: 0.625rem;
+  }
+
+  /* Reduce profile card padding */
+  .profileCard {
+    @apply p-2 gap-2;
+  }
+
+  .avatar {
+    @apply w-8 h-8 text-xs;
+  }
+
+  .profileName {
+    @apply text-xs;
+  }
+
+  .profileRole {
+    @apply text-xs;
+    font-size: 0.625rem;
+  }
+
+  /* Reduce scrollbar width */
+  .sidebar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    border-radius: 2px;
   }
 }

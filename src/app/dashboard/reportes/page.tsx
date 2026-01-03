@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FileText, Download, FileSpreadsheet, TrendingUp, ShoppingCart } from 'lucide-react'
+import { FileText, Download, FileSpreadsheet, TrendingUp, ShoppingCart, Loader2 } from 'lucide-react'
 import ReportFilter, { FilterState } from '@/components/reportes/ReportFilter'
 import ReportTable from '@/components/reportes/ReportTable'
 import ReportActions from '@/components/reportes/ReportActions'
@@ -17,6 +17,8 @@ import GraficoPropositos from '@/components/reportes/GraficoPropositos'
 import GraficoEstadoVotos from '@/components/reportes/GraficoEstadoVotos'
 import GraficoTendenciaPagos from '@/components/reportes/GraficoTendenciaPagos'
 import VentasPorProducto from '@/components/reportes/VentasPorProducto'
+import { useToast } from '@/lib/hooks/useToast'
+import { ToastContainer } from '@/components/ui/Toast'
 // Importaciones dinámicas para evitar errores si las dependencias no están instaladas
 const importPDFGenerators = async () => {
   try {
@@ -48,6 +50,9 @@ export default function ReportesPage() {
     miembroId: '',
     propositoId: ''
   })
+  const [exportingPDF, setExportingPDF] = useState(false)
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const { toasts, removeToast, success, error: showError } = useToast()
 
   // Hooks de datos
   const votosData = useReportesVotos({
@@ -146,28 +151,27 @@ export default function ReportesPage() {
         {reportes.map((reporte) => {
           const Icon = reporte.icono
           const isSelected = tipoReporte === reporte.id
-          
+
           return (
             <button
               key={reporte.id}
               onClick={() => setTipoReporte(reporte.id)}
-              className={`relative overflow-hidden rounded-xl border-2 p-6 text-left transition-all duration-300 ${
-                isSelected
-                  ? 'border-blue-500 bg-white shadow-xl scale-105'
-                  : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg'
-              }`}
+              className={`relative overflow-hidden rounded-xl border-2 p-6 text-left transition-all duration-300 ${isSelected
+                ? 'border-blue-500 bg-white shadow-xl scale-105'
+                : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-lg'
+                }`}
             >
               <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${reporte.color} opacity-10 rounded-full -mr-16 -mt-16`}></div>
-              
+
               <div className="relative">
                 <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${reporte.color} mb-4`}>
                   <Icon className="h-6 w-6 text-white" />
                 </div>
-                
+
                 <h3 className="text-lg font-semibold text-slate-900 mb-2">
                   {reporte.titulo}
                 </h3>
-                
+
                 <p className="text-sm text-slate-600">
                   {reporte.descripcion}
                 </p>
@@ -197,11 +201,12 @@ export default function ReportesPage() {
                 Configura los filtros y genera tu reporte
               </p>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
-              <button 
+              <button
                 onClick={handleExportPDF}
                 disabled={
+                  exportingPDF ||
                   (tipoReporte === 'votos' && votosData.loading) ||
                   (tipoReporte === 'pagos' && pagosData.loading) ||
                   (tipoReporte === 'miembros' && miembrosData.loading) ||
@@ -210,12 +215,17 @@ export default function ReportesPage() {
                 }
                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
               >
-                <Download className="h-4 w-4" />
-                <span className="text-sm font-medium">Exportar PDF</span>
+                {exportingPDF ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">{exportingPDF ? 'Exportando...' : 'Exportar PDF'}</span>
               </button>
-              <button 
+              <button
                 onClick={handleExportExcel}
                 disabled={
+                  exportingExcel ||
                   (tipoReporte === 'votos' && votosData.loading) ||
                   (tipoReporte === 'pagos' && pagosData.loading) ||
                   (tipoReporte === 'miembros' && miembrosData.loading) ||
@@ -224,8 +234,12 @@ export default function ReportesPage() {
                 }
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
               >
-                <FileSpreadsheet className="h-4 w-4" />
-                <span className="text-sm font-medium">Exportar Excel</span>
+                {exportingExcel ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="h-4 w-4" />
+                )}
+                <span className="text-sm font-medium">{exportingExcel ? 'Exportando...' : 'Exportar Excel'}</span>
               </button>
             </div>
           </div>
@@ -241,6 +255,9 @@ export default function ReportesPage() {
           {renderReporteContent()}
         </div>
       </div>
+
+      {/* Toast Container para notificaciones */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   )
 
@@ -353,11 +370,12 @@ export default function ReportesPage() {
 
   // Funciones de exportación
   async function handleExportPDF() {
+    setExportingPDF(true)
     try {
       const pdfModule = await importPDFGenerators()
-      
+
       if (!pdfModule) {
-        alert('⚠️ Las dependencias de PDF no están instaladas.\n\nPor favor ejecuta:\nnpm install jspdf jspdf-autotable')
+        showError('⚠️ Las dependencias de PDF no están instaladas. Por favor ejecuta: npm install jspdf jspdf-autotable', 6000)
         return
       }
 
@@ -366,7 +384,7 @@ export default function ReportesPage() {
       switch (tipoReporte) {
         case 'votos':
           if (votosData.data.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = pdfModule.generarPDFVotos(votosData.data)
@@ -374,7 +392,7 @@ export default function ReportesPage() {
 
         case 'ventas':
           if (ventasData.datos.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = pdfModule.generarPDFVentas(ventasData.datos)
@@ -382,7 +400,7 @@ export default function ReportesPage() {
 
         case 'pagos':
           if (pagosData.data.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = pdfModule.generarPDFPagos(pagosData.data)
@@ -390,7 +408,7 @@ export default function ReportesPage() {
 
         case 'miembros':
           if (miembrosData.data.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = pdfModule.generarPDFMiembros(miembrosData.data)
@@ -398,34 +416,38 @@ export default function ReportesPage() {
 
         case 'financiero':
           if (!financieroData.data) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = pdfModule.generarPDFFinanciero(financieroData.data)
           break
 
         default:
-          alert('Tipo de reporte no válido')
+          showError('Tipo de reporte no válido', 4000)
           return
       }
 
       if (resultado.success) {
+        success('✅ PDF exportado exitosamente', 4000)
         console.log('✅ PDF generado exitosamente')
       } else {
-        alert('Error al generar el PDF: ' + resultado.mensaje)
+        showError('Error al generar el PDF: ' + resultado.mensaje, 5000)
       }
     } catch (error) {
       console.error('Error al exportar PDF:', error)
-      alert('Error al generar el PDF. Verifica que las dependencias estén instaladas.')
+      showError('Error al generar el PDF. Verifica que las dependencias estén instaladas.', 5000)
+    } finally {
+      setExportingPDF(false)
     }
   }
 
   async function handleExportExcel() {
+    setExportingExcel(true)
     try {
       const excelModule = await importExcelExporters()
-      
+
       if (!excelModule) {
-        alert('⚠️ Las dependencias de Excel no están instaladas.\n\nPor favor ejecuta:\nnpm install xlsx file-saver')
+        showError('⚠️ Las dependencias de Excel no están instaladas. Por favor ejecuta: npm install xlsx file-saver', 6000)
         return
       }
 
@@ -434,7 +456,7 @@ export default function ReportesPage() {
       switch (tipoReporte) {
         case 'votos':
           if (votosData.data.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = excelModule.exportarExcelVotos(votosData.data)
@@ -442,7 +464,7 @@ export default function ReportesPage() {
 
         case 'ventas':
           if (ventasData.datos.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = excelModule.exportarExcelVentas(ventasData.datos)
@@ -450,7 +472,7 @@ export default function ReportesPage() {
 
         case 'pagos':
           if (pagosData.data.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = excelModule.exportarExcelPagos(pagosData.data)
@@ -458,7 +480,7 @@ export default function ReportesPage() {
 
         case 'miembros':
           if (miembrosData.data.length === 0) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = excelModule.exportarExcelMiembros(miembrosData.data)
@@ -466,25 +488,28 @@ export default function ReportesPage() {
 
         case 'financiero':
           if (!financieroData.data) {
-            alert('No hay datos para exportar')
+            showError('No hay datos para exportar', 4000)
             return
           }
           resultado = excelModule.exportarExcelFinanciero(financieroData.data)
           break
 
         default:
-          alert('Tipo de reporte no válido')
+          showError('Tipo de reporte no válido', 4000)
           return
       }
 
       if (resultado.success) {
+        success('✅ Excel exportado exitosamente', 4000)
         console.log('✅ Excel generado exitosamente')
       } else {
-        alert('Error al generar el Excel: ' + resultado.mensaje)
+        showError('Error al generar el Excel: ' + resultado.mensaje, 5000)
       }
     } catch (error) {
       console.error('Error al exportar Excel:', error)
-      alert('Error al generar el Excel. Verifica que las dependencias estén instaladas.')
+      showError('Error al generar el Excel. Verifica que las dependencias estén instaladas.', 5000)
+    } finally {
+      setExportingExcel(false)
     }
   }
 }

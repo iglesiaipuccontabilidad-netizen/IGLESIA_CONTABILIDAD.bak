@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Vote, Package, ShoppingCart, BarChart3, Download, FileText, FileSpreadsheet } from "lucide-react"
+import { Vote, Package, ShoppingCart, BarChart3, Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react"
 import { ProyectoProductosTable } from "./productos/ProyectoProductosTable"
 import { ProyectoVentasTable } from "./ventas/ProyectoVentasTable"
 import { generarPDFVentasProyecto, generarExcelVentasProyecto } from "@/lib/utils/reportesComite"
+import { useToast } from "@/lib/hooks/useToast"
+import { ToastContainer } from "@/components/ui/Toast"
 
 type TabType = "votos" | "productos" | "ventas" | "reportes"
 
@@ -30,8 +32,12 @@ export function ProyectoTabs({
   onRefresh,
 }: ProyectoTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>("votos")
+  const [exportingPDF, setExportingPDF] = useState(false)
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const { toasts, removeToast, success, error: showError } = useToast()
 
   const handleExportPDF = async () => {
+    setExportingPDF(true)
     try {
       const resultado = await generarPDFVentasProyecto({
         productos,
@@ -39,19 +45,23 @@ export function ProyectoTabs({
         resumenVentas,
         proyectoId
       })
-      
+
       if (resultado.success) {
+        success('✅ PDF exportado exitosamente', 4000)
         console.log('✅ PDF generado exitosamente')
       } else {
-        alert('Error al generar el PDF: ' + resultado.mensaje)
+        showError('Error al generar el PDF: ' + resultado.mensaje, 5000)
       }
     } catch (error) {
       console.error('Error al exportar PDF:', error)
-      alert('Error al generar el PDF. Por favor intenta nuevamente.')
+      showError('Error al generar el PDF. Por favor intenta nuevamente.', 5000)
+    } finally {
+      setExportingPDF(false)
     }
   }
 
   const handleExportExcel = async () => {
+    setExportingExcel(true)
     try {
       const resultado = await generarExcelVentasProyecto({
         productos,
@@ -59,15 +69,18 @@ export function ProyectoTabs({
         resumenVentas,
         proyectoId
       })
-      
+
       if (resultado.success) {
+        success('✅ Excel exportado exitosamente', 4000)
         console.log('✅ Excel generado exitosamente')
       } else {
-        alert('Error al generar el Excel: ' + resultado.mensaje)
+        showError('Error al generar el Excel: ' + resultado.mensaje, 5000)
       }
     } catch (error) {
       console.error('Error al exportar Excel:', error)
-      alert('Error al generar el Excel. Por favor intenta nuevamente.')
+      showError('Error al generar el Excel. Por favor intenta nuevamente.', 5000)
+    } finally {
+      setExportingExcel(false)
     }
   }
 
@@ -111,19 +124,17 @@ export function ProyectoTabs({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[120px] px-5 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${
-                  isActive
-                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-xl shadow-purple-500/30 scale-105"
-                    : "text-slate-600 hover:bg-slate-50 hover:scale-102"
-                }`}
+                className={`flex-1 min-w-[120px] px-5 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${isActive
+                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-xl shadow-purple-500/30 scale-105"
+                  : "text-slate-600 hover:bg-slate-50 hover:scale-102"
+                  }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse' : ''}`} />
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-black ${
-                      isActive ? "bg-white/30 text-white" : "bg-slate-200 text-slate-700"
-                    }`}
+                    className={`px-2.5 py-1 rounded-full text-xs font-black ${isActive ? "bg-white/30 text-white" : "bg-slate-200 text-slate-700"
+                      }`}
                   >
                     {tab.count}
                   </span>
@@ -303,19 +314,27 @@ export function ProyectoTabs({
                   <div className="flex flex-wrap gap-3">
                     <button
                       onClick={handleExportPDF}
-                      disabled={!ventas || ventas.length === 0}
+                      disabled={!ventas || ventas.length === 0 || exportingPDF}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md text-sm font-medium"
                     >
-                      <FileText className="w-4 h-4" />
-                      Exportar PDF
+                      {exportingPDF ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <FileText className="w-4 h-4" />
+                      )}
+                      {exportingPDF ? 'Exportando...' : 'Exportar PDF'}
                     </button>
                     <button
                       onClick={handleExportExcel}
-                      disabled={!ventas || ventas.length === 0}
+                      disabled={!ventas || ventas.length === 0 || exportingExcel}
                       className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md text-sm font-medium"
                     >
-                      <FileSpreadsheet className="w-4 h-4" />
-                      Exportar Excel
+                      {exportingExcel ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <FileSpreadsheet className="w-4 h-4" />
+                      )}
+                      {exportingExcel ? 'Exportando...' : 'Exportar Excel'}
                     </button>
                   </div>
                   {(!ventas || ventas.length === 0) && (
@@ -329,6 +348,9 @@ export function ProyectoTabs({
           </div>
         )}
       </div>
+
+      {/* Toast Container para notificaciones */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   )
 }

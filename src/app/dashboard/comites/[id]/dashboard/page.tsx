@@ -28,7 +28,7 @@ interface PageProps {
 
 export default async function DashboardComitePage({ params }: PageProps) {
   const supabase = await createClient()
-  
+
   // Await params en Next.js 15+
   const { id } = await params
 
@@ -74,144 +74,190 @@ export default async function DashboardComitePage({ params }: PageProps) {
   const canManage = access.isAdmin || access.rolEnComite === 'lider' || access.rolEnComite === 'tesorero'
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/dashboard/comites"
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver a Comités
-        </Link>
-
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center">
-                <LayoutDashboard className="w-6 h-6 text-white" />
-              </div>
-              Dashboard: {comite.nombre}
-            </h1>
-            <p className="text-slate-600 mt-2">
-              Vista general de la contabilidad del comité
-            </p>
-          </div>
-          <LogoutButton />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
+        {/* Breadcrumb mejorado */}
+        <div className="mb-4 sm:mb-6">
+          <Link
+            href="/dashboard/comites"
+            className="group inline-flex items-center gap-2 text-slate-600 hover:text-primary-600 transition-all duration-200"
+          >
+            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:border-primary-300 group-hover:bg-primary-50 transition-all duration-200">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
+            <span className="font-medium text-sm sm:text-base">Volver a Comités</span>
+          </Link>
         </div>
-      </div>
 
-      {/* Balance Cards */}
-      <div className="mb-8">
-        <BalanceCard data={balance} />
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Link
-          href={`/dashboard/comites/${id}/proyectos`}
-          className="bg-white rounded-xl border border-slate-200 p-6 hover:border-primary-300 hover:shadow-md transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Proyectos Activos</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1">{totalProyectos || 0}</p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center">
-              <Target className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href={`/dashboard/comites/${id}/votos`}
-          className="bg-white rounded-xl border border-slate-200 p-6 hover:border-primary-300 hover:shadow-md transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Votos Activos</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1">{totalVotos || 0}</p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center">
-              <FileText className="w-6 h-6 text-amber-600" />
-            </div>
-          </div>
-        </Link>
-
-        <Link
-          href={`/dashboard/comites/${id}/miembros`}
-          className="bg-white rounded-xl border border-slate-200 p-6 hover:border-primary-300 hover:shadow-md transition-all"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Miembros Activos</p>
-              <p className="text-3xl font-bold text-slate-900 mt-1">{totalMiembros || 0}</p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-cyan-50 flex items-center justify-center">
-              <Users className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Acciones Rápidas */}
-      {canManage && (
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-primary-600" />
-            Acciones Rápidas
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Link
-              href={`/dashboard/comites/${id}/ofrendas/nueva`}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
+        {/* Header mejorado */}
+        <div className="mb-6 sm:mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 shadow-lg p-6 sm:p-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 sm:gap-6">
+              {/* Título y descripción */}
+              <div className="flex-1 w-full lg:w-auto">
+                <div className="flex items-center gap-3 sm:gap-4 mb-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-cyan-500 rounded-2xl blur-xl opacity-30 animate-pulse"></div>
+                    <div className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-primary-500/30">
+                      <LayoutDashboard className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-1 truncate">
+                      Dashboard
+                    </h1>
+                    <p className="text-base sm:text-lg text-primary-600 font-semibold truncate">
+                      {comite.nombre}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-slate-600 text-sm sm:text-base ml-0 sm:ml-16 lg:ml-20">
+                  Vista general de la contabilidad del comité
+                </p>
               </div>
-              <span className="text-sm font-medium text-slate-900">Registrar Ofrenda</span>
-            </Link>
 
-            <Link
-              href={`/dashboard/comites/${id}/gastos/nuevo`}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-rose-600" />
+              {/* Logout button */}
+              <div className="w-full lg:w-auto">
+                <LogoutButton />
               </div>
-              <span className="text-sm font-medium text-slate-900">Registrar Gasto</span>
-            </Link>
-
-            <Link
-              href={`/dashboard/comites/${id}/votos/nuevo`}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-                <FileText className="w-5 h-5 text-amber-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-900">Nuevo Voto</span>
-            </Link>
-
-            <Link
-              href={`/dashboard/comites/${id}/proyectos/nuevo`}
-              className="flex flex-col items-center gap-2 p-4 bg-white rounded-lg border border-slate-200 hover:border-primary-300 hover:shadow-md transition-all"
-            >
-              <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
-                <Target className="w-5 h-5 text-purple-600" />
-              </div>
-              <span className="text-sm font-medium text-slate-900">Nuevo Proyecto</span>
-            </Link>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Grid de Información */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Votos Activos */}
-        <VotosActivosComite votos={votosActivos} comiteId={id} />
+        {/* Balance Cards */}
+        <div className="mb-6 sm:mb-8">
+          <BalanceCard data={balance} />
+        </div>
 
-        {/* Transacciones Recientes */}
-        <TransaccionesRecientes transacciones={transaccionesRecientes} />
+        {/* Stats Row - Mejorado para móviles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <Link
+            href={`/dashboard/comites/${id}/proyectos`}
+            className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 sm:p-6 hover:shadow-xl hover:border-purple-200 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1 sm:mb-2">Proyectos Activos</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900">{totalProyectos || 0}</p>
+              </div>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                <Target className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
+              </div>
+            </div>
+            <div className="relative mt-3 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full" style={{ width: '75%' }}></div>
+            </div>
+          </Link>
+
+          <Link
+            href={`/dashboard/comites/${id}/votos`}
+            className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 sm:p-6 hover:shadow-xl hover:border-amber-200 transition-all duration-300 hover:-translate-y-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1 sm:mb-2">Votos Activos</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900">{totalVotos || 0}</p>
+              </div>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
+              </div>
+            </div>
+            <div className="relative mt-3 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full" style={{ width: '60%' }}></div>
+            </div>
+          </Link>
+
+          <Link
+            href={`/dashboard/comites/${id}/miembros`}
+            className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 sm:p-6 hover:shadow-xl hover:border-cyan-200 transition-all duration-300 hover:-translate-y-1 sm:col-span-2 lg:col-span-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-50/50 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs sm:text-sm font-medium text-slate-600 mb-1 sm:mb-2">Miembros Activos</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-900">{totalMiembros || 0}</p>
+              </div>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                <Users className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-600" />
+              </div>
+            </div>
+            <div className="relative mt-3 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-cyan-500 to-cyan-600 rounded-full" style={{ width: '85%' }}></div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Acciones Rápidas - Mejorado para móviles */}
+        {canManage && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-5 sm:p-6 lg:p-8 mb-6 sm:mb-8 shadow-lg">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
+                  <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600" />
+                </div>
+                <span>Acciones Rápidas</span>
+              </h2>
+              <div className="w-2 h-2 rounded-full bg-primary-500 animate-pulse"></div>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <Link
+                href={`/dashboard/comites/${id}/ofrendas/nueva`}
+                className="group relative flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 bg-gradient-to-br from-white to-emerald-50/30 rounded-xl border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" />
+                </div>
+                <span className="relative text-xs sm:text-sm font-semibold text-slate-900 text-center">Registrar Ofrenda</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/comites/${id}/gastos/nuevo`}
+                className="group relative flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 bg-gradient-to-br from-white to-rose-50/30 rounded-xl border border-slate-200 hover:border-rose-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-rose-100 to-rose-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <DollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-rose-600" />
+                </div>
+                <span className="relative text-xs sm:text-sm font-semibold text-slate-900 text-center">Registrar Gasto</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/comites/${id}/votos/nuevo`}
+                className="group relative flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 bg-gradient-to-br from-white to-amber-50/30 rounded-xl border border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <FileText className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
+                </div>
+                <span className="relative text-xs sm:text-sm font-semibold text-slate-900 text-center">Nuevo Voto</span>
+              </Link>
+
+              <Link
+                href={`/dashboard/comites/${id}/proyectos/nuevo`}
+                className="group relative flex flex-col items-center gap-2 sm:gap-3 p-4 sm:p-5 bg-gradient-to-br from-white to-purple-50/30 rounded-xl border border-slate-200 hover:border-purple-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <Target className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
+                </div>
+                <span className="relative text-xs sm:text-sm font-semibold text-slate-900 text-center">Nuevo Proyecto</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Grid de Información - Mejorado para móviles */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Votos Activos */}
+          <VotosActivosComite votos={votosActivos} comiteId={id} />
+
+          {/* Transacciones Recientes */}
+          <TransaccionesRecientes transacciones={transaccionesRecientes} />
+        </div>
       </div>
     </div>
   )

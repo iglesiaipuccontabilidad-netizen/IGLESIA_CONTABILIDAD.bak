@@ -13,6 +13,7 @@ import {
   Activity,
 } from 'lucide-react'
 import { ProyectoTabs } from '@/components/comites/ProyectoTabs'
+import { requireComiteAccess } from '@/lib/auth/comite-permissions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -26,52 +27,13 @@ interface PageProps {
 
 export default async function DetalleProyectoPage({ params }: PageProps) {
   const { id, proyectoId } = await params
+  
+  // SEGURIDAD: Validar acceso al comité
+  const access = await requireComiteAccess(id)
+  const isAdmin = access.isAdmin
+  const rolEnComite = access.rolEnComite
+  
   const supabase = await createClient()
-
-  // Obtener el usuario actual
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  // Obtener rol del usuario
-  const { data: userData } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  const isAdmin = userData?.rol === 'admin' || userData?.rol === 'tesorero'
-
-  // Verificar acceso al comité
-  let hasAccess = isAdmin
-  let rolEnComite = null
-
-  if (!isAdmin) {
-    const { data: comiteUsuario } = await supabase
-      .from('comite_usuarios')
-      .select('rol')
-      .eq('comite_id', id)
-      .eq('usuario_id', user.id)
-      .eq('estado', 'activo')
-      .single()
-
-    hasAccess = !!comiteUsuario
-    rolEnComite = comiteUsuario?.rol
-  }
-
-  if (!hasAccess) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-rose-50 text-rose-600 p-4 rounded-lg border border-rose-200">
-          No tienes acceso a este comité.
-        </div>
-      </div>
-    )
-  }
 
   // Obtener proyecto con datos del comité
   const { data: proyecto, error: proyectoError } = await supabase

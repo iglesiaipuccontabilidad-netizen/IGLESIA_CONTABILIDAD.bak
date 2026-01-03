@@ -44,12 +44,6 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const { member, isLoading, comitesUsuario } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
-  // DEBUGGING AGRESIVO
-  console.log('🚨 SIDEBAR RENDERIZADO - member:', member, 'isLoading:', isLoading)
-  if (typeof window !== 'undefined') {
-    (window as any).DEBUG_SIDEBAR = { member, isLoading, comitesUsuario }
-  }
-
   // Mapeo de roles para mostrar nombres legibles
   const rolLabels: Record<string, string> = {
     admin: 'Administrador',
@@ -57,13 +51,6 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
     usuario: 'Usuario',
     pendiente: 'Pendiente'
   }
-
-  // Debug: verificar estado de member
-  React.useEffect(() => {
-    console.log('🔍 Sidebar - Estado Auth:', { member, isLoading, comitesUsuario })
-    console.log('🔍 Sidebar - member?.rol:', member?.rol)
-    console.log('🔍 Sidebar - rolLabels[member?.rol]:', member?.rol ? rolLabels[member.rol] : 'N/A')
-  }, [member, isLoading, comitesUsuario])
 
   // Efecto para manejar el scroll del body cuando el menú móvil está abierto
   React.useEffect(() => {
@@ -79,6 +66,11 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
 
   const menuSections: MenuSection[] = React.useMemo(() => {
     const sections: MenuSection[] = []
+
+    // Si está cargando, mostrar secciones vacías
+    if (isLoading || !member) {
+      return []
+    }
 
     // Solo mostrar contabilidad general si es admin o tesorero global
     const isAdminOrTesorero = member?.rol === 'admin' || member?.rol === 'tesorero'
@@ -157,7 +149,20 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
         }
       )
     } else if (comitesUsuario && comitesUsuario.length > 0) {
-      // Usuarios de comité: mostrar cada comité con su propio menú
+      // Usuarios de comité: mostrar sección principal de comités
+      sections.push({
+        title: "Administración",
+        items: [
+          {
+            href: "/dashboard/comites",
+            label: "Comités",
+            icon: Users,
+            description: "Comités con contabilidad independiente"
+          }
+        ]
+      })
+
+      // Luego mostrar cada comité con su propio menú
       comitesUsuario.forEach((comite, index) => {
         const comiteBase = `/dashboard/comites/${comite.comite_id}`
         
@@ -168,10 +173,11 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           secretario: 'Secretario',
           vocal: 'Vocal'
         }
-        const rolLabel = rolLabels[comite.rol_en_comite || 'vocal'] || comite.rol_en_comite
+        const rolLabel = rolLabels[comite.rol || 'vocal'] || comite.rol
+        const comiteName = comite.comites?.nombre || 'Comité'
         
         sections.push({
-          title: `${comite.comite_nombre} · ${rolLabel}`,
+          title: `${comiteName} · ${rolLabel}`,
           items: [
             {
               href: `${comiteBase}/dashboard`,
@@ -231,7 +237,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
     }
 
     return sections
-  }, [member?.rol, comitesUsuario])
+  }, [member?.rol, comitesUsuario, isLoading, member])
 
   const initials = React.useMemo(() => {
     if (!member?.email) return "IP"
@@ -302,26 +308,39 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
         </div>
 
         <nav className={styles.navigation} aria-label="Menú principal">
-        {menuSections.map((section) => (
-          <div key={section.title} className={styles.section}>
-            {!isCollapsed && <p className={styles.sectionTitle}>{section.title}</p>}
+          {isLoading ? (
+            <div className={styles.section}>
+              {!isCollapsed && (
+                <div className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  Cargando menú...
+                </div>
+              )}
+            </div>
+          ) : (
+            menuSections.map((section) => (
+              <div key={section.title} className={styles.section}>
+                {!isCollapsed && <p className={styles.sectionTitle}>{section.title}</p>}
 
-            <ul className={styles.navList}>
-              {section.items.map((item) => {
-                const Icon = item.icon
-                const active = isRouteActive(item.href)
+                <ul className={styles.navList}>
+                  {section.items.map((item) => {
+                    const Icon = item.icon
+                    const active = isRouteActive(item.href)
 
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
-                      onClick={() => {
-                        if (isMobileMenuVisible && onMobileMenuClose) {
-                          onMobileMenuClose()
-                        }
-                      }}
-                    >
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
+                          onClick={() => {
+                            if (isMobileMenuVisible && onMobileMenuClose) {
+                              onMobileMenuClose()
+                            }
+                          }}
+                        >
                       <span className={styles.iconWrapper}>
                         <Icon className={styles.icon} />
                       </span>
@@ -361,11 +380,12 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                     )}
                   </li>
                 )
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+                  })}
+                </ul>
+              </div>
+            ))
+          )}
+        </nav>
 
       <div className={styles.profileCard}>
         <div className={styles.avatar} aria-hidden="true">

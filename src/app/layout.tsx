@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import RootProvider from "@/components/providers/RootProvider";
 import "./globals.css";
 import "@/styles/layout.css";
+import "@/styles/mobile-responsive-improvements.css";
 
 const inter = Inter({
   subsets: ["latin"],

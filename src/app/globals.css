@@ -288,22 +288,53 @@
 }
 
 /* Responsive utilities */
+@media (max-width: 1024px) {
+  /* Tablet */
+  h1 {
+    @apply text-2xl sm:text-3xl;
+  }
+  
+  h2 {
+    @apply text-xl sm:text-2xl;
+  }
+  
+  h3 {
+    @apply text-lg sm:text-xl;
+  }
+  
+  .page-header {
+    @apply flex-col items-start gap-4;
+  }
+  
+  .container-custom {
+    @apply px-4;
+  }
+}
+
 @media (max-width: 768px) {
+  /* Mobile - Base */
   .page-title {
     @apply text-2xl;
   }
   
   /* Mejorar títulos en móviles */
   h1 {
-    @apply text-2xl md:text-4xl;
+    @apply text-xl sm:text-2xl;
+    word-wrap: break-word;
+    hyphens: auto;
   }
   
   h2 {
-    @apply text-xl md:text-2xl;
+    @apply text-lg sm:text-xl;
+    word-wrap: break-word;
   }
   
   h3 {
-    @apply text-lg md:text-xl;
+    @apply text-base sm:text-lg;
+  }
+  
+  h4, h5, h6 {
+    @apply text-sm;
   }
   
   /* Mejorar inputs en móviles */
@@ -312,15 +343,33 @@
   input[type="number"],
   input[type="date"],
   input[type="tel"],
+  input[type="password"],
+  input[type="search"],
   textarea,
   select {
     @apply text-base; /* Prevenir zoom en iOS */
     min-height: 44px; /* Área de toque mínima */
+    padding: 0.75rem 0.875rem !important;
+    font-size: 16px !important;
+    letter-spacing: normal;
+  }
+  
+  /* Focus states for inputs */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply ring-2 ring-offset-2;
   }
   
   /* Mejorar botones en móviles */
-  button {
+  button,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"],
+  a[role="button"] {
     min-height: 44px; /* Área de toque mínima */
+    min-width: 44px;
+    padding: 0.75rem 1rem !important;
   }
   
   /* Mejorar espaciado en móviles */
@@ -329,6 +378,12 @@
   }
   
   /* Mejorar cards en móviles */
+  .card,
+  [class*="Card"],
+  [class*="card"] {
+    @apply p-4 mb-4;
+  }
+  
   .card-padding {
     @apply p-4;
   }
@@ -337,27 +392,232 @@
   .mobile-text {
     @apply text-sm leading-relaxed;
   }
+  
+  /* Spacing utilities */
+  .px-safe {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+  
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  /* Better form layouts */
+  form {
+    @apply max-w-full;
+  }
+  
+  .form-group,
+  [class*="FormGroup"],
+  .form-field {
+    @apply mb-4 last:mb-0;
+  }
+  
+  label {
+    @apply block mb-2 text-sm font-medium;
+  }
+  
+  /* Better text wrapping */
+  p, span, a {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Better list styling */
+  ul, ol {
+    @apply pl-5;
+  }
+  
+  li {
+    @apply mb-2;
+  }
 }
 
-@media (max-width: 480px) {
-  /* Ajustes para móviles muy pequeños */
+@media (max-width: 640px) {
+  /* Small Mobile - 480px - 640px */
+  h1 {
+    @apply text-lg sm:text-xl;
+  }
+  
+  h2 {
+    @apply text-base sm:text-lg;
+  }
+  
+  h3 {
+    @apply text-sm sm:text-base;
+  }
+  
+  /* More aggressive padding reduction */
+  .card,
+  [class*="Card"] {
+    @apply p-3 mb-3;
+  }
+  
+  .card-padding {
+    @apply p-3;
+  }
+  
+  /* Tighter input sizing */
   input[type="text"],
   input[type="email"],
   input[type="number"],
   input[type="date"],
   input[type="tel"],
+  input[type="password"],
   textarea,
   select {
     @apply text-base;
-    min-height: 40px;
+    min-height: 40px !important;
+    padding: 0.65rem 0.75rem !important;
   }
   
-  button {
-    min-height: 40px;
+  button,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"] {
+    min-height: 40px !important;
+    padding: 0.65rem 0.875rem !important;
+    font-size: 0.9rem;
+  }
+  
+  /* Spacing reduction */
+  section, div[class*="section"] {
+    margin-bottom: 0.75rem;
+  }
+  
+  .form-group {
+    @apply mb-3;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Ajustes para móviles muy pequeños */
+  html {
+    font-size: 14px;
+  }
+  
+  h1 {
+    @apply text-base;
+    font-size: 1.25rem;
+  }
+  
+  h2 {
+    @apply text-sm;
+    font-size: 1rem;
+  }
+  
+  h3 {
+    @apply text-xs;
+    font-size: 0.9rem;
+  }
+  
+  p {
+    @apply text-xs sm:text-sm;
+  }
+  
+  /* Even more aggressive padding */
+  .card,
+  [class*="Card"],
+  [class*="card"],
+  .panel,
+  [class*="Panel"] {
+    @apply p-2.5 mb-2.5;
+  }
+  
+  .card-padding {
+    @apply p-2.5;
+  }
+  
+  /* Input adjustments */
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select {
+    @apply text-base;
+    min-height: 40px !important;
+    padding: 0.6rem 0.65rem !important;
+    font-size: 16px !important;
+    border-radius: 6px !important;
+  }
+  
+  textarea {
+    min-height: 80px !important;
+  }
+  
+  button,
+  input[type="button"],
+  input[type="submit"],
+  [role="button"],
+  a[role="button"] {
+    min-height: 40px !important;
+    min-width: 40px !important;
+    padding: 0.6rem 0.75rem !important;
+    font-size: 0.85rem;
+    border-radius: 6px;
   }
   
   /* Reducir padding en móviles muy pequeños */
-  .card-padding {
-    @apply p-3;
+  .page-header {
+    @apply mb-4;
+  }
+  
+  .mobile-spacing {
+    @apply space-y-2;
+  }
+  
+  /* Viewport safe areas for notched devices */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Better touch targets */
+  a, button, input, select, textarea {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Spacing reduction across the board */
+  section, article, nav, .section {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+  }
+  
+  .form-group, [class*="FormGroup"] {
+    @apply mb-2;
+  }
+  
+  /* Better overflow handling */
+  * {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  
+  /* Better select appearance */
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    padding-right: 2rem !important;
+  }
+  
+  /* Prevent zoom on input focus */
+  input:focus,
+  textarea:focus,
+  select:focus {
+    font-size: 16px !important;
   }
 }

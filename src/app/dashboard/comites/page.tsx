@@ -3,6 +3,8 @@ import { ComiteCard } from '@/components/comites/ComiteCard'
 import Link from 'next/link'
 import { Users, Plus } from 'lucide-react'
 import LogoutButton from '@/components/LogoutButton'
+import { requireAdminOrTesorero } from '@/lib/auth/permissions'
+import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -33,6 +35,34 @@ export default async function ComitesPage() {
     .single()
 
   const isAdmin = userData?.rol === 'admin' || userData?.rol === 'tesorero'
+
+  // Si es usuario de comité (no admin/tesorero), redirigir al dashboard de su primer comité
+  if (!isAdmin) {
+    const { data: comiteUsuario } = await supabase
+      .from('comite_usuarios')
+      .select('comite_id')
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single()
+
+    if (comiteUsuario?.comite_id) {
+      redirect(`/dashboard/comites/${comiteUsuario.comite_id}/dashboard`)
+    } else {
+      // Usuario sin comités asignados
+      return (
+        <div className="container mx-auto px-4 py-8">
+          <div className="bg-amber-50 text-amber-700 p-4 rounded-lg">
+            No tienes comités asignados. Contacta a un administrador.
+          </div>
+        </div>
+      )
+    }
+  }
+
+  // SEGURIDAD: Validar que solo admin/tesorero llega hasta aquí
+  await requireAdminOrTesorero()
 
   // Obtener comités con conteos
   const { data: comites, error } = await supabase

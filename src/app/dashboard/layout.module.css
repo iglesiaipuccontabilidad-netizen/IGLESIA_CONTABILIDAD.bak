@@ -23,6 +23,7 @@
   overflow-x: hidden;
   min-width: 0;
   background: linear-gradient(to bottom, #f8fafc, #ffffff, #f8fafc);
+  padding-top: 0;
 }
 
 @media (max-width: 1024px) {
@@ -38,15 +39,46 @@
 @media (max-width: 768px) {
   .mainContent {
     margin-left: 0;
+    margin-top: 56px;
   }
 
   .contentWrapper {
-    padding: 1.5rem 1.25rem;
+    padding: 1.25rem 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .contentWrapper {
+    padding: 1rem 0.75rem;
   }
 }
 
 @media (max-width: 480px) {
+  .mainContent {
+    margin-top: 52px;
+  }
+
   .contentWrapper {
-    padding: 1rem 0.75rem;
+    padding: 0.75rem 0.65rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .mainContent {
+    margin-top: 48px;
+  }
+
+  .contentWrapper {
+    padding: 0.65rem 0.5rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .mainContent {
+    margin-top: 44px;
+  }
+
+  .contentWrapper {
+    padding: 0.5rem 0.4rem;
   }
 }

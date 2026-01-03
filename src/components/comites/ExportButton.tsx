@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { FileDown, FileSpreadsheet, Loader2 } from "lucide-react"
+import { useToast } from "@/lib/hooks/useToast"
+import { ToastContainer } from "@/components/ui/Toast"
 
 interface ExportButtonProps {
   comiteId: string
@@ -23,17 +25,15 @@ export function ExportButton({ comiteId, comiteNombre, tipo, datos }: ExportButt
       if (tipo === "gastos") {
         csvContent = "Fecha,Categoría,Monto,Concepto,Beneficiario,Método Pago,Comprobante\n"
         datos.forEach((gasto) => {
-          csvContent += `${gasto.fecha},${gasto.categoria},$${gasto.monto},"${gasto.concepto}",${
-            gasto.beneficiario || ""
-          },${gasto.metodo_pago},${gasto.numero_comprobante || ""}\n`
+          csvContent += `${gasto.fecha},${gasto.categoria},$${gasto.monto},"${gasto.concepto}",${gasto.beneficiario || ""
+            },${gasto.metodo_pago},${gasto.numero_comprobante || ""}\n`
         })
         filename = `gastos_${comiteNombre}_${new Date().toISOString().split("T")[0]}.csv`
       } else if (tipo === "ofrendas") {
         csvContent = "Fecha,Tipo,Monto,Concepto,Nota\n"
         datos.forEach((ofrenda) => {
-          csvContent += `${ofrenda.fecha},${ofrenda.tipo},$${ofrenda.monto},"${
-            ofrenda.concepto || ""
-          }","${ofrenda.nota || ""}"\n`
+          csvContent += `${ofrenda.fecha},${ofrenda.tipo},$${ofrenda.monto},"${ofrenda.concepto || ""
+            }","${ofrenda.nota || ""}"\n`
         })
         filename = `ofrendas_${comiteNombre}_${new Date().toISOString().split("T")[0]}.csv`
       } else {
@@ -46,11 +46,11 @@ export function ExportButton({ comiteId, comiteNombre, tipo, datos }: ExportButt
       const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
       const link = document.createElement("a")
       const url = URL.createObjectURL(blob)
-      
+
       link.setAttribute("href", url)
       link.setAttribute("download", filename)
       link.style.visibility = "hidden"
-      
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

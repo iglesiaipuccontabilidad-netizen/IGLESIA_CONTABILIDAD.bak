@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, TrendingUp, Plus, DollarSign, FileText } from 'lucide-react'
+import { ArrowLeft, TrendingUp, Plus, DollarSign } from 'lucide-react'
 import { OfrendasList } from '@/components/comites/OfrendasList'
 import { OfrendasStats } from '@/components/comites/OfrendasStats'
 import { ExportButton } from '@/components/comites/ExportButton'
+import { OfrendasActions } from '@/components/comites/OfrendasActions'
+import { requireComiteAccess } from '@/lib/auth/comite-permissions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -17,52 +19,13 @@ interface PageProps {
 
 export default async function OfrendasComitePage({ params }: PageProps) {
   const { id } = await params
+  
+  // SEGURIDAD: Validar acceso al comité
+  const access = await requireComiteAccess(id)
+  const isAdmin = access.isAdmin
+  const rolEnComite = access.rolEnComite
+  
   const supabase = await createClient()
-
-  // Obtener el usuario actual
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return notFound()
-  }
-
-  // Obtener rol del usuario
-  const { data: userData } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  const isAdmin = userData?.rol === 'admin' || userData?.rol === 'tesorero'
-
-  // Verificar acceso al comité
-  let hasAccess = isAdmin
-  let rolEnComite = null
-
-  if (!isAdmin) {
-    const { data: comiteUsuario } = await supabase
-      .from('comite_usuarios')
-      .select('rol')
-      .eq('comite_id', id)
-      .eq('usuario_id', user.id)
-      .eq('estado', 'activo')
-      .single()
-
-    hasAccess = !!comiteUsuario
-    rolEnComite = comiteUsuario?.rol
-  }
-
-  if (!hasAccess) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-rose-50 text-rose-600 p-4 rounded-lg border border-rose-200">
-          No tienes acceso a este comité.
-        </div>
-      </div>
-    )
-  }
 
   // Obtener comité
   const { data: comite, error: comiteError } = await supabase
@@ -104,104 +67,83 @@ export default async function OfrendasComitePage({ params }: PageProps) {
 
   const canManage = isAdmin || rolEnComite === 'lider' || rolEnComite === 'tesorero'
 
-  // Función para generar reporte
-  const generarReporteOfrendas = (ofrendas: any[], nombreComite: string) => {
-    const total = ofrendas.length
-    const montoTotal = ofrendas.reduce((sum, o) => sum + o.monto, 0)
-    const promedio = total > 0 ? montoTotal / total : 0
-
-    const porTipo = ofrendas.reduce((acc, o) => {
-      acc[o.tipo] = (acc[o.tipo] || 0) + o.monto
-      return acc
-    }, {} as Record<string, number>)
-
-    let reporte = `REPORTE DE OFRENDAS - ${nombreComite.toUpperCase()}\n`
-    reporte += `Fecha de generación: ${new Date().toLocaleDateString('es-CO')}\n\n`
-
-    reporte += `ESTADÍSTICAS GENERALES:\n`
-    reporte += `- Total de ofrendas: ${total}\n`
-    reporte += `- Monto total: $${montoTotal.toLocaleString('es-CO')}\n`
-    reporte += `- Promedio por ofrenda: $${promedio.toLocaleString('es-CO')}\n\n`
-
-    reporte += `DISTRIBUCIÓN POR TIPO:\n`
-    Object.entries(porTipo).forEach(([tipo, monto]) => {
-      const montoNum = typeof monto === 'number' ? monto : 0
-      const porcentaje = ((montoNum / montoTotal) * 100).toFixed(1)
-      reporte += `- ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}: $${montoNum.toLocaleString('es-CO')} (${porcentaje}%)\n`
-    })
-
-    reporte += `\nDETALLE DE OFRENDAS:\n`
-    ofrendas.forEach((ofrenda, index) => {
-      reporte += `${index + 1}. ${new Date(ofrenda.fecha).toLocaleDateString('es-CO')} - ${ofrenda.tipo} - $${ofrenda.monto.toLocaleString('es-CO')}`
-      if (ofrenda.concepto) reporte += ` - ${ofrenda.concepto}`
-      if (ofrenda.proyecto_nombre) reporte += ` (Proyecto: ${ofrenda.proyecto_nombre})`
-      reporte += `\n`
-    })
-
-    return reporte
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href={`/dashboard/comites/${id}/dashboard`}
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Volver al Dashboard
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Breadcrumb mejorado */}
+        <div className="mb-6">
+          <Link
+            href={`/dashboard/comites/${id}/dashboard`}
+            className="group inline-flex items-center gap-2 text-slate-600 hover:text-primary-600 transition-all duration-200"
+          >
+            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:border-primary-300 group-hover:bg-primary-50 transition-all duration-200">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
+            <span className="font-medium">Volver al Dashboard</span>
+          </Link>
+        </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-white" />
+        {/* Header mejorado */}
+        <div className="mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 shadow-lg p-8">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+              {/* Título y descripción */}
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl blur-xl opacity-30 animate-pulse"></div>
+                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                      <TrendingUp className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h1 className="text-4xl font-bold text-slate-900 mb-1">
+                      Ofrendas
+                    </h1>
+                    <p className="text-lg text-primary-600 font-semibold">
+                      {comite.nombre}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-slate-600 text-base ml-20">
+                  Gestiona y visualiza los ingresos y ofrendas del comité
+                </p>
               </div>
-              Ofrendas: {comite.nombre}
-            </h1>
-            <p className="text-slate-600 mt-2">
-              Gestiona los ingresos y ofrendas del comité
-            </p>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <ExportButton
-              comiteId={id}
-              comiteNombre={comite.nombre}
-              tipo="ofrendas"
-              datos={ofrendasConProyecto}
-            />
-            <button
-              onClick={() => {
-                const reporte = generarReporteOfrendas(ofrendasConProyecto, comite.nombre)
-                navigator.clipboard.writeText(reporte)
-                alert('Reporte copiado al portapapeles')
-              }}
-              className="inline-flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
-            >
-              <FileText className="w-5 h-5" />
-              Generar Reporte
-            </button>
-            {canManage && (
-              <Link
-                href={`/dashboard/comites/${id}/ofrendas/nueva`}
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-medium hover:shadow-lg transition-all"
-              >
-                <Plus className="w-5 h-5" />
-                Nueva Ofrenda
-              </Link>
-            )}
+              {/* Botones de acción */}
+              <div className="flex flex-wrap items-center gap-3">
+                <ExportButton
+                  comiteId={id}
+                  comiteNombre={comite.nombre}
+                  tipo="ofrendas"
+                  datos={ofrendasConProyecto}
+                />
+                <OfrendasActions
+                  ofrendas={ofrendasConProyecto}
+                  comiteNombre={comite.nombre}
+                  comiteId={id}
+                />
+                {canManage && (
+                  <Link
+                    href={`/dashboard/comites/${id}/ofrendas/nueva`}
+                    className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-105"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <Plus className="w-5 h-5 relative z-10" />
+                    <span className="relative z-10">Nueva Ofrenda</span>
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Stats */}
+        <OfrendasStats ofrendas={ofrendasConProyecto} />
+
+        {/* Lista de Ofrendas con filtros */}
+        <OfrendasList ofrendas={ofrendasConProyecto} comiteId={id} />
       </div>
-
-      {/* Stats */}
-      <OfrendasStats ofrendas={ofrendasConProyecto} />
-
-      {/* Lista de Ofrendas con filtros */}
-      <OfrendasList ofrendas={ofrendasConProyecto} comiteId={id} />
     </div>
   )
 }
