@@ -43,6 +43,12 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const pathname = usePathname()
   const { member, isLoading, comitesUsuario } = useAuth()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
+
+  // Asegurar que el componente solo renderice en el cliente después de montar
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Mapeo de roles para mostrar nombres legibles
   const rolLabels: Record<string, string> = {
@@ -67,9 +73,9 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const menuSections: MenuSection[] = React.useMemo(() => {
     const sections: MenuSection[] = []
 
-    // Si está cargando, mostrar secciones vacías
-    if (isLoading || !member) {
-      return []
+    // Si no está montado o está cargando, retornar array vacío
+    if (!mounted || isLoading || !member) {
+      return sections
     }
 
     // Solo mostrar contabilidad general si es admin o tesorero global
@@ -237,7 +243,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
     }
 
     return sections
-  }, [member?.rol, comitesUsuario, isLoading, member])
+  }, [mounted, member?.rol, comitesUsuario, isLoading, member])
 
   const initials = React.useMemo(() => {
     if (!member?.email) return "IP"
