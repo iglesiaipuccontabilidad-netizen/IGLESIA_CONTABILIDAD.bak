@@ -13,8 +13,8 @@ interface FormattedNumberInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   helpText?: string
   showCurrency?: boolean
   showFormatted?: boolean
-  min?: number
-  max?: number
+  min?: number | string
+  max?: number | string
   quickAmounts?: number[]
 }
 

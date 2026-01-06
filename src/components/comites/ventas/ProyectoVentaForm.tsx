@@ -14,12 +14,8 @@ const ventaSchema = z.object({
   comprador_telefono: z.string().optional(),
   comprador_email: z.string().email("Email inválido").optional().or(z.literal("")),
   comprador_notas: z.string().optional(),
-  cantidad: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-    message: "La cantidad debe ser mayor a cero",
-  }),
-  precio_unitario: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-    message: "El precio debe ser mayor a cero",
-  }),
+  cantidad: z.number().min(1, "La cantidad debe ser mayor a cero"),
+  precio_unitario: z.number().min(0.01, "El precio debe ser mayor a cero"),
   fecha_venta: z.string().optional(),
 })
 
@@ -66,8 +62,8 @@ export function ProyectoVentaForm({
       comprador_telefono: "",
       comprador_email: "",
       comprador_notas: "",
-      cantidad: "1",
-      precio_unitario: "",
+      cantidad: 1,
+      precio_unitario: 0,
       fecha_venta: new Date().toISOString().split("T")[0],
     },
   })
@@ -82,14 +78,14 @@ export function ProyectoVentaForm({
       const producto = productos.find((p) => p.id === productoId)
       if (producto) {
         setProductoSeleccionado(producto)
-        setValue("precio_unitario", producto.precio_unitario.toString())
+        setValue("precio_unitario", producto.precio_unitario, { shouldValidate: true })
       }
     }
   }, [productoId, productos, setValue])
 
   const calcularTotal = () => {
-    const cant = parseFloat(cantidad) || 0
-    const precio = parseFloat(precioUnitario) || 0
+    const cant = typeof cantidad === 'number' ? cantidad : parseFloat(String(cantidad)) || 0
+    const precio = typeof precioUnitario === 'number' ? precioUnitario : parseFloat(String(precioUnitario)) || 0
     return cant * precio
   }
 
@@ -105,8 +101,8 @@ export function ProyectoVentaForm({
         comprador_telefono: data.comprador_telefono || undefined,
         comprador_email: data.comprador_email || undefined,
         comprador_notas: data.comprador_notas || undefined,
-        cantidad: parseInt(data.cantidad),
-        precio_unitario: parseFloat(data.precio_unitario),
+        cantidad: data.cantidad,
+        precio_unitario: data.precio_unitario,
         fecha_venta: data.fecha_venta || undefined,
       }
 
@@ -258,9 +254,9 @@ export function ProyectoVentaForm({
               id="cantidad"
               type="number"
               {...register("cantidad", {
-                required: "La cantidad es requerida",
                 valueAsNumber: true,
-                min: { value: 1, message: "La cantidad debe ser mayor a 0" },
+                required: "La cantidad es requerida",
+                min: { value: 1, message: "La cantidad debe ser mayor a cero" },
               })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="0"
@@ -281,14 +277,13 @@ export function ProyectoVentaForm({
               type="number"
               step="0.01"
               {...register("precio_unitario", {
-                required: "El precio es requerido",
                 valueAsNumber: true,
-                min: { value: 0.01, message: "El precio debe ser mayor a 0" },
+                required: "El precio es requerido",
+                min: { value: 0.01, message: "El precio debe ser mayor a cero" },
               })}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
               disabled={isSubmitting}
-              value={productoSeleccionado?.precio_unitario || 0}
             />
             {errors.precio_unitario && (
               <p className="text-xs text-rose-600 mt-1">{errors.precio_unitario.message}</p>

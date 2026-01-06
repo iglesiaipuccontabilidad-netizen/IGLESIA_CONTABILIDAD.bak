@@ -20,9 +20,9 @@ const ofrendaSchema = z.object({
     haceUnAnio.setFullYear(hoy.getFullYear() - 1)
     return fecha >= haceUnAnio && fecha <= hoy
   }, "La fecha debe estar dentro del último año"),
-  tipo_ofrenda: z.enum(["diezmo", "ofrenda", "primicia", "otro"]).default("ofrenda"),
+  tipo_ofrenda: z.enum(["diezmo", "ofrenda", "primicia", "otro"]),
   concepto: z.string().min(3, "El concepto debe tener al menos 3 caracteres").max(200, "El concepto no puede exceder 200 caracteres"),
-  metodo_pago: z.enum(["efectivo", "transferencia", "datafono", "otro"]).default("efectivo"),
+  metodo_pago: z.enum(["efectivo", "transferencia", "datafono", "otro"]),
   numero_comprobante: z.string().optional().refine((val) => {
     if (!val) return true
     return val.length >= 3 && val.length <= 50
@@ -151,10 +151,10 @@ export function ComiteOfrendaForm({
         </label>
         <FormattedNumberInput
           id="monto"
-          {...register("monto")}
           className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           placeholder="0"
           disabled={isSubmitting}
+          {...register("monto")}
         />
         {errors.monto && (
           <p className="text-xs text-rose-600 mt-1">{errors.monto.message}</p>

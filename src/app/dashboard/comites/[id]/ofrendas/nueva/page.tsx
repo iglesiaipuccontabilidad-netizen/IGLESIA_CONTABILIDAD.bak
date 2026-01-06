@@ -154,7 +154,7 @@ export default async function NuevaOfrendaPage({ params }: PageProps) {
             Ha ocurrido un error al cargar la página de nueva ofrenda. 
             Por favor, intenta recargar la página o contacta al administrador si el problema persiste.
           </p>
-          {process.env.NODE_ENV === 'development' && (
+          {process.env.NODE_ENV && ['development'].includes(process.env.NODE_ENV) && (
             <details className="mt-4">
               <summary className="cursor-pointer text-sm font-medium">Detalles técnicos</summary>
               <pre className="mt-2 text-xs bg-rose-100 p-2 rounded overflow-auto">

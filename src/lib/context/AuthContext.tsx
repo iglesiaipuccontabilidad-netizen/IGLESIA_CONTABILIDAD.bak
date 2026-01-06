@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase-client'
 
@@ -32,10 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [comitesUsuario, setComitesUsuario] = useState<any[]>([])
   
   const mountedRef = useRef(true)
-  const supabase = getSupabaseBrowserClient()
+  const supabaseRef = useRef(getSupabaseBrowserClient())
+  const supabase = supabaseRef.current
 
   // Cargar el rol del usuario - SIN CACHÉ para siempre obtener datos frescos
-  const loadUserRole = async (userId: string) => {
+  const loadUserRole = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('usuarios')
@@ -53,10 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error en loadUserRole:', err)
       return null
     }
-  }
+  }, [supabase])
 
   // Cargar los comités del usuario - SIN CACHÉ para siempre obtener datos frescos
-  const loadUserComites = async (userId: string) => {
+  const loadUserComites = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('comite_usuarios')
@@ -81,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error en loadUserComites:', err)
       return []
     }
-  }
+  }, [supabase])
 
   useEffect(() => {
     mountedRef.current = true
@@ -162,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mountedRef.current = false
       subscription?.unsubscribe()
     }
-  }, [supabase])
+  }, [supabase, loadUserRole, loadUserComites]) // Agregadas las dependencias correctas
 
   return (
     <AuthContext.Provider value={{ user, isLoading, member, comitesUsuario }}>

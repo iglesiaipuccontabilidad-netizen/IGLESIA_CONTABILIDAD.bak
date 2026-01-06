@@ -64,7 +64,7 @@ export default async function OfrendaDetallePage({ params }: PageProps) {
       .eq('id', ofrenda.registrado_por)
       .single()
     
-    if (usuario) {
+    if (usuario && usuario.email) {
       registradoPorNombre = usuario.email
     }
   }
