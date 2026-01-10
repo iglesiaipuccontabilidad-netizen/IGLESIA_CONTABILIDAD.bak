@@ -46,6 +46,7 @@ interface ProyectoVentaFormProps {
   proyectoId: string
   comiteId: string
   productos: Producto[]
+  ventaId?: string
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -54,11 +55,13 @@ export function ProyectoVentaForm({
   proyectoId,
   comiteId,
   productos,
+  ventaId,
   onSuccess,
   onCancel,
 }: ProyectoVentaFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null)
 
@@ -67,6 +70,7 @@ export function ProyectoVentaForm({
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<VentaFormData>({
     resolver: zodResolver(ventaSchema),
@@ -83,6 +87,49 @@ export function ProyectoVentaForm({
       metodo_pago: "efectivo",
     },
   })
+
+  // Cargar datos de venta existente si ventaId está presente
+  useEffect(() => {
+    if (ventaId) {
+      const loadVenta = async () => {
+        try {
+          setIsLoading(true)
+          setError(null)
+          
+          const { getProyectoVenta } = await import("@/app/actions/comites-actions")
+          const result = await getProyectoVenta(ventaId)
+          
+          if (!result.success) {
+            throw new Error(result.error || "Error al cargar la venta")
+          }
+          
+          const venta = result.data
+          
+          // Cargar datos en el formulario
+          reset({
+            producto_id: venta.producto_id,
+            comprador_nombre: venta.comprador_nombre,
+            comprador_telefono: venta.comprador_telefono || "",
+            comprador_email: venta.comprador_email || "",
+            comprador_notas: venta.comprador_notas || "",
+            cantidad: venta.cantidad,
+            precio_unitario: venta.precio_unitario,
+            fecha_venta: venta.fecha_venta,
+            estado_pago: venta.estado === 'pagado' ? 'pagado' : 'pendiente',
+            metodo_pago: "efectivo", // Default, se puede mejorar
+          })
+          
+        } catch (err) {
+          console.error("Error al cargar venta:", err)
+          setError(err instanceof Error ? err.message : "Error al cargar los datos de la venta")
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      
+      loadVenta()
+    }
+  }, [ventaId, reset])
 
   const productoId = watch("producto_id")
   const cantidad = watch("cantidad")
@@ -112,6 +159,7 @@ export function ProyectoVentaForm({
 
     try {
       const payload = {
+        ...(ventaId && { id: ventaId }),
         proyecto_id: proyectoId,
         producto_id: data.producto_id,
         comprador_nombre: data.comprador_nombre,
@@ -125,11 +173,14 @@ export function ProyectoVentaForm({
         metodo_pago: data.estado_pago === "pagado" ? data.metodo_pago : undefined,
       }
 
-      const { createProyectoVenta } = await import("@/app/actions/comites-actions")
-      const result = await createProyectoVenta(payload)
+      const { createProyectoVenta, updateProyectoVenta } = await import("@/app/actions/comites-actions")
+      
+      const result = ventaId 
+        ? await updateProyectoVenta(ventaId, payload)
+        : await createProyectoVenta(payload)
 
       if (!result.success) {
-        throw new Error(result.error || "Error al registrar venta")
+        throw new Error(result.error || `Error al ${ventaId ? 'actualizar' : 'registrar'} venta`)
       }
 
       if (onSuccess) {
@@ -139,7 +190,7 @@ export function ProyectoVentaForm({
         router.refresh()
       }
     } catch (err) {
-      console.error("Error al registrar venta:", err)
+      console.error(`Error al ${ventaId ? 'actualizar' : 'registrar'} venta:`, err)
       setError(err instanceof Error ? err.message : "Error desconocido")
     } finally {
       setIsSubmitting(false)
@@ -155,6 +206,18 @@ export function ProyectoVentaForm({
         <h3 className="text-lg font-semibold text-amber-900 mb-2">No hay productos disponibles</h3>
         <p className="text-amber-700">
           Debes crear al menos un producto activo antes de registrar ventas.
+        </p>
+      </div>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-8 text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">Cargando datos de la venta...</h3>
+        <p className="text-slate-600">
+          Por favor espera mientras cargamos la información.
         </p>
       </div>
     )

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { ShoppingCart, Plus, Trash2, DollarSign, User, Phone, Mail, Package, ChevronDown, ChevronUp } from "lucide-react"
+import { ShoppingCart, Plus, Trash2, DollarSign, User, Phone, Mail, Package, ChevronDown, ChevronUp, Eye } from "lucide-react"
+import Link from "next/link"
 import { ProyectoVentaForm } from "./ProyectoVentaForm"
 import { RegistrarPagoVentaForm } from "./RegistrarPagoVentaForm"
 
@@ -245,6 +246,14 @@ export function ProyectoVentasTable({
 
                 {/* Acciones */}
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                  <Link
+                    href={`/dashboard/comites/${comiteId}/proyectos/${proyectoId}/ventas/${venta.id}`}
+                    className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1 font-medium"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver detalles
+                  </Link>
+
                   <button
                     onClick={() => setExpandedId(expandedId === venta.id ? null : venta.id)}
                     className="text-sm text-slate-600 hover:text-purple-600 flex items-center gap-1"

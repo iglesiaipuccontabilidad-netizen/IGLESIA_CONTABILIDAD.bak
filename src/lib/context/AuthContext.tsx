@@ -33,12 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const mountedRef = useRef(true)
   const supabaseRef = useRef(getSupabaseBrowserClient())
-  const supabase = supabaseRef.current
 
   // Cargar el rol del usuario - SIN CACHÉ para siempre obtener datos frescos
   const loadUserRole = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseRef.current
         .from('usuarios')
         .select('rol')
         .eq('id', userId)
@@ -54,12 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error en loadUserRole:', err)
       return null
     }
-  }, [supabase])
+  }, [])
 
   // Cargar los comités del usuario - SIN CACHÉ para siempre obtener datos frescos
   const loadUserComites = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseRef.current
         .from('comite_usuarios')
         .select(`
           comite_id,
@@ -82,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Error en loadUserComites:', err)
       return []
     }
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     mountedRef.current = true
@@ -90,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function initializeAuth() {
       try {
         setIsLoading(true)
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { session } } = await supabaseRef.current.auth.getSession()
         
         if (session?.user && mountedRef.current) {
           setUser(session.user)
@@ -122,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
 
     // Escuchar cambios de autenticación - Mejor práctica de Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const { data: { subscription } } = supabaseRef.current.auth.onAuthStateChange(
       async (event, session) => {
         if (!mountedRef.current) return
 
@@ -163,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mountedRef.current = false
       subscription?.unsubscribe()
     }
-  }, [supabase, loadUserRole, loadUserComites]) // Agregadas las dependencias correctas
+  }, [loadUserRole, loadUserComites]) // Solo los callbacks estables
 
   return (
     <AuthContext.Provider value={{ user, isLoading, member, comitesUsuario }}>

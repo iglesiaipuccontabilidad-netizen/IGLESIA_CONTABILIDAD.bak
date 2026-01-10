@@ -441,8 +441,8 @@ export async function asignarUsuarioComite(dto: AsignarUsuarioComiteDTO): Promis
  * Actualiza el rol de un usuario en un comité
  */
 export async function actualizarRolUsuarioComite(
-  comiteId: string, 
-  usuarioId: string, 
+  comiteId: string,
+  usuarioId: string,
   nuevoRol: string
 ): Promise<OperationResult> {
   try {
@@ -1804,7 +1804,7 @@ export async function getGastosComite(comiteId: string): Promise<OperationResult
       .from('comite_gastos')
       .select('*')
       .eq('comite_id', comiteId)
-      .order('fecha', { ascending: false});
+      .order('fecha', { ascending: false });
 
     if (error) throw error;
 
@@ -2255,7 +2255,7 @@ export async function updateProyectoVenta(
       const ventaActual: any = venta;
       const nuevaCantidad = dto.cantidad || ventaActual.cantidad;
       const nuevoPrecio = dto.precio_unitario || ventaActual.precio_unitario;
-      
+
       updateData.cantidad = nuevaCantidad;
       updateData.precio_unitario = nuevoPrecio;
       updateData.valor_total = nuevaCantidad * nuevoPrecio;
@@ -2595,37 +2595,44 @@ export async function deletePagoVenta(pagoId: string): Promise<OperationResult> 
 }
 
 /**
- * Obtiene el resumen de ventas de un proyecto
+ * Obtiene una venta específica con todos sus datos relacionados
  */
-export async function getResumenVentasProyecto(proyectoId: string): Promise<OperationResult<any>> {
+export async function getProyectoVenta(ventaId: string): Promise<OperationResult<any>> {
   try {
     const supabase = await createClient();
 
-    // Obtener el proyecto para verificar acceso
-    const { data: proyecto } = await supabase
-      .from('comite_proyectos')
-      .select('comite_id')
-      .eq('id', proyectoId)
-      .single();
-
-    if (!proyecto) {
-      throw new Error('Proyecto no encontrado');
-    }
-
-    await verificarAccesoUsuarioComite(proyecto.comite_id);
-
-    // Usar la vista creada en la migración
-    const { data, error } = await supabase
-      .from('vista_resumen_ventas_proyecto')
-      .select('*')
-      .eq('proyecto_id', proyectoId)
+    // Obtener venta con datos relacionados
+    const { data: venta, error } = await supabase
+      .from('proyecto_ventas')
+      .select(`
+        *,
+        proyecto_productos (
+          id,
+          nombre,
+          precio_unitario,
+          descripcion
+        ),
+        comite_proyectos (
+          id,
+          nombre,
+          comite_id
+        )
+      `)
+      .eq('id', ventaId)
       .single();
 
     if (error) throw error;
 
-    return { success: true, data: data || null };
+    if (!venta) {
+      throw new Error('Venta no encontrada');
+    }
+
+    // Verificar acceso al comité
+    await verificarAccesoUsuarioComite((venta.comite_proyectos as any).comite_id);
+
+    return { success: true, data: venta };
   } catch (error) {
-    console.error('Error al obtener resumen de ventas:', error);
+    console.error('Error al obtener venta:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',

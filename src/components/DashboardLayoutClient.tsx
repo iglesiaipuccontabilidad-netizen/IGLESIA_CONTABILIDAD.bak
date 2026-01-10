@@ -51,19 +51,23 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
     }
   }, [user, isLoading, router, mounted])
 
+  // Renderizado condicional después de todos los hooks
   // No renderizar nada hasta que el componente esté montado en el cliente
   if (!mounted) {
     return null
   }
 
+  // Mostrar loading mientras carga
   if (isLoading) {
     return <LoadingFallback />
   }
 
+  // Si no hay usuario, no mostrar nada (se redirigirá en el useEffect)
   if (!user) {
     return null
   }
 
+  // Renderizar el dashboard completo
   return (
     <div className={styles.dashboardLayout}>
       <Sidebar 
