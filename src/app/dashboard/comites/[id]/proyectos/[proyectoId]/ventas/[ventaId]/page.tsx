@@ -46,7 +46,7 @@ export default async function DetalleVentaPage({ params }: PageProps) {
 
   const supabase = await createClient()
 
-  // Obtener venta con datos relacionados (corregido join a 'usuarios')
+  // Obtener venta con datos relacionados
   const { data: ventaRaw, error: ventaError } = await supabase
     .from('proyecto_ventas')
     .select(`
@@ -64,12 +64,6 @@ export default async function DetalleVentaPage({ params }: PageProps) {
           id,
           nombre
         )
-      ),
-      usuarios (
-        id,
-        nombre,
-        email,
-        rol
       )
     `)
     .eq('id', ventaId)
@@ -83,17 +77,10 @@ export default async function DetalleVentaPage({ params }: PageProps) {
 
   const venta = ventaRaw as any
 
-  // Obtener pagos de la venta (corregido join a 'usuarios')
+  // Obtener pagos de la venta
   const { data: pagosRaw } = await supabase
     .from('proyecto_pagos_ventas')
-    .select(`
-      *,
-      usuarios (
-        id,
-        nombre,
-        email
-      )
-    `)
+    .select('*')
     .eq('venta_id', ventaId)
     .order('fecha_pago', { ascending: false })
     .order('created_at', { ascending: false })
@@ -290,12 +277,12 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                 <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-white shadow-sm">
                     <div className="w-full h-full bg-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600">
-                      {(venta.usuarios?.nombre || 'S').charAt(0)}
+                      S
                     </div>
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Atendido por</p>
-                    <p className="text-sm font-bold text-slate-900">{venta.usuarios?.nombre || 'Sistema'}</p>
+                    <p className="text-sm font-bold text-slate-900">Sistema</p>
                   </div>
                 </div>
               </div>
