@@ -59,7 +59,8 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
       ['Total Recaudado', `$${totalRecaudado.toLocaleString()}`],
       ['Pendiente', `$${totalPendiente.toLocaleString()}`],
       ['Productos', `${datos.productos?.length || 0}`],
-      ['Ventas', `${datos.ventas?.length || 0} pagadas`]
+      ['Ventas', `${datos.ventas?.length || 0} pagadas`],
+      ['Compradores Únicos', `${datos.ventas ? [...new Set(datos.ventas.map((v: any) => v.comprador_nombre))].length : 0}`]
     ]
 
     autoTable(doc, {
@@ -142,24 +143,66 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
       })
     }
 
-    // Pie de página
-    const pageCount = doc.getNumberOfPages()
-    doc.setFontSize(8)
-    doc.setTextColor(150, 150, 150)
+    // Tabla de compradores
+    const finalY2 = (doc as any).lastAutoTable.finalY || finalY + 80
     
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i)
-      doc.text(
-        `Página ${i} de ${pageCount}`,
-        105,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      )
-      doc.text(
-        'IPUC - Sistema de Contabilidad',
-        14,
-        doc.internal.pageSize.height - 10
-      )
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Compradores', 14, finalY2 + 10)
+
+    // Agrupar ventas por comprador
+    const compradoresMap = new Map<string, any[]>()
+    datos.ventas?.forEach((venta: any) => {
+      const nombre = venta.comprador_nombre
+      if (!compradoresMap.has(nombre)) {
+        compradoresMap.set(nombre, [])
+      }
+      compradoresMap.get(nombre)!.push(venta)
+    })
+
+    const compradoresData = Array.from(compradoresMap.entries())
+      .map(([nombre, ventasComprador]) => {
+        const totalCompras = ventasComprador.length
+        const totalUnidades = ventasComprador.reduce((sum: number, v: any) => sum + v.cantidad, 0)
+        const valorTotal = ventasComprador.reduce((sum: number, v: any) => sum + v.valor_total, 0)
+        const totalPagado = ventasComprador.reduce((sum: number, v: any) => sum + v.monto_pagado, 0)
+        const pendiente = valorTotal - totalPagado
+
+        return [
+          nombre,
+          totalCompras.toString(),
+          totalUnidades.toString(),
+          `$${valorTotal.toLocaleString()}`,
+          `$${totalPagado.toLocaleString()}`,
+          `$${pendiente.toLocaleString()}`
+        ]
+      })
+      .sort((a, b) => parseFloat(b[3].replace(/[$,]/g, '')) - parseFloat(a[3].replace(/[$,]/g, '')))
+
+    if (compradoresData.length > 0) {
+      autoTable(doc, {
+        startY: finalY2 + 15,
+        head: [['Comprador', 'Compras', 'Unid.', 'Total', 'Pagado', 'Pendiente']],
+        body: compradoresData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [147, 51, 234],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: { fontSize: 8 },
+        alternateRowStyles: { fillColor: [250, 245, 255] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 15, halign: 'center' },
+          2: { cellWidth: 15, halign: 'center' },
+          3: { cellWidth: 25, halign: 'right' },
+          4: { cellWidth: 25, halign: 'right' },
+          5: { cellWidth: 25, halign: 'right' }
+        }
+      })
     }
 
     // Guardar el PDF
@@ -205,7 +248,8 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
       ['Total Recaudado', datos.resumenVentas?.total_recaudado || 0],
       ['Pendiente', datos.resumenVentas?.pendiente || 0],
       ['Productos', datos.productos?.length || 0],
-      ['Ventas', datos.ventas?.length || 0]
+      ['Ventas', datos.ventas?.length || 0],
+      ['Compradores Únicos', datos.ventas ? [...new Set(datos.ventas.map((v: any) => v.comprador_nombre))].length : 0]
     ]
     
     const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
@@ -287,7 +331,56 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
       XLSX.utils.book_append_sheet(wb, wsDetalle, 'Detalle de Ventas')
     }
 
-    // Hoja 4: Productos
+    // Hoja 4: Compradores
+    const compradoresMap = new Map<string, any[]>()
+    datos.ventas?.forEach((venta: any) => {
+      const nombre = venta.comprador_nombre
+      if (!compradoresMap.has(nombre)) {
+        compradoresMap.set(nombre, [])
+      }
+      compradoresMap.get(nombre)!.push(venta)
+    })
+
+    const compradoresArray = Array.from(compradoresMap.entries())
+      .map(([nombre, ventasComprador]) => {
+        const totalCompras = ventasComprador.length
+        const totalUnidades = ventasComprador.reduce((sum: number, v: any) => sum + v.cantidad, 0)
+        const valorTotal = ventasComprador.reduce((sum: number, v: any) => sum + v.valor_total, 0)
+        const totalPagado = ventasComprador.reduce((sum: number, v: any) => sum + v.monto_pagado, 0)
+        const pendiente = valorTotal - totalPagado
+        const ultimaCompra = new Date(Math.max(...ventasComprador.map((v: any) => new Date(v.fecha_venta).getTime())))
+
+        return {
+          Comprador: nombre,
+          'Total Compras': totalCompras,
+          'Unidades Totales': totalUnidades,
+          'Valor Total': valorTotal,
+          'Total Pagado': totalPagado,
+          'Pendiente': pendiente,
+          'Última Compra': ultimaCompra.toLocaleDateString('es-CO'),
+          'Estado': pendiente === 0 ? 'Pagado' : 'Pendiente'
+        }
+      })
+      .sort((a, b) => b['Valor Total'] - a['Valor Total'])
+
+    if (compradoresArray.length > 0) {
+      const wsCompradores = XLSX.utils.json_to_sheet(compradoresArray)
+      
+      wsCompradores['!cols'] = [
+        { wch: 30 }, // Comprador
+        { wch: 12 }, // Total Compras
+        { wch: 15 }, // Unidades Totales
+        { wch: 15 }, // Valor Total
+        { wch: 15 }, // Total Pagado
+        { wch: 15 }, // Pendiente
+        { wch: 15 }, // Última Compra
+        { wch: 12 }  // Estado
+      ]
+      
+      XLSX.utils.book_append_sheet(wb, wsCompradores, 'Compradores')
+    }
+
+    // Hoja 5: Productos
     const productosInfo = datos.productos?.map(producto => ({
       Nombre: producto.nombre || '',
       'Precio Unitario': producto.precio_unitario || 0,

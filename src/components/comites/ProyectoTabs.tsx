@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Vote, Package, ShoppingCart, BarChart3, Download, FileText, FileSpreadsheet, Loader2 } from "lucide-react"
+import { Vote, Package, ShoppingCart, BarChart3, Download, FileText, FileSpreadsheet, Loader2, User, DollarSign } from "lucide-react"
 import { ProyectoProductosTable } from "./productos/ProyectoProductosTable"
 import { ProyectoVentasTable } from "./ventas/ProyectoVentasTable"
 import { generarPDFVentasProyecto, generarExcelVentasProyecto } from "@/lib/utils/reportesComite"
@@ -173,7 +173,7 @@ export function ProyectoTabs({
         {activeTab === "reportes" && (
           <div className="space-y-6">
             {/* Resumen General */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="bg-white rounded-xl border border-slate-200 p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-slate-600">Total Vendido</span>
@@ -223,6 +223,19 @@ export function ProyectoTabs({
                 </p>
                 <p className="text-sm text-slate-500 mt-1">
                   {resumenVentas?.productos_distintos || 0} productos
+                </p>
+              </div>
+
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-600">Compradores</span>
+                  <User className="w-5 h-5 text-indigo-500" />
+                </div>
+                <p className="text-2xl font-bold text-slate-900">
+                  {ventas ? [...new Set(ventas.map((v: any) => v.comprador_nombre))].length : 0}
+                </p>
+                <p className="text-sm text-slate-500 mt-1">
+                  Clientes únicos
                 </p>
               </div>
             </div>
@@ -294,6 +307,147 @@ export function ProyectoTabs({
                       </div>
                     )
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Compradores */}
+            {ventas && ventas.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                  Compradores
+                </h3>
+                <div className="space-y-4">
+                  {/* Estadísticas generales de compradores */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-700">Total Compradores</span>
+                        <User className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-blue-900">
+                        {[...new Set(ventas.map((v: any) => v.comprador_nombre))].length}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-1">
+                        Compradores únicos
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-green-700">Compra Promedio</span>
+                        <DollarSign className="w-5 h-5 text-green-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-green-900">
+                        ${(ventas.reduce((sum: number, v: any) => sum + v.valor_total, 0) / ventas.length).toLocaleString("es-CO")}
+                      </p>
+                      <p className="text-xs text-green-600 mt-1">
+                        Por transacción
+                      </p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-purple-700">Unidades Promedio</span>
+                        <Package className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <p className="text-2xl font-bold text-purple-900">
+                        {(ventas.reduce((sum: number, v: any) => sum + v.cantidad, 0) / ventas.length).toFixed(1)}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">
+                        Por compra
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Lista de compradores */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold text-slate-900 mb-3">Detalle por Comprador</h4>
+                    <div className="space-y-3">
+                      {(() => {
+                        // Agrupar ventas por comprador
+                        const compradoresMap = new Map<string, any[]>()
+                        ventas.forEach((venta: any) => {
+                          const nombre = venta.comprador_nombre
+                          if (!compradoresMap.has(nombre)) {
+                            compradoresMap.set(nombre, [])
+                          }
+                          compradoresMap.get(nombre)!.push(venta)
+                        })
+
+                        // Convertir a array y ordenar por total gastado
+                        const compradores = Array.from(compradoresMap.entries())
+                          .map(([nombre, ventasComprador]) => {
+                            const totalCompras = ventasComprador.length
+                            const totalUnidades = ventasComprador.reduce((sum: number, v: any) => sum + v.cantidad, 0)
+                            const valorTotal = ventasComprador.reduce((sum: number, v: any) => sum + v.valor_total, 0)
+                            const totalPagado = ventasComprador.reduce((sum: number, v: any) => sum + v.monto_pagado, 0)
+                            const pendiente = valorTotal - totalPagado
+                            const ultimaCompra = new Date(Math.max(...ventasComprador.map((v: any) => new Date(v.fecha_venta).getTime())))
+
+                            return {
+                              nombre,
+                              totalCompras,
+                              totalUnidades,
+                              valorTotal,
+                              totalPagado,
+                              pendiente,
+                              ultimaCompra,
+                              ventas: ventasComprador
+                            }
+                          })
+                          .sort((a, b) => b.valorTotal - a.valorTotal)
+
+                        return compradores.map((comprador, index) => (
+                          <div
+                            key={comprador.nombre}
+                            className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors"
+                          >
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                                  {comprador.nombre.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <h5 className="font-semibold text-slate-900">{comprador.nombre}</h5>
+                                  <p className="text-xs text-slate-500">
+                                    {comprador.totalCompras} compra{comprador.totalCompras !== 1 ? 's' : ''} • 
+                                    Última: {comprador.ultimaCompra.toLocaleDateString('es-CO')}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-slate-900">
+                                  ${comprador.valorTotal.toLocaleString("es-CO")}
+                                </p>
+                                <p className="text-sm text-slate-600">
+                                  {comprador.totalUnidades} unidad{comprador.totalUnidades !== 1 ? 'es' : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 pt-3 border-t">
+                              <div>
+                                <p className="text-xs text-slate-500">Pagado</p>
+                                <p className="font-semibold text-green-600">
+                                  ${comprador.totalPagado.toLocaleString("es-CO")}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-slate-500">Pendiente</p>
+                                <p className="font-semibold text-amber-600">
+                                  ${comprador.pendiente.toLocaleString("es-CO")}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-slate-500">Estado</p>
+                                <p className={`font-semibold ${comprador.pendiente === 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                                  {comprador.pendiente === 0 ? 'Pagado' : 'Pendiente'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
