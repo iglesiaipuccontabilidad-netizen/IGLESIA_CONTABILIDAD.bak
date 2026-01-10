@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function NuevoProyectoPage({ params }: PageProps) {

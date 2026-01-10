@@ -29,11 +29,11 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
     proyectoId: string
     ventaId: string
-  }
+  }>
 }
 
 export default async function DetalleVentaPage({ params }: PageProps) {

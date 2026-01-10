@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ShoppingCart, Plus, Trash2, DollarSign, User, Phone, Mail, Package, ChevronDown, ChevronUp, Eye } from "lucide-react"
+import { ShoppingCart, Plus, Eye, DollarSign, User, Phone, Mail, Package } from "lucide-react"
 import Link from "next/link"
 import { ProyectoVentaForm } from "./ProyectoVentaForm"
 import { RegistrarPagoVentaForm } from "./RegistrarPagoVentaForm"
@@ -48,32 +48,7 @@ export function ProyectoVentasTable({
   onRefresh,
 }: ProyectoVentasTableProps) {
   const [showForm, setShowForm] = useState(false)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [pagoVentaId, setPagoVentaId] = useState<string | null>(null)
-
-  const handleDelete = async (ventaId: string) => {
-    if (!confirm("¿Estás seguro de eliminar esta venta? Esta acción no se puede deshacer.")) {
-      return
-    }
-
-    setDeletingId(ventaId)
-    try {
-      const { deleteProyectoVenta } = await import("@/app/actions/comites-actions")
-      const result = await deleteProyectoVenta(ventaId)
-
-      if (!result.success) {
-        throw new Error(result.error || "Error al eliminar venta")
-      }
-
-      if (onRefresh) onRefresh()
-    } catch (error) {
-      console.error("Error al eliminar venta:", error)
-      alert(error instanceof Error ? error.message : "Error al eliminar venta")
-    } finally {
-      setDeletingId(null)
-    }
-  }
 
   const handleFormSuccess = () => {
     setShowForm(false)
@@ -248,91 +223,13 @@ export function ProyectoVentasTable({
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t">
                   <Link
                     href={`/dashboard/comites/${comiteId}/proyectos/${proyectoId}/ventas/${venta.id}`}
-                    className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1 font-medium"
+                    className="text-sm px-3 py-1.5 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg font-medium transition-colors flex items-center gap-1"
                   >
                     <Eye className="w-4 h-4" />
                     Ver detalles
                   </Link>
-
-                  <button
-                    onClick={() => setExpandedId(expandedId === venta.id ? null : venta.id)}
-                    className="text-sm text-slate-600 hover:text-purple-600 flex items-center gap-1"
-                  >
-                    {expandedId === venta.id ? (
-                      <>
-                        <ChevronUp className="w-4 h-4" />
-                        Ocultar detalles
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-4 h-4" />
-                        Ver detalles
-                      </>
-                    )}
-                  </button>
-                  
-                  <div className="flex-1" />
-                  
-                  {canManage && venta.estado !== "cancelado" && venta.saldo_pendiente > 0 && (
-                    <button
-                      onClick={() => setPagoVentaId(venta.id)}
-                      className="text-sm px-3 py-1.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg font-medium transition-colors"
-                    >
-                      <DollarSign className="w-4 h-4 inline mr-1" />
-                      Registrar Pago
-                    </button>
-                  )}
-                  
-                  {canManage && (
-                    <button
-                      onClick={() => handleDelete(venta.id)}
-                      disabled={deletingId === venta.id}
-                      className="text-sm px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors disabled:opacity-50"
-                    >
-                      <Trash2 className="w-4 h-4 inline mr-1" />
-                      Eliminar
-                    </button>
-                  )}
                 </div>
               </div>
-
-              {/* Detalles expandidos */}
-              {expandedId === venta.id && (
-                <div className="bg-slate-50 p-4 border-t">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-sm font-semibold text-slate-900 mb-2">Detalles del Producto</h4>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Producto:</span>
-                          <span className="font-medium">{venta.proyecto_productos?.nombre}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Cantidad:</span>
-                          <span className="font-medium">{venta.cantidad}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Precio Unitario:</span>
-                          <span className="font-medium">${venta.precio_unitario.toLocaleString("es-CO")}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-600">Fecha de Venta:</span>
-                          <span className="font-medium">
-                            {new Date(venta.fecha_venta).toLocaleDateString("es-CO")}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {venta.comprador_notas && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-900 mb-2">Notas</h4>
-                        <p className="text-sm text-slate-600">{venta.comprador_notas}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
