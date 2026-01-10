@@ -1,12 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createActionClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type Database } from '@/lib/database.types'
 
 export async function logout() {
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   const { error } = await supabase.auth.signOut()
   
   if (error) {
@@ -30,7 +30,7 @@ export async function signup(formData: FormData) {
       return { error: 'Todos los campos son obligatorios' }
     }
 
-    const supabase = await createClient()
+    const supabase = await createActionClient()
 
     // 1. Crear el usuario en auth.users
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -118,7 +118,7 @@ export async function login(formData: FormData) {
   }
 
   try {
-    const supabase = await createClient()
+    const supabase = await createActionClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,

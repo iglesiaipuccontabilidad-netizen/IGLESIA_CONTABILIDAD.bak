@@ -1,10 +1,10 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createActionClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/database.types'
 
 export async function getSession() {
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   try {
     const {
       data: { session },
@@ -17,7 +17,7 @@ export async function getSession() {
 }
 
 export async function signIn(formData: FormData) {
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
@@ -34,7 +34,7 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signOut() {
-  const supabase = await createClient()
+  const supabase = await createActionClient()
   await supabase.auth.signOut()
   return { success: true }
 }

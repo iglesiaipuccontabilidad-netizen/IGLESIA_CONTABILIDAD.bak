@@ -1,6 +1,9 @@
 ﻿/* Sidebar Container */
 .sidebar {
   @apply w-72 h-screen bg-gradient-to-b from-blue-900 via-blue-800 to-slate-900 fixed left-0 top-0 flex flex-col shadow-2xl z-50 overflow-y-auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 /* Brand/Logo Area */
@@ -18,6 +21,10 @@
 
 .brandText {
   @apply flex flex-col gap-1 flex-1 min-w-0;
+}
+
+.sidebar.collapsed .brandText {
+  @apply hidden;
 }
 
 .brandName {
@@ -50,6 +57,10 @@
   @apply text-xs font-bold text-slate-400 uppercase tracking-wider px-4 mb-3;
 }
 
+.sidebar.collapsed .sectionTitle {
+  @apply hidden;
+}
+
 .navList {
   @apply space-y-2 px-4 list-none m-0 p-0;
 }
@@ -60,6 +71,8 @@
 
 .navLink {
   @apply flex items-center gap-3 px-4 py-3 text-slate-300 text-sm font-medium rounded-lg transition-all no-underline cursor-pointer border-l-4 border-transparent hover:bg-slate-700/50 hover:text-slate-100;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
 }
 
 .navLink:hover {
@@ -86,6 +99,10 @@
   @apply flex-1 min-w-0 flex flex-col gap-1;
 }
 
+.sidebar.collapsed .linkContent {
+  @apply hidden;
+}
+
 .linkLabel {
   @apply text-sm font-semibold text-slate-200;
 }
@@ -99,6 +116,10 @@
   @apply list-none py-2 pl-0 m-0;
 }
 
+.sidebar.collapsed .subNavList {
+  @apply hidden;
+}
+
 .subNavItem {
   @apply mt-1;
 }
@@ -109,6 +130,8 @@
 
 .subNavLink {
   @apply flex items-center gap-3 px-4 py-2 pl-12 text-slate-400 text-xs font-medium rounded-lg no-underline transition-all hover:bg-slate-700 hover:text-slate-100;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 40px;
 }
 
 .subNavLink:hover {
@@ -130,6 +153,10 @@
 
 .profileInfo {
   @apply flex-1 min-w-0;
+}
+
+.sidebar.collapsed .profileInfo {
+  @apply hidden;
 }
 
 .profileName {
@@ -159,11 +186,24 @@
 
 /* Mobile Menu States */
 .mobileOverlay {
-  @apply hidden;
+  @apply hidden fixed inset-0 bg-black/50 z-40;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  transition: opacity 0.3s ease;
 }
 
 .mobileOverlay.visible {
-  @apply block fixed inset-0 bg-black bg-opacity-50 z-40;
+  @apply block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .sidebar.collapsed {
@@ -220,114 +260,612 @@
 
 @media (max-width: 768px) {
   .sidebar {
-    @apply w-72 transform -translate-x-full transition-transform duration-300;
+    /* 85% del ancho en tablets y móviles medianos */
+    width: 85vw;
+    max-width: 360px;
+    @apply transform translate-x-0 transition-transform duration-300;
   }
 
   .sidebar.mobileVisible {
     @apply translate-x-0;
+  }
+
+  .mobileOverlay.visible {
+    @apply block;
+  }
+
+  /* En móvil SIEMPRE mostrar el contenido, ignorar collapsed */
+  .sidebar.collapsed {
+    width: 85vw;
+    max-width: 360px;
+  }
+
+  /* Forzar que TODO el contenido se muestre en móvil, collapsed o no */
+  .brandRow {
+    display: flex !important;
+    padding: 16px !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3) !important;
+    min-height: 70px !important;
+  }
+
+  .brandMark {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex: 1 !important;
+  }
+
+  .logo {
+    display: flex !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .brandText,
+  .sidebar.collapsed .brandText {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .sectionTitle,
+  .sidebar.collapsed .sectionTitle {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .linkContent,
+  .sidebar.collapsed .linkContent {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .subNavList,
+  .sidebar.collapsed .subNavList {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .profileInfo,
+  .sidebar.collapsed .profileInfo {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Forzar colores visibles */
+  .brandName {
+    color: #67e8f9 !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+  }
+
+  .brandDescription {
+    color: #cbd5e1 !important;
+    font-size: 14px !important;
+  }
+
+  .linkLabel {
+    color: #e2e8f0 !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .linkDescription {
+    color: #cbd5e1 !important;
+  }
+
+  .sectionTitle {
+    color: #cbd5e1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+
+  .profileName {
+    color: #a5f3fc !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .profileRole {
+    color: #cbd5e1 !important;
+  }
+
+  .icon {
+    color: #e2e8f0 !important;
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* Ocultar collapse button en móvil */
+  .collapseButton {
+    display: none !important;
+  }
+
+  /* Mejorar touch targets en tablets */
+  .navLink {
+    min-height: 44px;
+  }
+
+  .subNavLink {
+    min-height: 40px;
   }
 }
 
 @media (max-width: 480px) {
-  /* Very small phones - reduce dimensions significantly */
+  /* Very small phones - optimized for mobile best practices */
   .sidebar {
-    @apply w-screen transform -translate-x-full transition-transform duration-300;
-    max-width: calc(100vw - 60px);
+    /* 90% width en móviles pequeños para mejor UX - deja espacio para cerrar */
+    width: 90vw;
+    max-width: 320px;
+    /* DEBUG: Remover translate para ver el sidebar siempre */
+    @apply transform translate-x-0 transition-transform duration-300;
   }
 
   .sidebar.mobileVisible {
     @apply translate-x-0;
+    /* DEBUG: Asegurar que el sidebar sea visible */
+    background: linear-gradient(180deg, #1e3a8a 0%, #1e40af 50%, #0f172a 100%) !important;
   }
 
-  /* Reduce padding in brand row */
+  /* En móvil pequeño SIEMPRE mostrar todo, ignorar collapsed completamente */
+  .sidebar.collapsed {
+    width: 90vw;
+    max-width: 320px;
+  }
+
+  /* Forzar que TODO el contenido se muestre en móvil, collapsed o no */
   .brandRow {
-    @apply p-3 gap-2;
+    display: flex !important;
+    padding: 16px !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3) !important;
+    min-height: 70px !important;
   }
 
-  /* Reduce logo size */
+  .brandMark {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex: 1 !important;
+  }
+
   .logo {
-    @apply w-10 h-10 text-base;
+    display: flex !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+    flex-shrink: 0 !important;
   }
 
-  /* Reduce brand text sizes */
+  .brandText,
+  .sidebar.collapsed .brandText {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .navigation {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px 0 !important;
+  }
+
+  .section {
+    display: block !important;
+    margin-bottom: 20px !important;
+  }
+
+  .sectionTitle,
+  .sidebar.collapsed .sectionTitle {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    padding: 0 16px !important;
+    margin-bottom: 12px !important;
+    min-height: 20px !important;
+  }
+
+  .navList {
+    display: block !important;
+    padding: 0 12px !important;
+    list-style: none !important;
+    margin: 0 !important;
+  }
+
+  .navLink {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 12px !important;
+    min-height: 48px !important;
+    border-radius: 8px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .iconWrapper {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .linkContent,
+  .sidebar.collapsed .linkContent {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    gap: 2px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .subNavList,
+  .sidebar.collapsed .subNavList {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .profileCard {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    border-top: 1px solid rgba(148, 163, 184, 0.3) !important;
+    margin-top: auto !important;
+    min-height: 70px !important;
+  }
+
+  .avatar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+    flex-shrink: 0 !important;
+    font-weight: 700 !important;
+  }
+
+  .profileInfo,
+  .sidebar.collapsed .profileInfo {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    gap: 4px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  /* Asegurar que los links, íconos y textos sean visibles */
+  .navLink,
+  .navList,
+  .section,
+  .navigation,
+  .brandRow,
+  .brandMark,
+  .logo,
+  .brandName,
+  .brandDescription,
+  .profileCard,
+  .avatar,
+  .profileName,
+  .profileRole,
+  .icon,
+  .iconWrapper,
+  .linkLabel,
+  .linkDescription {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* Forzar colores de texto visibles en móvil */
   .brandName {
-    @apply text-xs;
+    color: #67e8f9 !important; /* cyan-300 */
+    font-size: 16px !important; /* DEBUG: Aumentar tamaño */
+    font-weight: 900 !important;
   }
 
   .brandDescription {
-    @apply text-xs;
-    font-size: 0.625rem;
+    color: #cbd5e1 !important; /* slate-300 */
+    font-size: 14px !important;
   }
 
-  /* Reduce section margins */
-  .section {
-    @apply mb-4;
+  .linkLabel {
+    color: #e2e8f0 !important; /* slate-200 */
+    font-size: 16px !important; /* DEBUG: Aumentar tamaño */
+    font-weight: 700 !important;
+  }
+
+  .linkDescription {
+    color: #cbd5e1 !important; /* slate-300 */
+    font-size: 14px !important;
   }
 
   .sectionTitle {
-    @apply text-xs px-3 mb-2;
-    font-size: 0.625rem;
+    color: #cbd5e1 !important; /* slate-300 */
+    font-size: 14px !important; /* DEBUG: Aumentar tamaño */
+    font-weight: 700 !important;
+  }
+
+  .profileName {
+    color: #a5f3fc !important; /* cyan-200 */
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .profileRole {
+    color: #cbd5e1 !important; /* slate-300 */
+    font-size: 14px !important;
+  }
+
+  .icon {
+    color: #e2e8f0 !important; /* slate-200 */
+    width: 24px !important; /* DEBUG: Aumentar tamaño */
+    height: 24px !important;
+  }
+
+  /* Ocultar collapse button en móvil */
+  .collapseButton {
+    display: none !important;
+  }
+
+  /* Optimizar padding para móvil - más compacto pero táctil */
+  .brandRow {
+    @apply p-3 gap-2.5;
+  }
+
+  /* Logo optimizado para móvil */
+  .logo {
+    @apply w-10 h-10 text-base flex-shrink-0;
+  }
+
+  /* Tipografía optimizada para móvil */
+  .brandName {
+    @apply text-sm font-bold leading-tight;
+  }
+
+  .brandDescription {
+    @apply text-xs leading-tight;
+  }
+
+  /* Espaciado vertical optimizado */
+  .section {
+    @apply mb-3;
+  }
+
+  .sectionTitle {
+    @apply text-xs px-3 mb-2 font-semibold;
   }
 
   .navList {
     @apply px-2 space-y-1;
   }
 
-  /* Reduce nav link padding */
+  /* Touch targets de 44px mínimo para mejor experiencia táctil */
   .navLink {
-    @apply px-3 py-2 text-xs rounded-md;
+    @apply px-3 py-3 text-sm rounded-lg;
+    min-height: 48px;
+    /* Aumentar área táctil */
   }
 
   .linkContent {
     @apply gap-0.5;
-    gap: 0.125rem;
   }
 
   .linkLabel {
-    @apply text-xs;
+    @apply text-sm font-semibold leading-snug;
   }
 
   .linkDescription {
-    @apply text-xs;
-    font-size: 0.625rem;
+    @apply text-xs leading-tight;
+    /* Ocultar descripciones en móviles muy pequeños para ahorrar espacio */
     display: none;
   }
 
-  /* Reduce icon size */
+  /* Icons táctiles */
   .icon {
-    @apply w-4 h-4;
+    @apply w-5 h-5 flex-shrink-0;
   }
 
-  /* Reduce sub-nav link padding */
+  /* Sub-navegación optimizada */
   .subNavLink {
-    @apply px-3 py-1 pl-10 text-xs;
-    font-size: 0.625rem;
+    @apply px-3 py-2.5 pl-10 text-xs;
+    min-height: 44px;
   }
 
-  /* Reduce profile card padding */
+  /* Profile card compacto pero táctil */
   .profileCard {
-    @apply p-2 gap-2;
+    @apply p-3 gap-2.5;
   }
 
   .avatar {
-    @apply w-8 h-8 text-xs;
+    @apply w-10 h-10 text-sm flex-shrink-0;
   }
 
   .profileName {
-    @apply text-xs;
+    @apply text-sm font-semibold leading-tight;
   }
 
   .profileRole {
-    @apply text-xs;
-    font-size: 0.625rem;
+    @apply text-xs leading-tight;
   }
 
-  /* Reduce scrollbar width */
+  /* Scrollbar mínimo para móvil */
   .sidebar::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
 
   .sidebar::-webkit-scrollbar-thumb {
     border-radius: 2px;
+  }
+
+  /* Optimizar navigation scroll */
+  .navigation {
+    @apply py-3;
+  }
+}
+
+/* Extra pequeños (320px y menos) */
+@media (max-width: 360px) {
+  .sidebar {
+    /* 95% del ancho para pantallas ultra pequeñas */
+    width: 95vw;
+    max-width: 280px;
+  }
+
+  .sidebar.collapsed {
+    width: 95vw;
+    max-width: 280px;
+  }
+
+  /* Forzar visibilidad en pantallas ultra pequeñas */
+  .brandText,
+  .sidebar.collapsed .brandText,
+  .sectionTitle,
+  .sidebar.collapsed .sectionTitle,
+  .linkContent,
+  .sidebar.collapsed .linkContent,
+  .subNavList,
+  .sidebar.collapsed .subNavList,
+  .profileInfo,
+  .sidebar.collapsed .profileInfo,
+  .navLink,
+  .navList,
+  .section,
+  .navigation,
+  .brandRow,
+  .brandMark,
+  .logo,
+  .brandName,
+  .brandDescription,
+  .profileCard,
+  .avatar,
+  .profileName,
+  .profileRole,
+  .icon,
+  .iconWrapper,
+  .linkLabel {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .brandText,
+  .sidebar.collapsed .brandText {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .sectionTitle,
+  .sidebar.collapsed .sectionTitle {
+    display: block !important;
+  }
+
+  .linkContent,
+  .sidebar.collapsed .linkContent {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .subNavList,
+  .sidebar.collapsed .subNavList {
+    display: block !important;
+  }
+
+  .profileInfo,
+  .sidebar.collapsed .profileInfo {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .brandRow {
+    @apply p-2.5 gap-2;
+  }
+
+  .logo {
+    @apply w-9 h-9 flex-shrink-0;
+  }
+
+  .brandName {
+    @apply text-xs font-bold leading-tight;
+  }
+
+  .brandDescription {
+    /* Ocultar descripción en pantallas ultra pequeñas */
+    display: none;
+  }
+
+  .section {
+    @apply mb-2;
+  }
+
+  .sectionTitle {
+    @apply text-xs px-2.5 mb-1.5;
+  }
+
+  .navList {
+    @apply px-1.5 space-y-1;
+  }
+
+  .navLink {
+    @apply px-2.5 py-2.5;
+    min-height: 44px;
+  }
+
+  .linkLabel {
+    @apply text-xs leading-tight;
+  }
+
+  .linkDescription {
+    display: none;
+  }
+
+  .icon {
+    @apply w-5 h-5;
+  }
+
+  .subNavLink {
+    @apply px-2.5 py-2 pl-9;
+    min-height: 40px;
+  }
+
+  .profileCard {
+    @apply p-2.5 gap-2;
+  }
+
+  .avatar {
+    @apply w-9 h-9 text-xs flex-shrink-0;
+  }
+
+  .profileName {
+    @apply text-xs leading-tight;
+  }
+
+  .profileRole {
+    @apply text-xs leading-tight;
   }
 }

@@ -1902,7 +1902,7 @@ export async function updateProyectoProducto(
     // Obtener el producto para verificar acceso
     const { data: producto } = await supabase
       .from('proyecto_productos')
-      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .select('proyecto_id')
       .eq('id', productoId)
       .single();
 
@@ -1910,7 +1910,18 @@ export async function updateProyectoProducto(
       throw new Error('Producto no encontrado');
     }
 
-    const comiteId = (producto as any).proyecto?.comite_id;
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', producto.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const comiteId = proyecto.comite_id;
     const { rol } = await verificarAccesoUsuarioComite(comiteId);
 
     // Solo lider y tesorero pueden editar productos
@@ -1969,7 +1980,7 @@ export async function deleteProyectoProducto(productoId: string): Promise<Operat
     // Obtener el producto para verificar acceso
     const { data: producto } = await supabase
       .from('proyecto_productos')
-      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .select('proyecto_id')
       .eq('id', productoId)
       .single();
 
@@ -1977,7 +1988,18 @@ export async function deleteProyectoProducto(productoId: string): Promise<Operat
       throw new Error('Producto no encontrado');
     }
 
-    const comiteId = (producto as any).proyecto?.comite_id;
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', producto.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const comiteId = proyecto.comite_id;
     const { rol } = await verificarAccesoUsuarioComite(comiteId);
 
     // Solo lider y tesorero pueden eliminar productos
@@ -2166,7 +2188,7 @@ export async function updateProyectoVenta(
     // Obtener la venta para verificar acceso
     const { data: venta } = await supabase
       .from('proyecto_ventas')
-      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .select('proyecto_id')
       .eq('id', ventaId)
       .single();
 
@@ -2174,7 +2196,18 @@ export async function updateProyectoVenta(
       throw new Error('Venta no encontrada');
     }
 
-    const comiteId = (venta as any).proyecto?.comite_id;
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', venta.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const comiteId = proyecto.comite_id;
     const { rol } = await verificarAccesoUsuarioComite(comiteId);
 
     // Solo lider y tesorero pueden editar ventas
@@ -2240,7 +2273,7 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
     // Obtener la venta para verificar acceso
     const { data: venta } = await supabase
       .from('proyecto_ventas')
-      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .select('proyecto_id')
       .eq('id', ventaId)
       .single();
 
@@ -2248,7 +2281,18 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
       throw new Error('Venta no encontrada');
     }
 
-    const comiteId = (venta as any).proyecto?.comite_id;
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', venta.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const comiteId = proyecto.comite_id;
     const { rol } = await verificarAccesoUsuarioComite(comiteId);
 
     // Solo lider y tesorero pueden eliminar ventas
@@ -2339,10 +2383,7 @@ export async function registrarPagoVenta(dto: RegistrarPagoVentaDTO): Promise<Op
     // Obtener la venta para verificar acceso y validar
     const { data: venta } = await supabase
       .from('proyecto_ventas')
-      .select(`
-        *,
-        proyecto:comite_proyectos(comite_id)
-      `)
+      .select('*')
       .eq('id', dto.venta_id)
       .single();
 
@@ -2354,7 +2395,18 @@ export async function registrarPagoVenta(dto: RegistrarPagoVentaDTO): Promise<Op
       throw new Error('No se pueden registrar pagos en ventas canceladas');
     }
 
-    const comiteId = (venta as any).proyecto?.comite_id;
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', venta.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const comiteId = proyecto.comite_id;
     const { user } = await verificarAccesoUsuarioComite(comiteId);
 
     // Validaciones
@@ -2413,7 +2465,7 @@ export async function getPagosVenta(ventaId: string): Promise<OperationResult<an
     // Obtener la venta para verificar acceso
     const { data: venta } = await supabase
       .from('proyecto_ventas')
-      .select('proyecto_id, proyecto:comite_proyectos(comite_id)')
+      .select('proyecto_id')
       .eq('id', ventaId)
       .single();
 
@@ -2421,8 +2473,18 @@ export async function getPagosVenta(ventaId: string): Promise<OperationResult<an
       throw new Error('Venta no encontrada');
     }
 
-    const comiteId = (venta as any).proyecto?.comite_id;
-    await verificarAccesoUsuarioComite(comiteId);
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', venta.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    await verificarAccesoUsuarioComite(proyecto.comite_id);
 
     const { data, error } = await supabase
       .from('proyecto_pagos_ventas')
@@ -2454,10 +2516,7 @@ export async function deletePagoVenta(pagoId: string): Promise<OperationResult> 
       .from('proyecto_pagos_ventas')
       .select(`
         *,
-        venta:proyecto_ventas(
-          proyecto_id,
-          proyecto:comite_proyectos(comite_id)
-        )
+        venta:proyecto_ventas(proyecto_id)
       `)
       .eq('id', pagoId)
       .single();
@@ -2466,7 +2525,20 @@ export async function deletePagoVenta(pagoId: string): Promise<OperationResult> 
       throw new Error('Pago no encontrado');
     }
 
-    const comiteId = (pago as any).venta?.proyecto?.comite_id;
+    const ventaProyectoId = (pago as any).venta?.proyecto_id;
+
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', ventaProyectoId)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    const comiteId = proyecto.comite_id;
     const { rol } = await verificarAccesoUsuarioComite(comiteId);
 
     // Solo lider y tesorero pueden eliminar pagos
