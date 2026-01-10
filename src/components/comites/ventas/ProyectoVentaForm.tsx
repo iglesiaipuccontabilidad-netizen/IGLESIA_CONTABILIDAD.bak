@@ -17,7 +17,21 @@ const ventaSchema = z.object({
   cantidad: z.number().min(1, "La cantidad debe ser mayor a cero"),
   precio_unitario: z.number().min(0.01, "El precio debe ser mayor a cero"),
   fecha_venta: z.string().optional(),
-})
+  estado_pago: z.enum(["pendiente", "pagado"]),
+  metodo_pago: z.enum(["efectivo", "transferencia", "tarjeta", "otro"]).optional(),
+}).refine(
+  (data) => {
+    // Si el estado es 'pagado', el método de pago es requerido
+    if (data.estado_pago === "pagado" && !data.metodo_pago) {
+      return false
+    }
+    return true
+  },
+  {
+    message: "El método de pago es requerido cuando se marca como pagado",
+    path: ["metodo_pago"],
+  }
+)
 
 type VentaFormData = z.infer<typeof ventaSchema>
 
@@ -65,12 +79,15 @@ export function ProyectoVentaForm({
       cantidad: 1,
       precio_unitario: 0,
       fecha_venta: new Date().toISOString().split("T")[0],
+      estado_pago: "pendiente",
+      metodo_pago: "efectivo",
     },
   })
 
   const productoId = watch("producto_id")
   const cantidad = watch("cantidad")
   const precioUnitario = watch("precio_unitario")
+  const estadoPago = watch("estado_pago")
 
   // Actualizar precio cuando se selecciona un producto
   useEffect(() => {
@@ -104,6 +121,8 @@ export function ProyectoVentaForm({
         cantidad: data.cantidad,
         precio_unitario: data.precio_unitario,
         fecha_venta: data.fecha_venta || undefined,
+        estado_pago: data.estado_pago,
+        metodo_pago: data.estado_pago === "pagado" ? data.metodo_pago : undefined,
       }
 
       const { createProyectoVenta } = await import("@/app/actions/comites-actions")
@@ -313,6 +332,97 @@ export function ProyectoVentaForm({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Estado de Pago */}
+      <div className="border-t pt-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4">Estado de Pago</h3>
+        
+        {/* Radio buttons para estado */}
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-purple-300 hover:bg-purple-50/50 transition-all">
+            <input
+              type="radio"
+              value="pendiente"
+              {...register("estado_pago")}
+              className="mt-1 w-4 h-4 text-purple-600 focus:ring-2 focus:ring-purple-500"
+            />
+            <div className="flex-1">
+              <div className="font-semibold text-slate-900 mb-1">Pendiente de Pago</div>
+              <div className="text-sm text-slate-600">
+                El comprador pagará posteriormente. Se registrará como venta pendiente.
+              </div>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 p-4 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-green-300 hover:bg-green-50/50 transition-all">
+            <input
+              type="radio"
+              value="pagado"
+              {...register("estado_pago")}
+              className="mt-1 w-4 h-4 text-green-600 focus:ring-2 focus:ring-green-500"
+            />
+            <div className="flex-1">
+              <div className="font-semibold text-slate-900 mb-1">Pagado en el Momento</div>
+              <div className="text-sm text-slate-600">
+                El comprador ya realizó el pago. Se registrará como venta pagada.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        {/* Método de pago - mostrar solo si está marcado como pagado */}
+        {estadoPago === "pagado" && (
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+            <label htmlFor="metodo_pago" className="block text-sm font-medium text-slate-900 mb-3">
+              Método de Pago <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <label className="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-green-400 hover:bg-white transition-all">
+                <input
+                  type="radio"
+                  value="efectivo"
+                  {...register("metodo_pago")}
+                  className="w-4 h-4 text-green-600 focus:ring-2 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium text-slate-700">💵 Efectivo</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-green-400 hover:bg-white transition-all">
+                <input
+                  type="radio"
+                  value="transferencia"
+                  {...register("metodo_pago")}
+                  className="w-4 h-4 text-green-600 focus:ring-2 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium text-slate-700">🏦 Transferencia</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-green-400 hover:bg-white transition-all">
+                <input
+                  type="radio"
+                  value="tarjeta"
+                  {...register("metodo_pago")}
+                  className="w-4 h-4 text-green-600 focus:ring-2 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium text-slate-700">💳 Tarjeta</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-green-400 hover:bg-white transition-all">
+                <input
+                  type="radio"
+                  value="otro"
+                  {...register("metodo_pago")}
+                  className="w-4 h-4 text-green-600 focus:ring-2 focus:ring-green-500"
+                />
+                <span className="text-sm font-medium text-slate-700">📋 Otro</span>
+              </label>
+            </div>
+            {errors.metodo_pago && (
+              <p className="mt-2 text-sm text-red-600">{errors.metodo_pago.message}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Botones */}

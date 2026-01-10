@@ -427,6 +427,8 @@ export interface CreateProyectoVentaDTO {
   cantidad: number;
   precio_unitario: number;  // Tomado del producto, pero puede ser diferente
   fecha_venta?: string;
+  estado_pago?: 'pendiente' | 'pagado';  // Estado de pago al momento de la venta
+  metodo_pago?: MetodoPagoVenta;  // Método de pago si estado_pago es 'pagado'
 }
 
 /**

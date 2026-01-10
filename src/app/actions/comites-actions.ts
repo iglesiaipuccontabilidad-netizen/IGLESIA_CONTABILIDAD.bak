@@ -2135,6 +2135,11 @@ export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<
 
     const valorTotal = dto.cantidad * dto.precio_unitario;
 
+    // Determinar estado y monto pagado según el estado_pago
+    const esPagado = dto.estado_pago === 'pagado';
+    const estado = esPagado ? 'pagado' : 'pendiente';
+    const montoPagado = esPagado ? valorTotal : 0;
+
     // Crear venta
     const { data, error } = await supabase
       .from('proyecto_ventas')
@@ -2148,8 +2153,8 @@ export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<
         cantidad: dto.cantidad,
         precio_unitario: dto.precio_unitario,
         valor_total: valorTotal,
-        monto_pagado: 0,
-        estado: 'pendiente',
+        monto_pagado: montoPagado,
+        estado: estado,
         fecha_venta: dto.fecha_venta || new Date().toISOString().split('T')[0],
         registrado_por: user.id,
       })
@@ -2157,6 +2162,25 @@ export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<
       .single();
 
     if (error) throw error;
+
+    // Si la venta está marcada como pagada, crear automáticamente el registro de pago
+    if (esPagado && dto.metodo_pago && data) {
+      const { error: pagoError } = await supabase
+        .from('proyecto_pagos_ventas')
+        .insert({
+          venta_id: data.id,
+          monto: valorTotal,
+          fecha_pago: dto.fecha_venta || new Date().toISOString().split('T')[0],
+          metodo_pago: dto.metodo_pago,
+          notas: 'Pago registrado al momento de la venta',
+          registrado_por: user.id,
+        });
+
+      if (pagoError) {
+        console.error('Error al crear registro de pago:', pagoError);
+        // No lanzar error, la venta ya fue creada exitosamente
+      }
+    }
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos/${dto.proyecto_id}`);
