@@ -481,11 +481,14 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                           />
                         )}
 
-                        <Icon
-                          className="shrink-0 transition-colors"
-                          size={showMobileVersion ? 22 : 20}
-                          color={active ? '#22d3ee' : undefined}
-                        />
+                        <span className="flex items-center justify-center shrink-0 transition-colors"
+                          style={{
+                            width: showMobileVersion ? "22px" : "20px",
+                            height: showMobileVersion ? "22px" : "20px",
+                            color: active ? "#22d3ee" : "#cbd5e1",
+                          }}>
+                          <Icon className="w-full h-full" />
+                        </span>
 
                         {/* Label - Hidden when collapsed on desktop */}
                         {(!isCollapsed || showMobileVersion) && (
