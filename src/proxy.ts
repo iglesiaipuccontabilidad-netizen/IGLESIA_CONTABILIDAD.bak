@@ -36,30 +36,31 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // 3. Crear el cliente de Supabase para verificar la sesión
+  // 3. Crear respuesta que será modificada por Supabase para refrescar cookies
+  let supabaseResponse = NextResponse.next({
+    request,
+  })
+
+  // 4. Crear el cliente de Supabase para verificar la sesión
+  // IMPORTANTE: Usar getAll/setAll según la documentación actualizada de @supabase/ssr
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          const cookie = request.cookies.get(name)
-          return cookie?.value
+        getAll() {
+          return request.cookies.getAll()
         },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
           })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
-        remove(name: string, options: any) {
-          request.cookies.delete({
-            name,
-            ...options,
-          })
-        }
-      }
+      },
     }
   )
 
@@ -110,8 +111,8 @@ export default async function proxy(request: NextRequest) {
 
       // 6. Manejar rutas según estado de autenticación
       if (isProtectedPath(pathname)) {
-        // Permitir acceso a rutas protegidas
-        return NextResponse.next()
+        // Permitir acceso a rutas protegidas (retornar supabaseResponse para propagar cookies)
+        return supabaseResponse
       }
 
       if (isPublicPath(pathname)) {
@@ -132,8 +133,8 @@ export default async function proxy(request: NextRequest) {
       }
 
       if (isPublicPath(pathname)) {
-        // Permitir acceso a rutas públicas
-        return NextResponse.next()
+        // Permitir acceso a rutas públicas (retornar supabaseResponse para propagar cookies)
+        return supabaseResponse
       }
     }
 
@@ -149,7 +150,7 @@ export default async function proxy(request: NextRequest) {
         new URL('/login?error=error_servidor', request.url)
       )
     }
-    return NextResponse.next()
+    return supabaseResponse
   }
 }
 

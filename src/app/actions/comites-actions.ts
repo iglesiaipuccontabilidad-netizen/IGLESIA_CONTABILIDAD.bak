@@ -2478,6 +2478,7 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
     }
 
     const comiteId = proyecto.comite_id;
+    const proyectoId = venta.proyecto_id;
     const { rol } = await verificarAccesoUsuarioComite(comiteId);
 
     // Solo lider y tesorero pueden eliminar ventas
@@ -2495,12 +2496,16 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
 
     // Revalidar rutas
     revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+    revalidatePath(`/dashboard/comites/${comiteId}/proyectos/${proyectoId}`);
 
-    return {
-      success: true,
-      message: 'Venta eliminada exitosamente',
-    };
+    // Redirigir directamente desde el servidor
+    redirect(`/dashboard/comites/${comiteId}/proyectos/${proyectoId}`);
   } catch (error) {
+    // Si es un error de redirect, dejarlo pasar
+    if (error && typeof error === 'object' && 'digest' in error) {
+      throw error;
+    }
+    
     console.error('Error al eliminar venta:', error);
     return {
       success: false,

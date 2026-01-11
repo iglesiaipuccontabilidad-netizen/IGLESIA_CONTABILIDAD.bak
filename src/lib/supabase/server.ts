@@ -5,6 +5,9 @@ import { cookies } from 'next/headers'
 /**
  * Cliente de Supabase para Server Components (solo lectura)
  * Usa este cliente en páginas y componentes de servidor
+ * 
+ * IMPORTANTE: Usa getAll/setAll según la documentación actualizada de @supabase/ssr
+ * https://supabase.com/docs/guides/auth/server-side/nextjs
  */
 export async function createClient() {
   const cookieStore = await cookies()
@@ -14,14 +17,19 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set() {
-          // No hacer nada en Server Components
-        },
-        remove() {
-          // No hacer nada en Server Components
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch (error) {
+            // El método `setAll` fue llamado desde un Server Component.
+            // Esto puede ser ignorado si tienes middleware refrescando
+            // las sesiones de usuario.
+          }
         },
       },
     }
@@ -40,14 +48,19 @@ export async function createActionClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set(name, value, options)
-        },
-        remove(name: string, options: any) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 })
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch (error) {
+            // El método `setAll` fue llamado desde un Server Component.
+            // Esto puede ser ignorado si tienes middleware refrescando
+            // las sesiones de usuario.
+          }
         },
       },
     }
