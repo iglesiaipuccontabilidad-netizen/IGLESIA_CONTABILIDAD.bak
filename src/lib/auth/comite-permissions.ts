@@ -24,65 +24,98 @@ export interface ComiteAccess {
 export async function verificarAccesoComite(
   comiteId: string
 ): Promise<ComiteAccess> {
-  const supabase = await createClient()
-  
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  try {
+    // Validar variables de entorno
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('❌ ERROR CRÍTICO: Variables de Supabase no configuradas en verificarAccesoComite')
+      throw new Error('Configuración de base de datos no disponible')
+    }
 
-  if (!user) {
-    redirect('/login')
-  }
+    const supabase = await createClient()
+    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
 
-  // Obtener rol del usuario
-  const { data: userData, error: userError } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
+    if (authError) {
+      console.error('❌ Error de autenticación en verificarAccesoComite:', authError)
+      redirect('/login')
+    }
 
-  if (userError || !userData) {
-    redirect('/login')
-  }
+    if (!user) {
+      console.log('⚠️ No hay usuario autenticado, redirigiendo a login')
+      redirect('/login')
+    }
 
-  const isAdmin = userData.rol === 'admin' || userData.rol === 'tesorero'
+    console.log('🔍 Verificando acceso para usuario:', user.id, 'al comité:', comiteId)
 
-  // Si es admin/tesorero, tiene acceso total
-  if (isAdmin) {
+    // Obtener rol del usuario
+    const { data: userData, error: userError } = await supabase
+      .from('usuarios')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    if (userError) {
+      console.error('❌ Error al obtener datos del usuario:', userError)
+      redirect('/login')
+    }
+
+    if (!userData) {
+      console.error('❌ Usuario no encontrado en tabla usuarios:', user.id)
+      redirect('/login')
+    }
+
+    const isAdmin = userData.rol === 'admin' || userData.rol === 'tesorero'
+    console.log('✅ Rol del usuario:', userData.rol, 'isAdmin:', isAdmin)
+
+    // Si es admin/tesorero, tiene acceso total
+    if (isAdmin) {
+      return {
+        hasAccess: true,
+        isAdmin: true,
+        rolEnComite: null,
+        userId: user.id,
+        comiteId,
+      }
+    }
+
+    // Verificar si el usuario pertenece al comité
+    const { data: comiteUsuario, error: comiteError } = await supabase
+      .from('comite_usuarios')
+      .select('rol, estado')
+      .eq('comite_id', comiteId)
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .single()
+
+    if (comiteError || !comiteUsuario) {
+      console.log('⚠️ Usuario no tiene acceso al comité:', comiteId)
+      return {
+        hasAccess: false,
+        isAdmin: false,
+        rolEnComite: null,
+        userId: user.id,
+        comiteId,
+      }
+    }
+
+    console.log('✅ Acceso concedido al comité con rol:', comiteUsuario.rol)
     return {
       hasAccess: true,
-      isAdmin: true,
-      rolEnComite: null,
-      userId: user.id,
-      comiteId,
-    }
-  }
-
-  // Verificar si el usuario pertenece al comité
-  const { data: comiteUsuario, error: comiteError } = await supabase
-    .from('comite_usuarios')
-    .select('rol, estado')
-    .eq('comite_id', comiteId)
-    .eq('usuario_id', user.id)
-    .eq('estado', 'activo')
-    .single()
-
-  if (comiteError || !comiteUsuario) {
-    return {
-      hasAccess: false,
       isAdmin: false,
-      rolEnComite: null,
+      rolEnComite: comiteUsuario.rol as ComiteRol,
       userId: user.id,
       comiteId,
     }
-  }
-
-  return {
-    hasAccess: true,
-    isAdmin: false,
-    rolEnComite: comiteUsuario.rol as ComiteRol,
-    userId: user.id,
-    comiteId,
+  } catch (error) {
+    // Si el error es un redirect de Next.js, re-lanzarlo
+    if (error && typeof error === 'object' && 'digest' in error) {
+      throw error
+    }
+    console.error('❌ Error inesperado en verificarAccesoComite:', error)
+    throw error
   }
 }
 

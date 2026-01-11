@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Loader2, Save, X, ShoppingCart } from "lucide-react"
 import { FormattedNumberInput } from "@/components/ui/FormattedNumberInput"
+import { createProyectoVenta, updateProyectoVenta, getProyectoVenta } from "@/app/actions/comites-actions"
 
 const ventaSchema = z.object({
   producto_id: z.string().min(1, "Selecciona un producto"),
@@ -96,7 +97,6 @@ export function ProyectoVentaForm({
           setIsLoading(true)
           setError(null)
           
-          const { getProyectoVenta } = await import("@/app/actions/comites-actions")
           const result = await getProyectoVenta(ventaId)
           
           if (!result.success) {
@@ -172,8 +172,6 @@ export function ProyectoVentaForm({
         estado_pago: data.estado_pago,
         metodo_pago: data.estado_pago === "pagado" ? data.metodo_pago : undefined,
       }
-
-      const { createProyectoVenta, updateProyectoVenta } = await import("@/app/actions/comites-actions")
       
       const result = ventaId 
         ? await updateProyectoVenta(ventaId, payload)

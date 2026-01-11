@@ -18,6 +18,15 @@ import { requireComiteAccess } from '@/lib/auth/comite-permissions'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+/**
+ * Función auxiliar para serializar datos antes de pasarlos a Client Components
+ * Convierte objetos Date y otros tipos no serializables a strings
+ */
+function serializeData<T>(data: T): T {
+  if (data === null || data === undefined) return data
+  return JSON.parse(JSON.stringify(data))
+}
+
 interface PageProps {
   params: Promise<{
     id: string
@@ -26,12 +35,16 @@ interface PageProps {
 }
 
 export default async function DetalleProyectoPage({ params }: PageProps) {
+  console.log('🔍 Iniciando DetalleProyectoPage')
+  
   const { id, proyectoId } = await params
+  console.log('📋 Params recibidos:', { id, proyectoId })
   
   // SEGURIDAD: Validar acceso al comité
   const access = await requireComiteAccess(id)
   const isAdmin = access.isAdmin
   const rolEnComite = access.rolEnComite
+  console.log('✅ Acceso validado:', { isAdmin, rolEnComite })
   
   const supabase = await createClient()
 
@@ -44,9 +57,14 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
     .single()
 
   if (proyectoError || !proyecto) {
-    console.error('Error al cargar proyecto:', proyectoError)
+    console.error('❌ Error al cargar proyecto:', {
+      error: proyectoError,
+      proyectoId,
+      comiteId: id
+    })
     return notFound()
   }
+  console.log('✅ Proyecto cargado:', proyecto.nombre)
 
   // Obtener votos asociados al proyecto
   const { data: votos, error: votosError } = await supabase
@@ -436,9 +454,9 @@ export default async function DetalleProyectoPage({ params }: PageProps) {
         comiteId={id}
         canManage={canManage}
         votosContent={votosContent}
-        productos={productos || []}
-        ventas={ventas || []}
-        resumenVentas={resumenVentas}
+        productos={serializeData(productos || [])}
+        ventas={serializeData(ventas || [])}
+        resumenVentas={serializeData(resumenVentas)}
       />
     </div>
   )
