@@ -245,179 +245,166 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
     // Crear un nuevo libro
     const wb = XLSX.utils.book_new()
 
-    // Hoja 1: Resumen
-    const resumenData = [
-      ['REPORTE DE VENTAS - PROYECTO DE COMITÉ'],
-      ['Generado:', new Date().toLocaleDateString('es-CO')],
+    // --- HOJA 1: DASHBOARD DE RESUMEN ---
+    const dashboardData = [
+      ['INFORME EJECUTIVO DE PROYECTO'],
+      ['SISTEMA DE GESTIÓN CONTABLE IPUC'],
       [''],
-      ['RESUMEN GENERAL'],
-      ['Total Vendido', datos.resumenVentas?.valor_total_ventas || 0],
-      ['Total Recaudado', datos.resumenVentas?.total_recaudado || 0],
-      ['Pendiente', datos.resumenVentas?.total_pendiente || 0],
-      ['Productos', datos.productos?.length || 0],
-      ['Ventas', datos.ventas?.length || 0],
+      ['INFORMACIÓN DEL REPORTE'],
+      ['Fecha de Emisión:', new Date().toLocaleDateString('es-CO')],
+      ['Proyecto ID:', datos.proyectoId],
+      ['Estado del Proyecto:', datos.resumenVentas?.total_pendiente === 0 ? 'COMPLETADO' : 'EN EJECUCIÓN'],
+      [''],
+      ['MÉTRICAS FINANCIERAS', 'VALOR'],
+      ['Total Venta Bruta', datos.resumenVentas?.valor_total_ventas || 0],
+      ['Recaudación Efectiva', datos.resumenVentas?.total_recaudado || 0],
+      ['Cartera Pendiente', datos.resumenVentas?.total_pendiente || 0],
+      ['% de Recaudación', datos.resumenVentas?.valor_total_ventas > 0
+        ? ((datos.resumenVentas?.total_recaudado / datos.resumenVentas?.valor_total_ventas) * 100).toFixed(2) + '%'
+        : '0%'],
+      [''],
+      ['ESTADÍSTICAS OPERATIVAS', 'CANTIDAD'],
+      ['Productos en Catálogo', datos.productos?.length || 0],
+      ['Transacciones Realizadas', datos.ventas?.length || 0],
       ['Compradores Únicos', datos.ventas ? [...new Set(datos.ventas.map((v: any) => v.comprador_nombre))].length : 0],
+      ['Promedio por Venta', datos.ventas?.length > 0
+        ? (datos.resumenVentas?.valor_total_ventas / datos.ventas.length)
+        : 0],
       [''],
       [''],
       ['SOFTWARE BY JUAN AGUILAR']
     ]
 
-    const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
+    const wsDashboard = XLSX.utils.aoa_to_sheet(dashboardData)
+    wsDashboard['!cols'] = [{ wch: 30 }, { wch: 25 }]
+    XLSX.utils.book_append_sheet(wb, wsDashboard, 'Dashboard')
 
-    // Estilos básicos para el resumen
-    wsResumen['!cols'] = [{ wch: 20 }, { wch: 20 }]
-
-    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
-
-    // Hoja 2: Ventas por Producto
+    // --- HOJA 2: ANÁLISIS DE PRODUCTOS ---
     const ventasPorProducto = new Map()
+    let totalUnid = 0, totalVendido = 0, totalRec = 0, totalPen = 0
 
     datos.ventas?.forEach((venta: any) => {
       const productoId = venta.producto_id
       if (!ventasPorProducto.has(productoId)) {
         const producto = datos.productos?.find(p => p.id === productoId)
         ventasPorProducto.set(productoId, {
-          Producto: producto?.nombre || 'Producto desconocido',
-          'Precio Unitario': producto?.precio_unitario || 0,
-          Unidades: 0,
-          'Total Vendido': 0,
-          Recaudado: 0,
-          Pendiente: 0
+          Producto: producto?.nombre || 'Desconocido',
+          'Precio Ref.': producto?.precio_unitario || 0,
+          'Unid. Vendidas': 0,
+          'Total Bruto': 0,
+          'Total Recaudado': 0,
+          'Saldo en Mora': 0,
+          '% Cumplimiento': 0
         })
       }
 
       const item = ventasPorProducto.get(productoId)
-      item.Unidades += venta.cantidad || 0
-      item['Total Vendido'] += venta.valor_total || 0
-      item.Recaudado += venta.monto_pagado || 0
-      item.Pendiente += venta.saldo_pendiente || 0
+      item['Unid. Vendidas'] += venta.cantidad || 0
+      item['Total Bruto'] += venta.valor_total || 0
+      item['Total Recaudado'] += venta.monto_pagado || 0
+      item['Saldo en Mora'] += venta.saldo_pendiente || 0
+
+      totalUnid += venta.cantidad || 0
+      totalVendido += venta.valor_total || 0
+      totalRec += venta.monto_pagado || 0
+      totalPen += venta.saldo_pendiente || 0
     })
 
-    const productosArray = Array.from(ventasPorProducto.values())
+    const productosArray = Array.from(ventasPorProducto.values()).map(p => ({
+      ...p,
+      '% Cumplimiento': p['Total Bruto'] > 0 ? ((p['Total Recaudado'] / p['Total Bruto']) * 100).toFixed(1) + '%' : '0%'
+    }))
 
-    if (productosArray.length > 0) {
-      const wsProductos = XLSX.utils.json_to_sheet(productosArray)
+    // Agregar Fila de Totales
+    productosArray.push({
+      Producto: 'TOTAL GENERAL',
+      'Precio Ref.': null,
+      'Unid. Vendidas': totalUnid,
+      'Total Bruto': totalVendido,
+      'Total Recaudado': totalRec,
+      'Saldo en Mora': totalPen,
+      '% Cumplimiento': totalVendido > 0 ? ((totalRec / totalVendido) * 100).toFixed(1) + '%' : '0%'
+    })
 
-      // Configurar anchos de columna
-      wsProductos['!cols'] = [
-        { wch: 30 }, // Producto
-        { wch: 15 }, // Precio Unitario
-        { wch: 10 }, // Unidades
-        { wch: 15 }, // Total Vendido
-        { wch: 15 }, // Recaudado
-        { wch: 15 }  // Pendiente
-      ]
+    const wsAnálisis = XLSX.utils.json_to_sheet(productosArray)
+    wsAnálisis['!cols'] = [{ wch: 35 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }]
+    XLSX.utils.book_append_sheet(wb, wsAnálisis, 'Análisis x Producto')
 
-      XLSX.utils.book_append_sheet(wb, wsProductos, 'Ventas por Producto')
-    }
-
-    // Hoja 3: Detalle de Ventas
+    // --- HOJA 3: CRONOLOGÍA DE VENTAS ---
     const ventasDetalle = datos.ventas?.map((venta: any) => {
       const producto = datos.productos?.find(p => p.id === venta.producto_id)
       return {
         Fecha: venta.fecha_venta ? new Date(venta.fecha_venta).toLocaleDateString('es-CO') : '',
+        Comprador: venta.comprador_nombre || 'N/A',
         Producto: producto?.nombre || 'N/A',
         Cantidad: venta.cantidad || 0,
-        'Valor Total': venta.valor_total || 0,
-        Recaudado: venta.monto_pagado || 0,
-        Pendiente: venta.saldo_pendiente || 0,
-        Estado: venta.estado || 'N/A'
+        'Venta Total': venta.valor_total || 0,
+        Pagado: venta.monto_pagado || 0,
+        'Pendiente': (venta.valor_total - venta.monto_pagado) || 0,
+        Estado: (venta.valor_total - venta.monto_pagado) === 0 ? 'PAGADO' : 'PENDIENTE'
       }
     }) || []
 
     if (ventasDetalle.length > 0) {
-      const wsDetalle = XLSX.utils.json_to_sheet(ventasDetalle)
-
-      wsDetalle['!cols'] = [
-        { wch: 12 }, // Fecha
-        { wch: 30 }, // Producto
-        { wch: 10 }, // Cantidad
-        { wch: 15 }, // Valor Total
-        { wch: 15 }, // Recaudado
-        { wch: 15 }, // Pendiente
-        { wch: 12 }  // Estado
-      ]
-
-      XLSX.utils.book_append_sheet(wb, wsDetalle, 'Detalle de Ventas')
+      const wsVentas = XLSX.utils.json_to_sheet(ventasDetalle)
+      wsVentas['!cols'] = [{ wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }]
+      XLSX.utils.book_append_sheet(wb, wsVentas, 'Registro de Ventas')
     }
 
-    // Hoja 4: Compradores
+    // --- HOJA 4: RANKING DE COMPRADORES ---
     const compradoresMap = new Map<string, any[]>()
     datos.ventas?.forEach((venta: any) => {
       const nombre = venta.comprador_nombre
-      if (!compradoresMap.has(nombre)) {
-        compradoresMap.set(nombre, [])
-      }
+      if (!compradoresMap.has(nombre)) compradoresMap.set(nombre, [])
       compradoresMap.get(nombre)!.push(venta)
     })
 
-    const compradoresArray = Array.from(compradoresMap.entries())
+    const rankingCompradores = Array.from(compradoresMap.entries())
       .map(([nombre, ventasComprador]) => {
-        const totalCompras = ventasComprador.length
-        const totalUnidades = ventasComprador.reduce((sum: number, v: any) => sum + v.cantidad, 0)
         const valorTotal = ventasComprador.reduce((sum: number, v: any) => sum + v.valor_total, 0)
         const totalPagado = ventasComprador.reduce((sum: number, v: any) => sum + v.monto_pagado, 0)
-        const pendiente = valorTotal - totalPagado
-        const ultimaCompra = new Date(Math.max(...ventasComprador.map((v: any) => new Date(v.fecha_venta).getTime())))
-
         return {
-          Comprador: nombre,
-          'Total Compras': totalCompras,
-          'Unidades Totales': totalUnidades,
-          'Valor Total': valorTotal,
-          'Total Pagado': totalPagado,
-          'Pendiente': pendiente,
-          'Última Compra': ultimaCompra.toLocaleDateString('es-CO'),
-          'Estado': pendiente === 0 ? 'Pagado' : 'Pendiente'
+          'Nombre del Cliente': nombre,
+          'Frecuencia (Compras)': ventasComprador.length,
+          'Volumen Artículos': ventasComprador.reduce((sum: number, v: any) => sum + v.cantidad, 0),
+          'Inversión Total': valorTotal,
+          'Aportes Realizados': totalPagado,
+          'Saldo Deudor': valorTotal - totalPagado,
+          Status: valorTotal - totalPagado === 0 ? 'AL DÍA' : 'CON SALDO'
         }
       })
-      .sort((a, b) => b['Valor Total'] - a['Valor Total'])
+      .sort((a, b) => b['Inversión Total'] - a['Inversión Total'])
 
-    if (compradoresArray.length > 0) {
-      const wsCompradores = XLSX.utils.json_to_sheet(compradoresArray)
+    const wsRanking = XLSX.utils.json_to_sheet(rankingCompradores)
+    wsRanking['!cols'] = [{ wch: 35 }, { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }]
+    XLSX.utils.book_append_sheet(wb, wsRanking, 'Ranking Compradores')
 
-      wsCompradores['!cols'] = [
-        { wch: 30 }, // Comprador
-        { wch: 12 }, // Total Compras
-        { wch: 15 }, // Unidades Totales
-        { wch: 15 }, // Valor Total
-        { wch: 15 }, // Total Pagado
-        { wch: 15 }, // Pendiente
-        { wch: 15 }, // Última Compra
-        { wch: 12 }  // Estado
-      ]
-
-      XLSX.utils.book_append_sheet(wb, wsCompradores, 'Compradores')
-    }
-
-    // Hoja 5: Productos
-    const productosInfo = datos.productos?.map(producto => ({
-      Nombre: producto.nombre || '',
-      'Precio Unitario': producto.precio_unitario || 0,
-      Descripción: producto.descripcion || '',
-      Estado: producto.estado || 'activo'
+    // --- HOJA 5: CATÁLOGO DE PRODUCTOS ---
+    const catálogo = datos.productos?.map(p => ({
+      Referencia: p.nombre || '',
+      'Precio Base': p.precio_unitario || 0,
+      'Descripción Técnica': p.descripcion || 'Sin descripción',
+      'Estado Catálogo': p.estado?.toUpperCase() || 'ACTIVO'
     })) || []
 
-    if (productosInfo.length > 0) {
-      const wsProductosInfo = XLSX.utils.json_to_sheet(productosInfo)
+    const wsCatálogo = XLSX.utils.json_to_sheet(catálogo)
+    wsCatálogo['!cols'] = [{ wch: 35 }, { wch: 15 }, { wch: 50 }, { wch: 15 }]
+    XLSX.utils.book_append_sheet(wb, wsCatálogo, 'Catálogo Referencia')
 
-      wsProductosInfo['!cols'] = [
-        { wch: 30 }, // Nombre
-        { wch: 15 }, // Precio
-        { wch: 40 }, // Descripción
-        { wch: 12 }  // Estado
-      ]
+    // Añadir Firma a cada hoja (en la última fila)
+    wb.SheetNames.forEach(sheetName => {
+      const ws = wb.Sheets[sheetName]
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1')
+      const lastRow = range.e.r + 2
+      XLSX.utils.sheet_add_aoa(ws, [['REPORTE GENERADO'], ['SOFTWARE BY JUAN AGUILAR']], { origin: { r: lastRow, c: 0 } })
+    })
 
-      XLSX.utils.book_append_sheet(wb, wsProductosInfo, 'Productos')
-    }
-
-    // Generar el archivo Excel
+    // Finalizar y descargar
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([wbout], { type: 'application/octet-stream' })
+    FileSaver.saveAs(blob, `INFORME_EJECUTIVO_${datos.proyectoId.slice(0, 8)}_${new Date().getTime()}.xlsx`)
 
-    FileSaver.saveAs(blob, `reporte-ventas-proyecto-${new Date().getTime()}.xlsx`)
-
-    return { success: true, mensaje: 'Excel generado correctamente' }
+    return { success: true, mensaje: 'Excel profesional generado correctamente' }
   } catch (error) {
     console.error('Error generando Excel:', error)
 
