@@ -244,8 +244,8 @@ export function DetalleVentaActions({
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
                       💰 Monto a Abonar
                     </label>
-                    <div className="relative">
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 text-4xl font-black text-emerald-500">$</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-4xl font-black text-emerald-500">$</span>
                       <input
                         type="number"
                         step="0.01"
@@ -254,7 +254,7 @@ export function DetalleVentaActions({
                         placeholder="0.00"
                         value={pagoForm.monto}
                         onChange={(e) => setPagoForm(prev => ({ ...prev, monto: e.target.value }))}
-                        className="w-full pl-28 py-2 text-5xl font-black text-slate-900 bg-transparent border-none focus:ring-0 placeholder:text-slate-200"
+                        className="w-full py-2 text-5xl font-black text-slate-900 bg-transparent border-none focus:ring-0 placeholder:text-slate-200"
                         required
                         autoFocus
                       />
