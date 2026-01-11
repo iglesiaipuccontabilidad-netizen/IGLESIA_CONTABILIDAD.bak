@@ -104,6 +104,13 @@ export function DetalleVentaActions({
     try {
       const result = await deleteProyectoVenta(ventaId)
 
+      // Si result es undefined, significa que redirect() fue llamado y la redirección ya está en curso
+      if (!result) {
+        toast.success("Venta eliminada exitosamente")
+        setShowDeleteModal(false)
+        return
+      }
+
       if (result.success) {
         toast.success("Venta eliminada exitosamente")
         setShowDeleteModal(false)

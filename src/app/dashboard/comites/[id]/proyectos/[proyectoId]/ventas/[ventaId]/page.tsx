@@ -67,8 +67,20 @@ export default async function DetalleVentaPage({ params }: PageProps) {
     .eq('proyecto_id', proyectoId)
     .single()
 
+  // Si hay error o no existe la venta, mostrar 404
   if (ventaError || !ventaRaw) {
-    console.error('Error al cargar venta:', ventaError)
+    if (ventaError) {
+      console.error('Error al cargar venta:', {
+        code: ventaError.code,
+        message: ventaError.message,
+        details: ventaError.details,
+        hint: ventaError.hint,
+        ventaId,
+        proyectoId
+      })
+    } else {
+      console.error('Venta no encontrada:', { ventaId, proyectoId })
+    }
     return notFound()
   }
 

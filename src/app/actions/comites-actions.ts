@@ -22,6 +22,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import {
   getComites as getComitesService,
   getComiteById as getComiteByIdService,
@@ -2451,7 +2452,7 @@ export async function actualizarProyectoVenta(
 /**
  * Elimina una venta
  */
-export async function deleteProyectoVenta(ventaId: string): Promise<OperationResult> {
+export async function deleteProyectoVenta(ventaId: string): Promise<OperationResult | void> {
   try {
     const supabase = await createClient();
 
@@ -2463,7 +2464,10 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
       .single();
 
     if (!venta) {
-      throw new Error('Venta no encontrada');
+      return {
+        success: false,
+        error: 'Venta no encontrada',
+      };
     }
 
     // Obtener el comite_id desde el proyecto
@@ -2474,7 +2478,10 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
       .single();
 
     if (!proyecto) {
-      throw new Error('Proyecto no encontrado');
+      return {
+        success: false,
+        error: 'Proyecto no encontrado',
+      };
     }
 
     const comiteId = proyecto.comite_id;
@@ -2483,7 +2490,10 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
 
     // Solo lider y tesorero pueden eliminar ventas
     if (!['admin', 'lider', 'tesorero'].includes(rol)) {
-      throw new Error('No tienes permisos para eliminar ventas');
+      return {
+        success: false,
+        error: 'No tienes permisos para eliminar ventas',
+      };
     }
 
     // Eliminar venta (los pagos se eliminan en cascada)
@@ -2492,13 +2502,17 @@ export async function deleteProyectoVenta(ventaId: string): Promise<OperationRes
       .delete()
       .eq('id', ventaId);
 
-    if (error) throw error;
+    if (error) {
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
 
-    // Revalidar rutas
-    revalidatePath(`/dashboard/comites/${comiteId}/proyectos`);
+    // Revalidar solo la página de destino (NO la página actual que ya no existe)
     revalidatePath(`/dashboard/comites/${comiteId}/proyectos/${proyectoId}`);
 
-    // Redirigir directamente desde el servidor
+    // Redirigir directamente desde el servidor (esto lanza una excepción y nunca retorna normalmente)
     redirect(`/dashboard/comites/${comiteId}/proyectos/${proyectoId}`);
   } catch (error) {
     // Si es un error de redirect, dejarlo pasar
