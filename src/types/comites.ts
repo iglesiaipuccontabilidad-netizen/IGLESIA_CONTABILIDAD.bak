@@ -94,6 +94,7 @@ export type VotoEstado = typeof VOTO_ESTADOS[keyof typeof VOTO_ESTADOS];
 export const METODO_PAGO = {
   EFECTIVO: 'efectivo',
   TRANSFERENCIA: 'transferencia',
+  CHEQUE: 'cheque',
   OTRO: 'otro',
 } as const;
 

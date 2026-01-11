@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
+import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import {
   Edit,
@@ -45,6 +47,18 @@ export function DetalleVentaActions({
     referencia: "",
     notas: ""
   })
+
+  // Bloquear scroll cuando el modal está abierto
+  useEffect(() => {
+    if (showPagoModal) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showPagoModal])
 
   const handlePagoSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -92,22 +106,23 @@ export function DetalleVentaActions({
 
       if (result.success) {
         toast.success("Venta eliminada exitosamente")
-        router.push(`/dashboard/comites/${comiteId}/proyectos/${proyectoId}`)
+        setShowDeleteModal(false)
+        // Usar replace para evitar que se intente recargar la página eliminada
+        router.replace(`/dashboard/comites/${comiteId}/proyectos/${proyectoId}`)
       } else {
         toast.error(result.error || "Error al eliminar la venta")
+        setIsLoading(false)
       }
     } catch (error) {
       console.error("Error:", error)
       toast.error("Error inesperado al eliminar la venta")
-    } finally {
       setIsLoading(false)
-      setShowDeleteModal(false)
     }
   }
 
   return (
     <>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 relative z-10">
         {/* Botón Registrar Pago */}
         {estado !== 'cancelado' && saldoPendiente > 0 && (
           <button
@@ -131,7 +146,7 @@ export function DetalleVentaActions({
 
           {showMenu && (
             <>
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border-2 border-slate-200 shadow-xl z-10">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl border-2 border-slate-200 shadow-xl z-20">
                 <div className="py-2">
                   <button
                     onClick={() => {
@@ -159,7 +174,7 @@ export function DetalleVentaActions({
 
               {/* Overlay para cerrar menú */}
               <div
-                className="fixed inset-0 z-0"
+                className="fixed inset-0 z-10"
                 onClick={() => setShowMenu(false)}
               />
             </>
@@ -167,133 +182,186 @@ export function DetalleVentaActions({
         </div>
       </div>
 
-      {/* Modal de Registrar Pago */}
-      {showPagoModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <CreditCard className="w-5 h-5 text-green-600" />
+      {/* Modal de Registrar Pago - Bottom Sheet con Portal */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence mode="wait">
+          {showPagoModal && (
+            <>
+              {/* Fondo oscuro con fade */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                style={{ zIndex: 9998 }}
+                onClick={() => setShowPagoModal(false)}
+              />
+
+              {/* Modal - Bottom Sheet con slide up */}
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed inset-x-0 bottom-0 max-h-[92vh] overflow-y-auto bg-white rounded-t-[2.5rem] shadow-2xl border-t border-emerald-100 pb-safe"
+                style={{ zIndex: 9999 }}
+              >
+                {/* Tirador visual */}
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 mb-2" />
+
+                {/* Header */}
+                <div className="px-6 py-4 flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100">
+                      <CreditCard className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Registrar Pago</h3>
+                      <p className="text-sm text-slate-500 font-bold">
+                        Saldo Pendiente: <span className="text-emerald-600">${saldoPendiente.toLocaleString('es-CO')}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Registrar Pago</h3>
-                    <p className="text-sm text-slate-600">Saldo pendiente: ${saldoPendiente.toLocaleString('es-CO')}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowPagoModal(false)}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handlePagoSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Monto *
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={pagoForm.monto}
-                      onChange={(e) => setPagoForm(prev => ({ ...prev, monto: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Fecha del Pago *
-                  </label>
-                  <input
-                    type="date"
-                    value={pagoForm.fecha_pago}
-                    onChange={(e) => setPagoForm(prev => ({ ...prev, fecha_pago: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Método de Pago *
-                  </label>
-                  <select
-                    value={pagoForm.metodo_pago}
-                    onChange={(e) => setPagoForm(prev => ({ ...prev, metodo_pago: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Selecciona un método</option>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="transferencia">Transferencia Bancaria</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="tarjeta">Tarjeta de Crédito/Débito</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Referencia
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Número de recibo, comprobante, etc."
-                    value={pagoForm.referencia}
-                    onChange={(e) => setPagoForm(prev => ({ ...prev, referencia: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Notas
-                  </label>
-                  <textarea
-                    placeholder="Observaciones sobre el pago..."
-                    value={pagoForm.notas}
-                    onChange={(e) => setPagoForm(prev => ({ ...prev, notas: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
                   <button
-                    type="button"
                     onClick={() => setShowPagoModal(false)}
-                    className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-                    disabled={isLoading}
+                    className="w-10 h-10 rounded-xl bg-slate-50 hover:bg-slate-100 flex items-center justify-center transition-all hover:rotate-90"
                   >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? "Registrando..." : "Registrar Pago"}
+                    <X className="w-5 h-5 text-slate-400" />
                   </button>
                 </div>
-              </form>
-            </div>
-          </div>
-        </div>
+
+                {/* Formulario */}
+                <form onSubmit={handlePagoSubmit} className="px-6 pb-12 space-y-6">
+                  {/* Monto Principal */}
+                  <div className="bg-slate-50 p-6 rounded-3xl border-2 border-slate-100 group focus-within:border-emerald-500 transition-all">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                      💰 Monto a Abonar
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 text-4xl font-black text-emerald-500">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max={saldoPendiente}
+                        placeholder="0.00"
+                        value={pagoForm.monto}
+                        onChange={(e) => setPagoForm(prev => ({ ...prev, monto: e.target.value }))}
+                        className="w-full pl-14 py-2 text-5xl font-black text-slate-900 bg-transparent border-none focus:ring-0 placeholder:text-slate-200"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grid Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                        📅 Fecha del Pago
+                      </label>
+                      <input
+                        type="date"
+                        value={pagoForm.fecha_pago}
+                        onChange={(e) => setPagoForm(prev => ({ ...prev, fecha_pago: e.target.value }))}
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-bold text-slate-700"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                        🏦 Método de Pago
+                      </label>
+                      <select
+                        value={pagoForm.metodo_pago}
+                        onChange={(e) => setPagoForm(prev => ({ ...prev, metodo_pago: e.target.value }))}
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-bold text-slate-700 appearance-none shadow-sm"
+                        required
+                      >
+                        <option value="">Selecciona un método...</option>
+                        <option value="efectivo">💵 Efectivo</option>
+                        <option value="transferencia">🏦 Transferencia</option>
+                        <option value="cheque">📝 Cheque</option>
+                        <option value="tarjeta">💳 Tarjeta / Datáfono</option>
+                        <option value="otro">📋 Otro</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                        📌 Referencia / Comprobante
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Opcional..."
+                        value={pagoForm.referencia}
+                        onChange={(e) => setPagoForm(prev => ({ ...prev, referencia: e.target.value }))}
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium text-slate-700 shadow-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">
+                        📝 Observaciones
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Notas adicionales..."
+                        value={pagoForm.notas}
+                        onChange={(e) => setPagoForm(prev => ({ ...prev, notas: e.target.value }))}
+                        className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium text-slate-700 shadow-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Acciones */}
+                  <div className="flex gap-4 pt-6">
+                    <button
+                      type="button"
+                      onClick={() => setShowPagoModal(false)}
+                      className="flex-1 px-6 py-4 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
+                      disabled={isLoading}
+                    >
+                      Cerrar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-emerald-200 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Confirmar Pago
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
 
       {/* Modal de Confirmación de Eliminación */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false)
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
@@ -328,14 +396,6 @@ export function DetalleVentaActions({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Overlay para cerrar modales */}
-      {(showPagoModal || showDeleteModal) && (
-        <div className="fixed inset-0 z-40" onClick={() => {
-          setShowPagoModal(false)
-          setShowDeleteModal(false)
-        }} />
       )}
     </>
   )

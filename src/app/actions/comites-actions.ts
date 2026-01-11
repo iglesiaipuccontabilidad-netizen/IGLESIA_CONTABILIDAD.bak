@@ -2288,6 +2288,92 @@ export async function updateProyectoVenta(
 }
 
 /**
+ * Actualiza una venta (cantidad, precio unitario, total)
+ */
+export async function actualizarProyectoVenta(
+  ventaId: string,
+  data: { cantidad?: number; precio_unitario?: number; total?: number }
+): Promise<OperationResult<any>> {
+  try {
+    const supabase = await createClient();
+
+    // Obtener la venta para verificar acceso
+    const { data: venta } = await supabase
+      .from('proyecto_ventas')
+      .select('proyecto_id, estado, monto_pagado, valor_total')
+      .eq('id', ventaId)
+      .single();
+
+    if (!venta) {
+      throw new Error('Venta no encontrada');
+    }
+
+    if (venta.estado === 'cancelado') {
+      throw new Error('No se pueden editar ventas canceladas');
+    }
+
+    // Obtener el comite_id desde el proyecto
+    const { data: proyecto } = await supabase
+      .from('comite_proyectos')
+      .select('comite_id')
+      .eq('id', venta.proyecto_id)
+      .single();
+
+    if (!proyecto) {
+      throw new Error('Proyecto no encontrado');
+    }
+
+    await verificarAccesoUsuarioComite(proyecto.comite_id);
+
+    // Preparar datos a actualizar
+    const updateData: any = {};
+    
+    if (data.cantidad !== undefined) {
+      updateData.cantidad = data.cantidad;
+    }
+    
+    if (data.precio_unitario !== undefined) {
+      updateData.precio_unitario = data.precio_unitario;
+    }
+    
+    if (data.total !== undefined) {
+      updateData.valor_total = data.total;
+    }
+
+    // Validar que el nuevo total no sea menor al monto pagado
+    const nuevoTotal = data.total || venta.valor_total || 0;
+    if (nuevoTotal < venta.monto_pagado) {
+      throw new Error('El nuevo total no puede ser menor al monto ya pagado');
+    }
+
+    // Actualizar venta
+    const { data: updated, error } = await supabase
+      .from('proyecto_ventas')
+      .update(updateData)
+      .eq('id', ventaId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Revalidar rutas
+    revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos`);
+
+    return {
+      success: true,
+      data: updated,
+      message: 'Venta actualizada exitosamente',
+    };
+  } catch (error) {
+    console.error('Error al actualizar venta:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Error desconocido',
+    };
+  }
+}
+
+/**
  * Elimina una venta
  */
 export async function deleteProyectoVenta(ventaId: string): Promise<OperationResult> {

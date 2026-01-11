@@ -9,13 +9,12 @@ import { Loader2, Save, X, TrendingDown, AlertTriangle } from "lucide-react"
 import { FormattedNumberInput } from "@/components/ui/FormattedNumberInput"
 
 const gastoSchema = z.object({
-  monto: z.string().min(1, "El monto es requerido"),
-  fecha_gasto: z.string().min(1, "La fecha es requerida"),
-  categoria: z.enum(["operativo", "infraestructura", "social", "otro"]),
+  monto: z.number().min(1, "El monto debe ser mayor a 0"),
+  fecha: z.string().min(1, "La fecha es requerida"),
   concepto: z.string().min(3, "El concepto debe tener al menos 3 caracteres"),
-  beneficiario: z.string().optional(),
-  metodo_pago: z.enum(["efectivo", "transferencia", "otro"]),
-  numero_comprobante: z.string().optional(),
+  metodo_pago: z.enum(["efectivo", "transferencia", "cheque", "otro"]),
+  comprobante: z.string().optional(),
+  nota: z.string().optional(),
 })
 
 type GastoFormData = z.infer<typeof gastoSchema>
@@ -49,13 +48,12 @@ export function ComiteGastoForm({
   } = useForm<GastoFormData>({
     resolver: zodResolver(gastoSchema),
     defaultValues: {
-      monto: initialData?.monto || "",
-      fecha_gasto: initialData?.fecha_gasto || new Date().toISOString().split('T')[0],
-      categoria: (initialData?.categoria || "operativo") as any,
+      monto: initialData?.monto ? Number(initialData.monto) : undefined,
+      fecha: initialData?.fecha || new Date().toISOString().split('T')[0],
       concepto: initialData?.concepto || "",
-      beneficiario: initialData?.beneficiario || "",
       metodo_pago: (initialData?.metodo_pago || "efectivo") as any,
-      numero_comprobante: initialData?.numero_comprobante || "",
+      comprobante: initialData?.comprobante || "",
+      nota: initialData?.nota || "",
     },
   })
 
@@ -65,7 +63,7 @@ export function ComiteGastoForm({
     setWarning(null)
 
     try {
-      const montoGasto = parseFloat(data.monto)
+      const montoGasto = data.monto
       
       // Advertir si el gasto supera el balance disponible (pero permitirlo)
       if (!gastoId && balanceDisponible !== undefined && montoGasto > balanceDisponible) {
@@ -79,12 +77,11 @@ export function ComiteGastoForm({
       const payload = {
         comite_id: comiteId,
         monto: montoGasto,
-        fecha_gasto: data.fecha_gasto,
-        categoria: data.categoria,
+        fecha: data.fecha,
         concepto: data.concepto,
-        beneficiario: data.beneficiario || undefined,
         metodo_pago: data.metodo_pago,
-        numero_comprobante: data.numero_comprobante || undefined,
+        comprobante: data.comprobante || undefined,
+        nota: data.nota || undefined,
       }
 
       // Llamar a la action del servidor
@@ -155,12 +152,14 @@ export function ComiteGastoForm({
         <input
           id="monto"
           type="number"
+          step="1"
           {...register("monto", {
-            required: "El monto es requerido",
             valueAsNumber: true,
-            min: { value: 1, message: "El monto debe ser mayor a 0" },
           })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+          className={`
+            w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500
+            ${errors.monto ? "border-rose-300" : "border-slate-300"}
+          `}
           placeholder="0"
           disabled={isSubmitting}
         />
@@ -171,41 +170,23 @@ export function ComiteGastoForm({
 
       {/* Fecha */}
       <div>
-        <label htmlFor="fecha_gasto" className="block text-sm font-medium text-slate-700 mb-2">
+        <label htmlFor="fecha" className="block text-sm font-medium text-slate-700 mb-2">
           Fecha <span className="text-rose-500">*</span>
         </label>
         <input
-          {...register("fecha_gasto")}
+          {...register("fecha")}
           type="date"
-          id="fecha_gasto"
+          id="fecha"
           className={`
             w-full px-4 py-2.5 rounded-lg border bg-white
             focus:outline-none focus:ring-2 focus:ring-rose-500
-            ${errors.fecha_gasto ? "border-rose-300" : "border-slate-200"}
+            ${errors.fecha ? "border-rose-300" : "border-slate-200"}
           `}
           disabled={isSubmitting}
         />
-        {errors.fecha_gasto && (
-          <p className="text-rose-500 text-xs mt-1">{errors.fecha_gasto.message}</p>
+        {errors.fecha && (
+          <p className="text-rose-500 text-xs mt-1">{errors.fecha.message}</p>
         )}
-      </div>
-
-      {/* Categoría */}
-      <div>
-        <label htmlFor="categoria" className="block text-sm font-medium text-slate-700 mb-2">
-          Categoría
-        </label>
-        <select
-          {...register("categoria")}
-          id="categoria"
-          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
-          disabled={isSubmitting}
-        >
-          <option value="operativo">Operativo</option>
-          <option value="infraestructura">Infraestructura</option>
-          <option value="social">Social</option>
-          <option value="otro">Otro</option>
-        </select>
       </div>
 
       {/* Concepto */}
@@ -230,21 +211,6 @@ export function ComiteGastoForm({
         )}
       </div>
 
-      {/* Beneficiario */}
-      <div>
-        <label htmlFor="beneficiario" className="block text-sm font-medium text-slate-700 mb-2">
-          Beneficiario <span className="text-slate-400">(opcional)</span>
-        </label>
-        <input
-          {...register("beneficiario")}
-          type="text"
-          id="beneficiario"
-          placeholder="Nombre del beneficiario o proveedor..."
-          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
-          disabled={isSubmitting}
-        />
-      </div>
-
       {/* Método de Pago */}
       <div>
         <label htmlFor="metodo_pago" className="block text-sm font-medium text-slate-700 mb-2">
@@ -258,21 +224,36 @@ export function ComiteGastoForm({
         >
           <option value="efectivo">Efectivo</option>
           <option value="transferencia">Transferencia</option>
-          <option value="datafono">Datáfono</option>
+          <option value="cheque">Cheque</option>
           <option value="otro">Otro</option>
         </select>
       </div>
 
-      {/* Número de Comprobante */}
+      {/* Comprobante */}
       <div>
-        <label htmlFor="numero_comprobante" className="block text-sm font-medium text-slate-700 mb-2">
-          Número de Comprobante <span className="text-slate-400">(opcional)</span>
+        <label htmlFor="comprobante" className="block text-sm font-medium text-slate-700 mb-2">
+          Comprobante <span className="text-slate-400">(opcional)</span>
         </label>
         <input
-          {...register("numero_comprobante")}
+          {...register("comprobante")}
           type="text"
-          id="numero_comprobante"
-          placeholder="Ej: 123456789"
+          id="comprobante"
+          placeholder="Número de factura o recibo"
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      {/* Nota */}
+      <div>
+        <label htmlFor="nota" className="block text-sm font-medium text-slate-700 mb-2">
+          Nota <span className="text-slate-400">(opcional)</span>
+        </label>
+        <textarea
+          {...register("nota")}
+          id="nota"
+          rows={2}
+          placeholder="Observaciones adicionales..."
           className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
           disabled={isSubmitting}
         />
