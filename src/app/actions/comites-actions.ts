@@ -2089,18 +2089,40 @@ export async function getProductosProyecto(proyectoId: string): Promise<Operatio
  */
 export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<OperationResult<any>> {
   try {
+    // Validar variables de entorno
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('❌ ERROR CRÍTICO: Variables de Supabase no configuradas');
+      throw new Error('Configuración de base de datos no disponible. Contacte al administrador.');
+    }
+
+    console.log('🔍 Iniciando createProyectoVenta:', {
+      proyecto_id: dto.proyecto_id,
+      producto_id: dto.producto_id,
+      comprador: dto.comprador_nombre,
+      cantidad: dto.cantidad,
+      precio: dto.precio_unitario,
+    });
+
     const supabase = await createClient();
 
     // Obtener el proyecto para verificar acceso
-    const { data: proyecto } = await supabase
+    const { data: proyecto, error: proyectoError } = await supabase
       .from('comite_proyectos')
       .select('comite_id')
       .eq('id', dto.proyecto_id)
       .single();
 
+    if (proyectoError) {
+      console.error('❌ Error al buscar proyecto:', proyectoError);
+      throw new Error(`Error al buscar el proyecto: ${proyectoError.message}`);
+    }
+
     if (!proyecto) {
+      console.error('❌ Proyecto no encontrado:', dto.proyecto_id);
       throw new Error('Proyecto no encontrado');
     }
+
+    console.log('✅ Proyecto encontrado, verificando acceso al comité:', proyecto.comite_id);
 
     const { user } = await verificarAccesoUsuarioComite(proyecto.comite_id);
 
@@ -2118,20 +2140,30 @@ export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<
     }
 
     // Verificar que el producto existe y pertenece al proyecto
-    const { data: producto } = await supabase
+    console.log('🔍 Verificando producto:', dto.producto_id);
+    const { data: producto, error: productoError } = await supabase
       .from('proyecto_productos')
       .select('id, proyecto_id, estado')
       .eq('id', dto.producto_id)
       .eq('proyecto_id', dto.proyecto_id)
       .single();
 
+    if (productoError) {
+      console.error('❌ Error al buscar producto:', productoError);
+      throw new Error(`Error al buscar el producto: ${productoError.message}`);
+    }
+
     if (!producto) {
+      console.error('❌ Producto no encontrado:', { producto_id: dto.producto_id, proyecto_id: dto.proyecto_id });
       throw new Error('Producto no encontrado en este proyecto');
     }
 
     if (producto.estado !== 'activo') {
+      console.error('❌ Producto no activo:', { producto_id: dto.producto_id, estado: producto.estado });
       throw new Error('El producto no está activo');
     }
+
+    console.log('✅ Producto validado correctamente');
 
     const valorTotal = dto.cantidad * dto.precio_unitario;
 
@@ -2140,31 +2172,59 @@ export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<
     const estado = esPagado ? 'pagado' : 'pendiente';
     const montoPagado = esPagado ? valorTotal : 0;
 
+    console.log('💰 Datos calculados de la venta:', {
+      valorTotal,
+      esPagado,
+      estado,
+      montoPagado,
+      fecha_venta: dto.fecha_venta || new Date().toISOString().split('T')[0],
+    });
+
     // Crear venta
+    const ventaData = {
+      proyecto_id: dto.proyecto_id,
+      producto_id: dto.producto_id,
+      comprador_nombre: dto.comprador_nombre.trim(),
+      comprador_telefono: dto.comprador_telefono?.trim() || null,
+      comprador_email: dto.comprador_email?.trim() || null,
+      comprador_notas: dto.comprador_notas?.trim() || null,
+      cantidad: dto.cantidad,
+      precio_unitario: dto.precio_unitario,
+      valor_total: valorTotal,
+      monto_pagado: montoPagado,
+      estado: estado,
+      fecha_venta: dto.fecha_venta || new Date().toISOString().split('T')[0],
+      registrado_por: user.id,
+    };
+
+    console.log('📝 Insertando venta en la base de datos...');
     const { data, error } = await supabase
       .from('proyecto_ventas')
-      .insert({
-        proyecto_id: dto.proyecto_id,
-        producto_id: dto.producto_id,
-        comprador_nombre: dto.comprador_nombre.trim(),
-        comprador_telefono: dto.comprador_telefono?.trim() || null,
-        comprador_email: dto.comprador_email?.trim() || null,
-        comprador_notas: dto.comprador_notas?.trim() || null,
-        cantidad: dto.cantidad,
-        precio_unitario: dto.precio_unitario,
-        valor_total: valorTotal,
-        monto_pagado: montoPagado,
-        estado: estado,
-        fecha_venta: dto.fecha_venta || new Date().toISOString().split('T')[0],
-        registrado_por: user.id,
-      })
+      .insert(ventaData)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error al insertar venta:', {
+        error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      throw new Error(`Error al registrar la venta: ${error.message}`);
+    }
+
+    console.log('✅ Venta registrada exitosamente:', data.id);
 
     // Si la venta está marcada como pagada, crear automáticamente el registro de pago
     if (esPagado && dto.metodo_pago && data) {
+      console.log('💳 Registrando pago automático:', {
+        venta_id: data.id,
+        monto: valorTotal,
+        metodo_pago: dto.metodo_pago,
+      });
+
       const { error: pagoError } = await supabase
         .from('proyecto_pagos_ventas')
         .insert({
@@ -2177,24 +2237,39 @@ export async function createProyectoVenta(dto: CreateProyectoVentaDTO): Promise<
         });
 
       if (pagoError) {
-        console.error('Error al crear registro de pago:', pagoError);
+        console.error('⚠️  Error al crear registro de pago:', pagoError);
         // No lanzar error, la venta ya fue creada exitosamente
+      } else {
+        console.log('✅ Pago registrado correctamente');
       }
     }
 
     // Revalidar rutas
+    console.log('🔄 Revalidando rutas...');
     revalidatePath(`/dashboard/comites/${proyecto.comite_id}/proyectos/${dto.proyecto_id}`);
 
+    console.log('✅ Proceso completado exitosamente');
     return {
       success: true,
       data,
       message: 'Venta registrada exitosamente',
     };
   } catch (error) {
-    console.error('Error al crear venta:', error);
+    console.error('❌ ERROR EN createProyectoVenta:', {
+      error,
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      dto,
+    });
+
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Error desconocido al registrar la venta';
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
+      error: errorMessage,
     };
   }
 }

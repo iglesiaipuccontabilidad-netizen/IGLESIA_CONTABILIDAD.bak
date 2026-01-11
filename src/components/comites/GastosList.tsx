@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react"
 import { Calendar, DollarSign, Tag, FileText, TrendingDown } from "lucide-react"
 import { FiltersBar, type FilterValues } from "./FiltersBar"
+import Link from "next/link"
 
 interface Gasto {
   id: string
@@ -146,9 +147,10 @@ export function GastosList({ gastos, comiteId }: GastosListProps) {
       {/* Lista de gastos mejorada */}
       <div className="grid gap-4">
         {gastosFiltrados.map((gasto, index) => (
-          <div
+          <Link
             key={gasto.id}
-            className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-xl hover:border-rose-200 transition-all duration-300 hover:-translate-y-1"
+            href={`/dashboard/comites/${comiteId}/gastos/${gasto.id}`}
+            className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 p-6 hover:shadow-xl hover:border-rose-200 transition-all duration-300 hover:-translate-y-1 block"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             {/* Borde decorativo animado */}
@@ -223,7 +225,7 @@ export function GastosList({ gastos, comiteId }: GastosListProps) {
                 </div>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
