@@ -113,9 +113,9 @@ export function ProyectoTabs({
 
   return (
     <div className="space-y-6">
-      {/* Tabs Header */}
-      <div className="bg-white rounded-2xl border-2 border-slate-200 p-3 shadow-sm">
-        <div className="flex flex-wrap gap-3">
+      {/* Tabs Header - Mejorada Responsividad */}
+      <div className="bg-white rounded-2xl border-2 border-slate-200 p-1.5 sm:p-2 shadow-sm sticky top-0 z-20 backdrop-blur-xl bg-white/95">
+        <div className="flex overflow-x-auto scrollbar-hide sm:flex-wrap gap-1.5 sm:gap-3 p-1">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -124,17 +124,22 @@ export function ProyectoTabs({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[120px] px-5 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2.5 ${isActive
-                  ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-xl shadow-purple-500/30 scale-105"
-                  : "text-slate-600 hover:bg-slate-50 hover:scale-102"
-                  }`}
+                className={`
+                  flex-1 min-w-fit whitespace-nowrap px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl font-black transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm
+                  ${isActive
+                    ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-500/30 scale-[1.02] sm:scale-105"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-purple-600"
+                  }
+                `}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse' : ''}`} />
-                <span>{tab.label}</span>
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'animate-pulse' : ''}`} />
+                <span className="tracking-tight">{tab.label}</span>
                 {tab.count !== null && (
                   <span
-                    className={`px-2.5 py-1 rounded-full text-xs font-black ${isActive ? "bg-white/30 text-white" : "bg-slate-200 text-slate-700"
-                      }`}
+                    className={`
+                      ml-0.5 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-black
+                      ${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}
+                    `}
                   >
                     {tab.count}
                   </span>
@@ -409,7 +414,7 @@ export function ProyectoTabs({
                                 <div>
                                   <h5 className="font-semibold text-slate-900">{comprador.nombre}</h5>
                                   <p className="text-xs text-slate-500">
-                                    {comprador.totalCompras} compra{comprador.totalCompras !== 1 ? 's' : ''} • 
+                                    {comprador.totalCompras} compra{comprador.totalCompras !== 1 ? 's' : ''} •
                                     Última: {comprador.ultimaCompra.toLocaleDateString('es-CO')}
                                   </p>
                                 </div>

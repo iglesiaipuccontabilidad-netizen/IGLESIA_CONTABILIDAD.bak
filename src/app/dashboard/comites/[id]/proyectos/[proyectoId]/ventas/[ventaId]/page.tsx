@@ -155,9 +155,9 @@ export default async function DetalleVentaPage({ params }: PageProps) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link
             href={`/dashboard/comites/${id}/proyectos/${proyectoId}`}
-            className="group flex items-center gap-2 text-slate-600 hover:text-primary-600 transition-all font-medium text-sm"
+            className="group flex items-center gap-2 text-slate-600 hover:text-purple-600 transition-all font-medium text-sm"
           >
-            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:border-primary-300 group-hover:bg-primary-50 transition-all duration-200">
+            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:border-purple-300 group-hover:bg-purple-50 transition-all duration-200">
               <ArrowLeft className="w-4 h-4" />
             </div>
             Volver al Proyecto
@@ -184,7 +184,7 @@ export default async function DetalleVentaPage({ params }: PageProps) {
           <div className="lg:col-span-8 space-y-8">
             {/* Payment Summary Header */}
             <div className="bg-white rounded-[2.5rem] p-8 sm:p-10 border border-slate-200 shadow-xl shadow-slate-200/50 relative overflow-hidden group">
-              <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl group-hover:bg-primary-500/10 transition-colors duration-1000"></div>
+              <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-colors duration-1000"></div>
 
               <div className="relative z-10">
                 <div className="flex flex-wrap items-center gap-3 mb-8">
@@ -205,12 +205,12 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                     </h1>
                     <div className="flex flex-col gap-1">
                       <p className="text-slate-500 font-bold flex items-center gap-2 text-lg">
-                        <Package className="w-6 h-6 text-primary-500" strokeWidth={2.5} />
+                        <Package className="w-6 h-6 text-purple-500" strokeWidth={2.5} />
                         {venta.cantidad} x {(venta.proyecto_productos as any)?.nombre}
                       </p>
-                      <div className="flex items-center gap-2 mt-2 px-4 py-2 bg-primary-50 rounded-2xl border border-primary-100 w-fit">
-                        <User className="w-5 h-5 text-primary-600" />
-                        <span className="text-sm font-black text-primary-700 uppercase tracking-tight">Comprador: {venta.comprador_nombre}</span>
+                      <div className="flex items-center gap-2 mt-2 px-4 py-2 bg-purple-50 rounded-2xl border border-purple-100 w-fit">
+                        <User className="w-5 h-5 text-purple-600" />
+                        <span className="text-sm font-black text-purple-700 uppercase tracking-tight">Comprador: {venta.comprador_nombre}</span>
                       </div>
                     </div>
                   </div>
@@ -221,11 +221,11 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                     </div>
                     <div className="w-48 bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200 shadow-inner">
                       <div
-                        className="bg-gradient-to-r from-primary-500 to-primary-600 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(37,99,235,0.4)]"
+                        className="bg-gradient-to-r from-purple-500 to-purple-600 h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(168,85,247,0.4)]"
                         style={{ width: `${porcentajePagado}%` }}
                       ></div>
                     </div>
-                    <span className="text-sm font-black text-primary-600 mt-2">{porcentajePagado}% Completado</span>
+                    <span className="text-sm font-black text-purple-600 mt-2">{porcentajePagado}% Completado</span>
                   </div>
                 </div>
 
@@ -242,8 +242,8 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Unitario</p>
                     <p className="text-xl font-black text-slate-800">${venta.precio_unitario.toLocaleString('es-CO')}</p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-700 border border-primary-700 shadow-lg shadow-primary-500/20">
-                    <p className="text-[10px] font-black text-primary-100 uppercase tracking-widest mb-1">Fecha Venta</p>
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-700 border border-purple-700 shadow-lg shadow-purple-500/20">
+                    <p className="text-[10px] font-black text-purple-100 uppercase tracking-widest mb-1">Fecha Venta</p>
                     <p className="text-sm font-black text-white">
                       {new Date(venta.fecha_venta).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
@@ -259,8 +259,8 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                   <User size={120} strokeWidth={1} />
                 </div>
                 <div className="relative z-10">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center mb-6 border border-primary-100">
-                    <User className="w-6 h-6 text-primary-600" />
+                  <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mb-6 border border-purple-100">
+                    <User className="w-6 h-6 text-purple-600" />
                   </div>
                   <h3 className="text-xl font-black text-slate-900 mb-6 font-primary">Datos del Comprador</h3>
                   <div className="space-y-5">
@@ -271,7 +271,7 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                     {venta.comprador_telefono && (
                       <div>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Teléfono</p>
-                        <a href={`tel:${venta.comprador_telefono}`} className="text-lg font-bold text-primary-600 hover:text-primary-700 hover:underline">
+                        <a href={`tel:${venta.comprador_telefono}`} className="text-lg font-bold text-purple-600 hover:text-purple-700 hover:underline">
                           {venta.comprador_telefono}
                         </a>
                       </div>
@@ -297,8 +297,8 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                   </p>
                 </div>
                 <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-primary-100 shadow-sm">
-                    <div className="w-full h-full bg-primary-100 flex items-center justify-center text-[10px] font-black text-primary-600 uppercase">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden border-2 border-purple-100 shadow-sm">
+                    <div className="w-full h-full bg-purple-100 flex items-center justify-center text-[10px] font-black text-purple-600 uppercase">
                       S
                     </div>
                   </div>
@@ -314,10 +314,10 @@ export default async function DetalleVentaPage({ params }: PageProps) {
             <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
               <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                  <History className="w-6 h-6 text-primary-600" />
+                  <History className="w-6 h-6 text-purple-600" />
                   Registro de Abonos
                 </h3>
-                <span className="px-3 py-1 rounded-full bg-primary-50 text-[10px] font-black text-primary-700 border border-primary-200 uppercase tracking-tight">
+                <span className="px-3 py-1 rounded-full bg-purple-50 text-[10px] font-black text-purple-700 border border-purple-200 uppercase tracking-tight">
                   {pagos?.length || 0} Operaciones
                 </span>
               </div>
@@ -377,10 +377,10 @@ export default async function DetalleVentaPage({ params }: PageProps) {
           {/* Sidebar Column */}
           <div className="lg:col-span-4 space-y-8">
             {/* System Context Card */}
-            <div className="bg-[#152A55] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
-              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-primary-500/10 rounded-full blur-2xl"></div>
+            <div className="bg-[#120b2e] rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+              <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl"></div>
               <h3 className="text-lg font-black mb-6 flex items-center gap-2">
-                <BadgeCheck className="w-6 h-6 text-primary-400" />
+                <BadgeCheck className="w-6 h-6 text-purple-400" />
                 Contexto
               </h3>
 
@@ -388,8 +388,8 @@ export default async function DetalleVentaPage({ params }: PageProps) {
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Comité Responsable</p>
                   <div className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
-                    <div className="w-10 h-10 rounded-xl bg-primary-500/20 flex items-center justify-center border border-primary-500/30">
-                      <Tag className="w-5 h-5 text-primary-400" />
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                      <Tag className="w-5 h-5 text-purple-400" />
                     </div>
                     <p className="font-black text-sm tracking-tight text-white">
                       {comiteData?.nombre || 'General'}
@@ -399,7 +399,7 @@ export default async function DetalleVentaPage({ params }: PageProps) {
 
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Proyecto</p>
-                  <p className="text-xl font-black text-primary-300">
+                  <p className="text-xl font-black text-purple-300">
                     {(venta.comite_proyectos as any)?.nombre}
                   </p>
                 </div>
@@ -418,23 +418,23 @@ export default async function DetalleVentaPage({ params }: PageProps) {
             </div>
 
             {/* Product Feature Card */}
-            <div className="bg-gradient-to-br from-primary-50 to-white rounded-[2.5rem] p-8 border border-primary-100 shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm border border-primary-100">
-                <Package className="w-7 h-7 text-primary-600" strokeWidth={2.5} />
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-[2.5rem] p-8 border border-purple-100 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-sm border border-purple-100">
+                <Package className="w-7 h-7 text-purple-600" strokeWidth={2.5} />
               </div>
-              <h3 className="text-xl font-black text-primary-900 mb-4 font-primary">Información del Producto</h3>
-              <p className="text-primary-900/40 text-[10px] font-black uppercase tracking-widest mb-2">Descripción</p>
-              <p className="text-primary-900/70 text-sm font-medium leading-relaxed">
+              <h3 className="text-xl font-black text-purple-900 mb-4 font-primary">Información del Producto</h3>
+              <p className="text-purple-900/40 text-[10px] font-black uppercase tracking-widest mb-2">Descripción</p>
+              <p className="text-purple-900/70 text-sm font-medium leading-relaxed">
                 {(venta.proyecto_productos as any)?.descripcion || "Este producto no cuenta con una descripción detallada cargada en el inventario actual de este proyecto."}
               </p>
 
-              <div className="mt-8 pt-8 border-t border-primary-200/50 flex items-center justify-between">
+              <div className="mt-8 pt-8 border-t border-purple-200/50 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-primary-900/40 uppercase tracking-widest">Base Unitario</p>
-                  <p className="text-lg font-black text-primary-900">${venta.precio_unitario.toLocaleString('es-CO')}</p>
+                  <p className="text-[10px] font-black text-purple-900/40 uppercase tracking-widest">Base Unitario</p>
+                  <p className="text-lg font-black text-purple-900">${venta.precio_unitario.toLocaleString('es-CO')}</p>
                 </div>
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-primary-100">
-                  <DollarSign className="w-6 h-6 text-primary-500" />
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-purple-100">
+                  <DollarSign className="w-6 h-6 text-purple-500" />
                 </div>
               </div>
             </div>

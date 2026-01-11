@@ -254,7 +254,7 @@ export function DetalleVentaActions({
                         placeholder="0.00"
                         value={pagoForm.monto}
                         onChange={(e) => setPagoForm(prev => ({ ...prev, monto: e.target.value }))}
-                        className="w-full pl-14 py-2 text-5xl font-black text-slate-900 bg-transparent border-none focus:ring-0 placeholder:text-slate-200"
+                        className="w-full pl-28 py-2 text-5xl font-black text-slate-900 bg-transparent border-none focus:ring-0 placeholder:text-slate-200"
                         required
                         autoFocus
                       />
