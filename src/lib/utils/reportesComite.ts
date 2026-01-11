@@ -30,10 +30,10 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(20)
     doc.setTextColor(91, 33, 182) // Púrpura
-    
+
     // Título
     doc.text('REPORTE DE VENTAS', 105, 20, { align: 'center' })
-    
+
     doc.setFontSize(12)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(100, 100, 100)
@@ -46,13 +46,13 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
     doc.setTextColor(0, 0, 0)
     doc.text('Resumen General', 14, 45)
 
-    const totalVendido = datos.resumenVentas?.total_vendido || 0
+    const totalVendido = datos.resumenVentas?.valor_total_ventas || 0
     const totalRecaudado = datos.resumenVentas?.total_recaudado || 0
-    const totalPendiente = datos.resumenVentas?.pendiente || 0
+    const totalPendiente = datos.resumenVentas?.total_pendiente || 0
 
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    
+
     // Cuadros de resumen
     const resumenData = [
       ['Total Vendido', `$${totalVendido.toLocaleString()}`],
@@ -79,14 +79,14 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
 
     // Tabla de ventas por producto
     const finalY = (doc as any).lastAutoTable.finalY || 100
-    
+
     doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
     doc.text('Ventas por Producto', 14, finalY + 10)
 
     // Agrupar ventas por producto
     const ventasPorProducto = new Map()
-    
+
     datos.ventas?.forEach((venta: any) => {
       const productoId = venta.producto_id
       if (!ventasPorProducto.has(productoId)) {
@@ -100,7 +100,7 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
           pendiente: 0
         })
       }
-      
+
       const item = ventasPorProducto.get(productoId)
       item.cantidad += venta.cantidad || 0
       item.total += venta.valor_total || 0
@@ -145,7 +145,7 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
 
     // Tabla de compradores
     const finalY2 = (doc as any).lastAutoTable.finalY || finalY + 80
-    
+
     doc.setFontSize(14)
     doc.setFont('helvetica', 'bold')
     doc.text('Compradores', 14, finalY2 + 10)
@@ -205,20 +205,27 @@ export async function generarPDFVentasProyecto(datos: DatosVentasProyecto) {
       })
     }
 
+    // Pie de página (Marca de agua sutil)
+    const pageHeight = doc.internal.pageSize.getHeight()
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'italic')
+    doc.setTextColor(200, 200, 200) // Gris muy claro
+    doc.text('SOFTWARE BY JUAN AGUILAR', 105, pageHeight - 10, { align: 'center' })
+
     // Guardar el PDF
     doc.save(`reporte-ventas-proyecto-${new Date().getTime()}.pdf`)
 
     return { success: true, mensaje: 'PDF generado correctamente' }
   } catch (error) {
     console.error('Error generando PDF:', error)
-    
+
     if ((error as any)?.message?.includes('jspdf')) {
       return {
         success: false,
         mensaje: 'Dependencias no instaladas. Ejecuta: npm install jspdf jspdf-autotable'
       }
     }
-    
+
     return {
       success: false,
       mensaje: 'Error al generar el PDF: ' + (error as Error).message
@@ -244,24 +251,27 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
       ['Generado:', new Date().toLocaleDateString('es-CO')],
       [''],
       ['RESUMEN GENERAL'],
-      ['Total Vendido', datos.resumenVentas?.total_vendido || 0],
+      ['Total Vendido', datos.resumenVentas?.valor_total_ventas || 0],
       ['Total Recaudado', datos.resumenVentas?.total_recaudado || 0],
-      ['Pendiente', datos.resumenVentas?.pendiente || 0],
+      ['Pendiente', datos.resumenVentas?.total_pendiente || 0],
       ['Productos', datos.productos?.length || 0],
       ['Ventas', datos.ventas?.length || 0],
-      ['Compradores Únicos', datos.ventas ? [...new Set(datos.ventas.map((v: any) => v.comprador_nombre))].length : 0]
+      ['Compradores Únicos', datos.ventas ? [...new Set(datos.ventas.map((v: any) => v.comprador_nombre))].length : 0],
+      [''],
+      [''],
+      ['SOFTWARE BY JUAN AGUILAR']
     ]
-    
+
     const wsResumen = XLSX.utils.aoa_to_sheet(resumenData)
-    
+
     // Estilos básicos para el resumen
     wsResumen['!cols'] = [{ wch: 20 }, { wch: 20 }]
-    
+
     XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
 
     // Hoja 2: Ventas por Producto
     const ventasPorProducto = new Map()
-    
+
     datos.ventas?.forEach((venta: any) => {
       const productoId = venta.producto_id
       if (!ventasPorProducto.has(productoId)) {
@@ -275,7 +285,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
           Pendiente: 0
         })
       }
-      
+
       const item = ventasPorProducto.get(productoId)
       item.Unidades += venta.cantidad || 0
       item['Total Vendido'] += venta.valor_total || 0
@@ -284,10 +294,10 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
     })
 
     const productosArray = Array.from(ventasPorProducto.values())
-    
+
     if (productosArray.length > 0) {
       const wsProductos = XLSX.utils.json_to_sheet(productosArray)
-      
+
       // Configurar anchos de columna
       wsProductos['!cols'] = [
         { wch: 30 }, // Producto
@@ -297,7 +307,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
         { wch: 15 }, // Recaudado
         { wch: 15 }  // Pendiente
       ]
-      
+
       XLSX.utils.book_append_sheet(wb, wsProductos, 'Ventas por Producto')
     }
 
@@ -317,7 +327,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
 
     if (ventasDetalle.length > 0) {
       const wsDetalle = XLSX.utils.json_to_sheet(ventasDetalle)
-      
+
       wsDetalle['!cols'] = [
         { wch: 12 }, // Fecha
         { wch: 30 }, // Producto
@@ -327,7 +337,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
         { wch: 15 }, // Pendiente
         { wch: 12 }  // Estado
       ]
-      
+
       XLSX.utils.book_append_sheet(wb, wsDetalle, 'Detalle de Ventas')
     }
 
@@ -365,7 +375,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
 
     if (compradoresArray.length > 0) {
       const wsCompradores = XLSX.utils.json_to_sheet(compradoresArray)
-      
+
       wsCompradores['!cols'] = [
         { wch: 30 }, // Comprador
         { wch: 12 }, // Total Compras
@@ -376,7 +386,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
         { wch: 15 }, // Última Compra
         { wch: 12 }  // Estado
       ]
-      
+
       XLSX.utils.book_append_sheet(wb, wsCompradores, 'Compradores')
     }
 
@@ -390,34 +400,34 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
 
     if (productosInfo.length > 0) {
       const wsProductosInfo = XLSX.utils.json_to_sheet(productosInfo)
-      
+
       wsProductosInfo['!cols'] = [
         { wch: 30 }, // Nombre
         { wch: 15 }, // Precio
         { wch: 40 }, // Descripción
         { wch: 12 }  // Estado
       ]
-      
+
       XLSX.utils.book_append_sheet(wb, wsProductosInfo, 'Productos')
     }
 
     // Generar el archivo Excel
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([wbout], { type: 'application/octet-stream' })
-    
+
     FileSaver.saveAs(blob, `reporte-ventas-proyecto-${new Date().getTime()}.xlsx`)
 
     return { success: true, mensaje: 'Excel generado correctamente' }
   } catch (error) {
     console.error('Error generando Excel:', error)
-    
+
     if ((error as any)?.message?.includes('xlsx') || (error as any)?.message?.includes('file-saver')) {
       return {
         success: false,
         mensaje: 'Dependencias no instaladas. Ejecuta: npm install xlsx file-saver'
       }
     }
-    
+
     return {
       success: false,
       mensaje: 'Error al generar el Excel: ' + (error as Error).message
