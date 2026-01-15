@@ -44,6 +44,21 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const [isMobile, setIsMobile] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
 
+  // Debug: Log del estado del member
+  React.useEffect(() => {
+    console.log('🎨 [Sidebar] Estado:', {
+      isLoading,
+      hasMember: !!member,
+      member: member ? {
+        id: member.id,
+        email: member.email,
+        rol: member.rol,
+        estado: member.estado
+      } : null,
+      comitesCount: comitesUsuario.length
+    })
+  }, [member, isLoading, comitesUsuario])
+
   // Detectar si es móvil con soporte para SSR
   React.useEffect(() => {
     setMounted(true)

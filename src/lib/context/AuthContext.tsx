@@ -37,6 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Cargar el rol y estado del usuario - SIN CACHÉ para siempre obtener datos frescos
   const loadUserRole = useCallback(async (userId: string) => {
     try {
+      console.log('📊 [AuthContext] Consultando tabla usuarios para ID:', userId)
+      
       const { data, error } = await supabaseRef.current
         .from('usuarios')
         .select('rol, estado')
@@ -44,13 +46,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle()
 
       if (error) {
-        console.error('Error cargando rol y estado:', error)
+        console.error('❌ [AuthContext] Error cargando rol y estado:', error)
         return { rol: null, estado: null }
       }
 
+      if (!data) {
+        console.error('❌ [AuthContext] Usuario no encontrado en tabla usuarios. ID:', userId)
+        console.error('   Este usuario existe en auth.users pero NO en la tabla usuarios')
+        return { rol: null, estado: null }
+      }
+
+      console.log('✅ [AuthContext] Rol y estado cargados:', data)
       return { rol: data?.rol || null, estado: data?.estado || null }
     } catch (err) {
-      console.error('Error en loadUserRole:', err)
+      console.error('❌ [AuthContext] Error en loadUserRole:', err)
       return { rol: null, estado: null }
     }
   }, [])
@@ -172,13 +181,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (session?.user) {
             console.log('🔄 [AuthContext] Actualizando datos de sesión para:', session.user.email)
             
-            // Limpiar estado anterior primero
-            setUser(null)
-            setMember(null)
-            setComitesUsuario([])
+            // NO limpiar el estado si es el mismo usuario - evita flash/redirecciones
+            const isSameUser = user?.id === session.user.id
             
-            // Pequeña pausa para asegurar limpieza
-            await new Promise(resolve => setTimeout(resolve, 50))
+            if (!isSameUser) {
+              console.log('👤 [AuthContext] Usuario diferente detectado, limpiando estado...')
+              // Solo limpiar si cambió de usuario
+              setUser(null)
+              setMember(null)
+              setComitesUsuario([])
+              
+              // Pequeña pausa para asegurar limpieza
+              await new Promise(resolve => setTimeout(resolve, 50))
+            } else {
+              console.log('🔄 [AuthContext] Mismo usuario, actualizando datos...')
+            }
             
             setUser(session.user)
             
