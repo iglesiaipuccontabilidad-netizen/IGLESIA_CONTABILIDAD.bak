@@ -47,6 +47,104 @@ export async function getAllPropositos(): Promise<{
   }
 }
 
+export async function updateProposito(
+  id: string,
+  data: {
+    nombre: string
+    descripcion?: string | null
+    monto_objetivo?: number | null
+    fecha_inicio?: string | null
+    fecha_fin?: string | null
+    estado?: string
+  }
+): Promise<{
+  success: boolean;
+  error: any | null;
+}> {
+  'use server'
+
+  const supabase = await createClient()
+
+  try {
+    // Verificar autenticación y permisos
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('No autenticado')
+    }
+
+    const { data: userData } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData || (userData as any).estado !== 'activo') {
+      throw new Error('Usuario no autorizado')
+    }
+
+    // Solo admin y tesorero pueden editar propósitos
+    if (!['admin', 'tesorero'].includes((userData as any).rol)) {
+      throw new Error('No tienes permisos para editar propósitos')
+    }
+
+    // Verificar que el propósito existe
+    const { data: propositoExistente, error: fetchError } = await supabase
+      .from('propositos')
+      .select('id, nombre')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !propositoExistente) {
+      throw new Error('Propósito no encontrado')
+    }
+
+    // Verificar si el nombre ya existe (excluyendo el actual)
+    if (data.nombre !== propositoExistente.nombre) {
+      const { data: existingProposito, error: checkError } = await supabase
+        .from('propositos')
+        .select('id')
+        .eq('nombre', data.nombre.trim())
+        .neq('id', id)
+        .single()
+
+      if (existingProposito) {
+        throw new Error('Ya existe un propósito con este nombre')
+      }
+    }
+
+    // Preparar datos de actualización
+    const updateData = {
+      nombre: data.nombre.trim(),
+      descripcion: data.descripcion?.trim() || null,
+      monto_objetivo: data.monto_objetivo || null,
+      fecha_inicio: data.fecha_inicio || null,
+      fecha_fin: data.fecha_fin || null,
+      estado: data.estado || 'activo',
+      ultima_actualizacion_por: user.id,
+      updated_at: new Date().toISOString()
+    }
+
+    // Actualizar el propósito
+    const { error: updateError } = await supabase
+      .from('propositos')
+      .update(updateData)
+      .eq('id', id)
+
+    if (updateError) {
+      throw updateError
+    }
+
+    // Revalidar rutas
+    revalidatePath('/dashboard/propositos')
+    revalidatePath('/dashboard')
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('Error al actualizar propósito:', error)
+    return { success: false, error }
+  }
+}
+
 export async function deleteProposito(id: string): Promise<{
   success: boolean;
   error: any | null;

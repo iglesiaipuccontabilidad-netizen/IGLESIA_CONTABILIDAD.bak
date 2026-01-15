@@ -1,9 +1,9 @@
 // @ts-nocheck
 'use client'
 
-import { useState } from 'react'
+import { useState, useActionState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseBrowserClient } from '@/lib/supabase-client'
+import { updateProposito } from '@/app/actions/propositos-actions'
 import toast from 'react-hot-toast'
 import { Save, X } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
@@ -20,7 +20,6 @@ interface PropositoFormProps {
 
 export default function PropositoForm({ proposito, mode = 'create' }: PropositoFormProps) {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<Partial<PropositoInsert>>({
     nombre: proposito?.nombre || '',
     descripcion: proposito?.descripcion || '',
@@ -30,6 +29,75 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
     estado: proposito?.estado || 'activo'
   })
 
+  // Estado inicial para useActionState
+  const initialState = {
+    success: false,
+    error: null as string | null
+  }
+
+  // Server Action con useActionState
+  const [state, formAction, pending] = useActionState(async (prevState: any, formDataForm: FormData) => {
+    try {
+      // Extraer datos del FormData
+      const nombre = formDataForm.get('nombre') as string
+      const descripcion = formDataForm.get('descripcion') as string
+      const monto_objetivo = formDataForm.get('monto_objetivo') as string
+      const fecha_inicio = formDataForm.get('fecha_inicio') as string
+      const fecha_fin = formDataForm.get('fecha_fin') as string
+      const estado = formDataForm.get('estado') as string
+
+      // Validaciones
+      if (!nombre?.trim()) {
+        return { success: false, error: 'El nombre es requerido' }
+      }
+
+      // Validar monto objetivo si se proporciona
+      const montoObjetivo = monto_objetivo ? parseFloat(monto_objetivo) : null
+      if (montoObjetivo != null && montoObjetivo <= 0) {
+        return { success: false, error: 'El monto objetivo debe ser mayor a 0' }
+      }
+
+      // Validar fechas
+      if (fecha_inicio && fecha_fin) {
+        if (new Date(fecha_fin) < new Date(fecha_inicio)) {
+          return { success: false, error: 'La fecha de finalización no puede ser anterior a la fecha de inicio' }
+        }
+      }
+
+      // Preparar datos para la Server Action
+      const updateData = {
+        nombre: nombre.trim(),
+        descripcion: descripcion?.trim() || null,
+        monto_objetivo: montoObjetivo,
+        fecha_inicio: fecha_inicio || null,
+        fecha_fin: fecha_fin || null,
+        estado: estado || 'activo'
+      }
+
+      // Llamar a la Server Action
+      const result = await updateProposito(proposito!.id, updateData)
+
+      if (!result.success) {
+        return { success: false, error: result.error?.message || 'Error al actualizar el propósito' }
+      }
+
+      // Éxito
+      toast.success('Propósito actualizado exitosamente')
+      
+      // Redirigir después de un breve delay
+      setTimeout(() => {
+        router.push('/dashboard/propositos')
+        router.refresh()
+      }, 1000)
+
+      return { success: true, error: null }
+
+    } catch (error: any) {
+      console.error('Error en form action:', error)
+      return { success: false, error: error.message || 'Error inesperado' }
+    }
+  }, initialState)
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -38,127 +106,16 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validaciones de formulario
-    if (!formData.nombre?.trim()) {
-      toast.error('El nombre es requerido')
-      return
-    }
-
-    // Validar monto objetivo si se proporciona
-    const montoObjetivo = formData.monto_objetivo
-    if (montoObjetivo != null && montoObjetivo <= 0) {
-      toast.error('El monto objetivo debe ser mayor a 0')
-      return
-    }
-
-    // Validar fechas
-    if (formData.fecha_inicio && formData.fecha_fin) {
-      if (new Date(formData.fecha_fin) < new Date(formData.fecha_inicio)) {
-        toast.error('La fecha de finalización no puede ser anterior a la fecha de inicio')
-        return
-      }
-    }
-
-    setLoading(true)
-    let toastId: string | undefined
-
-    try {
-      const supabase = getSupabaseBrowserClient()
-      // Verificar sesión
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError) throw new Error('Error al verificar la sesión')
-      if (!session) throw new Error('No hay sesión activa')
-
-      // Mostrar toast de carga
-      toastId = toast.loading(mode === 'create' ? 'Creando propósito...' : 'Actualizando propósito...').toString()
-
-      // Preparar datos base
-      const baseData = {
-        nombre: formData.nombre.trim(),
-        descripcion: formData.descripcion?.trim() || null,
-        monto_objetivo: formData.monto_objetivo || null,
-        fecha_inicio: formData.fecha_inicio || null,
-        fecha_fin: formData.fecha_fin || null,
-        estado: formData.estado || 'activo',
-        ultima_actualizacion_por: session.user.id
-      }
-
-      if (mode === 'create') {
-        const dataToInsert: PropositoInsert = {
-          ...baseData,
-          creado_por: session.user.id,
-          created_at: new Date().toISOString(),
-          monto_recaudado: 0
-        }
-
-        const { error: insertError, data } = await supabase
-          .from('propositos')
-          .insert(dataToInsert)
-          .select('*')
-          .single()
-
-        if (insertError) {
-          if (insertError.code === '23505') { // Código de error de unique constraint
-            throw new Error('Ya existe un propósito con este nombre')
-          }
-          throw insertError
-        }
-
-        if (!data) throw new Error('No se pudo crear el propósito')
-        
-        toast.success('Propósito creado exitosamente', { id: toastId })
-      } else if (mode === 'edit' && proposito?.id) {
-        const updateData = {
-          ...baseData,
-          updated_at: new Date().toISOString()
-        } satisfies PropositoUpdate
-
-        const { error: updateError } = await supabase
-          .from('propositos')
-          .update(updateData)
-          .eq('id', proposito.id)
-          .select('*')
-
-        if (updateError) throw updateError
-
-        toast.success('Propósito actualizado exitosamente', { id: toastId })
-      }
-
-      // Esperar un momento antes de redirigir
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      router.push('/dashboard/propositos')
-      router.refresh()
-    } catch (error: any) {
-      console.error('Error al guardar propósito:', error)
-      
-      // Asegurarse de que el toast de error se muestre
-      if (toastId) {
-        toast.error(
-          error.message || 'Error al guardar el propósito. Por favor, inténtalo de nuevo.', 
-          { id: toastId, duration: 5000 }
-        )
-      } else {
-        toast.error(
-          error.message || 'Error al guardar el propósito. Por favor, inténtalo de nuevo.',
-          { duration: 5000 }
-        )
-      }
-    } finally {
-      // Si por alguna razón el toast no se cerró, lo cerramos
-      if (!toastId) {
-        toast.dismiss()
-      }
-      setLoading(false)
-    }
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+    <form action={formAction} className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
       <div className="space-y-6">
+        {/* Mostrar error del state si existe */}
+        {state.error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600 text-sm font-medium">{state.error}</p>
+          </div>
+        )}
+
         {/* Nombre */}
         <div>
           <label htmlFor="nombre" className="block text-sm font-semibold text-slate-900 mb-2">
@@ -168,10 +125,9 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
             type="text"
             id="nombre"
             name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
+            defaultValue={formData.nombre}
+            disabled={pending}
             required
-            disabled={loading}
             className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             placeholder="Ej: Construcción del nuevo templo"
           />
@@ -185,9 +141,8 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
           <textarea
             id="descripcion"
             name="descripcion"
-            value={formData.descripcion || ''}
-            onChange={handleChange}
-            disabled={loading}
+            defaultValue={formData.descripcion || ''}
+            disabled={pending}
             rows={4}
             className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed resize-none"
             placeholder="Describe el propósito de esta campaña..."
@@ -207,9 +162,8 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
               type="number"
               id="monto_objetivo"
               name="monto_objetivo"
-              value={formData.monto_objetivo || ''}
-              onChange={handleChange}
-              disabled={loading}
+              defaultValue={formData.monto_objetivo || ''}
+              disabled={pending}
               min="0"
               step="0.01"
               className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -231,9 +185,8 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
               type="date"
               id="fecha_inicio"
               name="fecha_inicio"
-              value={formData.fecha_inicio || ''}
-              onChange={handleChange}
-              disabled={loading}
+              defaultValue={formData.fecha_inicio || ''}
+              disabled={pending}
               className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -246,9 +199,8 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
               type="date"
               id="fecha_fin"
               name="fecha_fin"
-              value={formData.fecha_fin || ''}
-              onChange={handleChange}
-              disabled={loading}
+              defaultValue={formData.fecha_fin || ''}
+              disabled={pending}
               className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
@@ -262,9 +214,8 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
           <select
             id="estado"
             name="estado"
-            value={formData.estado}
-            onChange={handleChange}
-            disabled={loading}
+            defaultValue={formData.estado}
+            disabled={pending}
             className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="activo">Activo</option>
@@ -279,7 +230,7 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
         <button
           type="button"
           onClick={() => router.back()}
-          disabled={loading}
+          disabled={pending}
           className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <X className="w-5 h-5" />
@@ -287,11 +238,11 @@ export default function PropositoForm({ proposito, mode = 'create' }: PropositoF
         </button>
         <button
           type="submit"
-          disabled={loading}
+          disabled={pending}
           className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
         >
           <Save className="w-5 h-5" />
-          {loading ? 'Guardando...' : mode === 'create' ? 'Crear Propósito' : 'Guardar Cambios'}
+          {pending ? 'Guardando...' : mode === 'create' ? 'Crear Propósito' : 'Guardar Cambios'}
         </button>
       </div>
     </form>
