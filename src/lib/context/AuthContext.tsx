@@ -42,6 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log(`📊 [AuthContext] Consultando rol usuario (intento ${attempt}/${retries}):`, userId)
         
+        // Verificar que hay sesión válida antes de consultar
+        const { data: { session } } = await supabaseRef.current.auth.getSession()
+        if (!session) {
+          console.warn(`⚠️ [AuthContext] No hay sesión en intento ${attempt}, esperando...`)
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 800 * attempt))
+            continue
+          }
+          return { rol: null, estado: null }
+        }
+        
         const { data, error } = await supabaseRef.current
           .from('usuarios')
           .select('rol, estado')
@@ -49,9 +60,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .maybeSingle()
 
         if (error) {
-          console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message)
+          console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message, error.code)
           if (attempt < retries) {
-            await new Promise(r => setTimeout(r, 500 * attempt)) // Espera exponencial
+            await new Promise(r => setTimeout(r, 800 * attempt)) // Espera más larga
             continue
           }
           return { rol: null, estado: null }
@@ -67,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error(`❌ [AuthContext] Error en loadUserRole (intento ${attempt}):`, err)
         if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 500 * attempt))
+          await new Promise(r => setTimeout(r, 800 * attempt))
           continue
         }
       }
@@ -105,9 +116,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Función para cargar todos los datos del usuario
   const loadUserData = useCallback(async (authUser: User) => {
-    console.log('📥 [AuthContext] Cargando datos para:', authUser.email)
+    console.log('📥 [AuthContext] Cargando datos para:', authUser.email, authUser.id)
     
     setUser(authUser)
+    
+    // Esperar un momento para asegurar que la sesión esté completamente sincronizada
+    await new Promise(r => setTimeout(r, 300))
     
     // Cargar rol y comités en paralelo
     const [userData, comites] = await Promise.all([
@@ -132,6 +146,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         estado: memberData.estado,
         comites: comites.length
       })
+      
+      // Si el rol es null, intentar cargar de nuevo después de un momento
+      if (!userData.rol && authUser.id) {
+        console.log('🔄 [AuthContext] Rol null, reintentando en 1 segundo...')
+        setTimeout(async () => {
+          if (mountedRef.current) {
+            const retryData = await loadUserRole(authUser.id, 2)
+            if (retryData.rol && mountedRef.current) {
+              console.log('✅ [AuthContext] Rol obtenido en reintento:', retryData.rol)
+              setMember(prev => prev ? { ...prev, rol: retryData.rol, estado: retryData.estado } : null)
+            }
+          }
+        }, 1000)
+      }
     }
   }, [loadUserRole, loadUserComites])
 
@@ -210,8 +238,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               console.log('✨ [AuthContext] Login detectado:', session.user.email)
               setIsLoading(true)
               
-              // Pequeña pausa para asegurar que la sesión está establecida
-              await new Promise(r => setTimeout(r, 100))
+              // Esperar 500ms para asegurar que cookies y sesión están completamente sincronizadas
+              await new Promise(r => setTimeout(r, 500))
+              
+              // Verificar que la sesión está activa antes de cargar datos
+              const { data: { session: verifiedSession } } = await supabaseRef.current.auth.getSession()
+              if (!verifiedSession) {
+                console.warn('⚠️ [AuthContext] Sesión no verificada después de SIGNED_IN, esperando más...')
+                await new Promise(r => setTimeout(r, 1000))
+              }
               
               await loadUserData(session.user)
               
