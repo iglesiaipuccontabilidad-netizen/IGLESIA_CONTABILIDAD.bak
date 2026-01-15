@@ -128,7 +128,7 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
             {userRole && ['admin', 'tesorero'].includes(userRole) && (
               <Link
                 href={`/dashboard/votos/editar/${voto.id}`}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white text-sm font-semibold rounded-lg hover:bg-cyan-600 transition-colors shadow-sm"
                 title="Editar voto"
               >
                 <Edit className="h-4 w-4" />
