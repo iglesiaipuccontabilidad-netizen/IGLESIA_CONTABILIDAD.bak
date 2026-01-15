@@ -22,7 +22,7 @@ import { useAuth } from "@/lib/context/AuthContext"
 type MenuItem = {
   href: string
   label: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   description?: string
   subItems?: { href: string; label: string }[]
 }
@@ -481,14 +481,14 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                           />
                         )}
 
-                        <span className="flex items-center justify-center shrink-0 transition-colors"
+                        <Icon
+                          className="shrink-0 transition-colors"
                           style={{
-                            width: showMobileVersion ? "22px" : "20px",
-                            height: showMobileVersion ? "22px" : "20px",
-                            color: active ? "#22d3ee" : "#cbd5e1",
-                          }}>
-                          <Icon className="w-full h-full" />
-                        </span>
+                            width: showMobileVersion ? '22px' : '20px',
+                            height: showMobileVersion ? '22px' : '20px',
+                            color: active ? '#22d3ee' : undefined,
+                          }}
+                        />
 
                         {/* Label - Hidden when collapsed on desktop */}
                         {(!isCollapsed || showMobileVersion) && (

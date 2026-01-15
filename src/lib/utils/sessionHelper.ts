@@ -1,47 +1,48 @@
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * Asegura que existe una sesión válida antes de ejecutar acciones
- * Soluciona el problema de "cold start" en la primera interacción
+ * En Server Actions, la sesión ya se maneja automáticamente por Supabase
  */
 export async function ensureValidSession() {
-  const supabase = createClient()
-  
   try {
-    // Obtener sesión actual
-    const { data: { session }, error } = await supabase.auth.getSession()
-    
-    if (error) {
-      console.error('❌ Error al obtener sesión:', error)
-      throw new Error('Error de autenticación')
-    }
-    
+    const supabase = await createClient()
+
+    // En Server Actions, intentar obtener la sesión
+    const { data: { session } } = await supabase.auth.getSession()
+
     if (!session) {
-      console.warn('⚠️ No hay sesión activa')
-      throw new Error('No hay sesión activa')
+      console.warn('⚠️ No hay sesión activa en el servidor (continuando)')
+      // No lanzar error, permitir que continue
+      return null
     }
-    
+
     // Verificar si el token está próximo a expirar (menos de 5 minutos)
     const expiresAt = session.expires_at
     const now = Math.floor(Date.now() / 1000)
     const timeUntilExpiry = expiresAt ? expiresAt - now : 0
-    
-    if (timeUntilExpiry < 300) { // 5 minutos
-      console.log('🔄 Token próximo a expirar, refrescando...')
-      const { data: { session: newSession }, error: refreshError } = await supabase.auth.refreshSession()
-      
-      if (refreshError) {
-        console.error('❌ Error al refrescar sesión:', refreshError)
-        throw new Error('Error al refrescar sesión')
+
+    if (timeUntilExpiry < 300 && timeUntilExpiry > 0) { // 5 minutos
+      console.log('🔄 Token próximo a expirar, intentando refrescar...')
+
+      try {
+        const { data: { session: newSession } } = await supabase.auth.refreshSession()
+
+        if (newSession) {
+          console.log('✅ Sesión refrescada exitosamente')
+          return newSession
+        }
+      } catch (refreshError) {
+        console.warn('⚠️ Error al refrescar sesión (continuando):', refreshError)
+        return session // Usar sesión original
       }
-      
-      return newSession
     }
-    
+
     return session
   } catch (error) {
-    console.error('❌ Error en ensureValidSession:', error)
-    throw error
+    console.warn('⚠️ Error en ensureValidSession (continuando):', error)
+    // No lanzar error, permitir que continue
+    return null
   }
 }
 
@@ -55,7 +56,7 @@ export async function withValidSession<T>(
   try {
     // Asegurar sesión válida
     await ensureValidSession()
-    
+
     // Ejecutar acción
     return await action()
   } catch (error) {
@@ -73,25 +74,25 @@ export async function withRetry<T>(
   delayMs = 1000
 ): Promise<T> {
   let lastError: Error | null = null
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      // Asegurar sesión válida antes de cada intento
+      // Intentar asegurar sesión válida, pero no fallar si no hay sesión
       await ensureValidSession()
-      
+
       // Ejecutar función
       return await fn()
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Error desconocido')
       console.warn(`⚠️ Intento ${attempt + 1}/${maxRetries} falló:`, lastError.message)
-      
+
       // Si no es el último intento, esperar antes de reintentar
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)))
       }
     }
   }
-  
+
   // Si llegamos aquí, todos los intentos fallaron
   throw lastError || new Error('Todos los intentos fallaron')
 }

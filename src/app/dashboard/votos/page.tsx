@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { getVotosWithDetails } from '@/app/actions/votos-actions'
+import { getCurrentUserRole } from '@/lib/auth'
 import type { VotoDetalle } from '@/types/votos'
 
 interface FiltrosVotos {
@@ -34,6 +35,7 @@ export default function VotosPage() {
     estado: ''
   })
   const [loading, setLoading] = useState(true)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   const cargarVotos = useCallback(async () => {
     try {
@@ -55,7 +57,17 @@ export default function VotosPage() {
 
   useEffect(() => {
     cargarVotos()
+    cargarUserRole()
   }, [cargarVotos])
+
+  const cargarUserRole = useCallback(async () => {
+    try {
+      const role = await getCurrentUserRole()
+      setUserRole(role)
+    } catch (error) {
+      console.error('Error cargando rol del usuario:', error)
+    }
+  }, [])
 
   const formatearMonto = useCallback((monto: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -456,6 +468,18 @@ export default function VotosPage() {
                               </svg>
                               <span>Ver</span>
                             </Link>
+                            {userRole && ['admin', 'tesorero'].includes(userRole) && (
+                              <Link
+                                href={`/dashboard/votos/editar/${voto.id}`}
+                                className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2 text-xs font-bold text-amber-700 transition-all hover:border-amber-300 hover:shadow-lg hover:shadow-amber-200/50 hover:-translate-y-0.5"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21H21v-3.75l-5.83-5.83a3 3 0 0 0-4.24 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m15 11 4.24-4.24a3 3 0 0 0-4.24-4.24L11 6.76a3 3 0 0 0 0 4.24z" />
+                                </svg>
+                                <span>Editar</span>
+                              </Link>
+                            )}
                             <Link
                               href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
                               className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-200/50 hover:-translate-y-0.5"
