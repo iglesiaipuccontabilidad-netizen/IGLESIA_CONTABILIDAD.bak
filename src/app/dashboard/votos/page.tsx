@@ -377,29 +377,33 @@ export default function VotosPage() {
                     const avatar = voto.miembro ? `${voto.miembro.nombres.charAt(0)}${voto.miembro.apellidos.charAt(0)}` : 'NA'
 
                     return (
-                      <tr 
-                        key={voto.id} 
-                        className="group transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-cyan-50/30"
-                        style={{ animationDelay: `${index * 30}ms` }}
+                      <Link
+                        key={voto.id}
+                        href={`/dashboard/votos/${voto.id}`}
+                        className="block"
                       >
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-cyan-600 text-sm font-bold text-white shadow-lg group-hover:shadow-xl transition-shadow">
-                                {avatar}
+                        <tr
+                          className="group transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-cyan-50/30 cursor-pointer"
+                          style={{ animationDelay: `${index * 30}ms` }}
+                        >
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-3">
+                              <div className="relative">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-cyan-600 text-sm font-bold text-white shadow-lg group-hover:shadow-xl transition-shadow">
+                                  {avatar}
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500"></div>
                               </div>
-                              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500"></div>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
+                                  {voto.miembro
+                                    ? `${voto.miembro.nombres} ${voto.miembro.apellidos}`
+                                    : 'Sin asignar'}
+                                </span>
+                                <span className="text-xs font-medium text-slate-500">Creado el {new Date(voto.created_at).toLocaleDateString('es-CO')}</span>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors">
-                                {voto.miembro
-                                  ? `${voto.miembro.nombres} ${voto.miembro.apellidos}`
-                                  : 'Sin asignar'}
-                              </span>
-                              <span className="text-xs font-medium text-slate-500">Creado el {new Date(voto.created_at).toLocaleDateString('es-CO')}</span>
-                            </div>
-                          </div>
-                        </td>
+                          </td>
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 rounded-full bg-primary-500"></div>
@@ -492,6 +496,7 @@ export default function VotosPage() {
                           </div>
                         </td>
                       </tr>
+                      </Link>
                     )
                   })
                 ) : (
