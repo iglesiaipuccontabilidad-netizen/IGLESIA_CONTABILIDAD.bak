@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [comitesUsuario, setComitesUsuario] = useState<any[]>([])
   
   const mountedRef = useRef(true)
+  const initializingRef = useRef(false) // Evitar inicializaciones múltiples
   const supabaseRef = useRef(getSupabaseBrowserClient())
 
   // Cargar el rol y estado del usuario - SIN CACHÉ para siempre obtener datos frescos
@@ -94,44 +95,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     mountedRef.current = true
+    
+    // Evitar inicializaciones múltiples
+    if (initializingRef.current) {
+      console.log('⏳ [AuthContext] Ya inicializando, saltando...')
+      return
+    }
+    initializingRef.current = true
+    
     console.log('🚀 [AuthContext] Iniciando useEffect')
     
-    // Timeout de seguridad - si después de 10 segundos no carga, forzar a terminar
+    // Timeout de seguridad reducido - 5 segundos es suficiente
     const timeoutId = setTimeout(() => {
       if (mountedRef.current && isLoading) {
         console.warn('⚠️ [AuthContext] Timeout de carga alcanzado, terminando carga...')
         setIsLoading(false)
       }
-    }, 10000)
+    }, 5000)
     
     async function initializeAuth() {
       try {
         console.log('🔐 [AuthContext] Iniciando autenticación...')
-        setIsLoading(true)
         
-        // Limpiar estado anterior primero
-        console.log('🧹 [AuthContext] Limpiando estado anterior...')
-        setUser(null)
-        setMember(null)
-        setComitesUsuario([])
+        // Usar getUser() en lugar de getSession() - más seguro y confiable
+        // getUser() valida el JWT contra el servidor de Supabase
+        const { data: { user: authUser }, error } = await supabaseRef.current.auth.getUser()
         
-        const { data: { session } } = await supabaseRef.current.auth.getSession()
-        console.log('📝 [AuthContext] Sesión obtenida:', session ? '✅ Usuario encontrado' : '❌ Sin sesión')
+        if (error) {
+          console.log('⚠️ [AuthContext] Error obteniendo usuario:', error.message)
+          // No es un error crítico, simplemente no hay sesión
+          if (mountedRef.current) {
+            setIsLoading(false)
+          }
+          return
+        }
         
-        if (session?.user && mountedRef.current) {
-          console.log('👤 [AuthContext] Usuario en sesión:')
-          console.log('  - ID:', session.user.id)
-          console.log('  - Email:', session.user.email)
-          console.log('  - Created:', session.user.created_at)
+        console.log('📝 [AuthContext] Usuario obtenido:', authUser ? '✅ Usuario encontrado' : '❌ Sin usuario')
+        
+        if (authUser && mountedRef.current) {
+          console.log('👤 [AuthContext] Usuario autenticado:')
+          console.log('  - ID:', authUser.id)
+          console.log('  - Email:', authUser.email)
           
-          setUser(session.user)
+          setUser(authUser)
           
-          // Cargar el rol y comités en paralelo
+          // Cargar el rol y comités en paralelo con timeout
           console.log('📥 [AuthContext] Cargando datos del usuario desde BD...')
-          const [userData, comites] = await Promise.all([
-            loadUserRole(session.user.id),
-            loadUserComites(session.user.id)
-          ])
+          
+          const loadDataWithTimeout = async () => {
+            const timeoutPromise = new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout')), 3000)
+            )
+            
+            try {
+              const [userData, comites] = await Promise.race([
+                Promise.all([
+                  loadUserRole(authUser.id),
+                  loadUserComites(authUser.id)
+                ]),
+                timeoutPromise
+              ]) as [{ rol: string | null; estado: string | null }, any[]]
+              
+              return { userData, comites }
+            } catch (err) {
+              console.warn('⚠️ [AuthContext] Timeout cargando datos, usando valores por defecto')
+              return { userData: { rol: null, estado: null }, comites: [] }
+            }
+          }
+          
+          const { userData, comites } = await loadDataWithTimeout()
           
           console.log('✅ [AuthContext] Datos cargados desde BD:')
           console.log('  - Rol:', userData.rol)
@@ -140,8 +172,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           if (mountedRef.current) {
             const memberData = {
-              id: session.user.id,
-              email: session.user.email ?? null,
+              id: authUser.id,
+              email: authUser.email ?? null,
               rol: userData.rol,
               estado: userData.estado
             }
@@ -176,6 +208,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log('🔄 [AuthContext] Auth state changed:', event)
 
+        // Ignorar INITIAL_SESSION ya que lo manejamos en initializeAuth
+        if (event === 'INITIAL_SESSION') {
+          console.log('⏭️ [AuthContext] INITIAL_SESSION ignorado (ya manejado)')
+          return
+        }
+
         // Refrescar datos del usuario cuando cambia la sesión
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (session?.user) {
@@ -185,38 +223,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const isSameUser = user?.id === session.user.id
             
             if (!isSameUser) {
-              console.log('👤 [AuthContext] Usuario diferente detectado, limpiando estado...')
-              // Solo limpiar si cambió de usuario
-              setUser(null)
-              setMember(null)
-              setComitesUsuario([])
-              
-              // Pequeña pausa para asegurar limpieza
-              await new Promise(resolve => setTimeout(resolve, 50))
-            } else {
-              console.log('🔄 [AuthContext] Mismo usuario, actualizando datos...')
+              console.log('👤 [AuthContext] Usuario diferente detectado, actualizando...')
             }
             
             setUser(session.user)
             
-            // Refetch completo de datos frescos
-            const [userData, comites] = await Promise.all([
-              loadUserRole(session.user.id),
-              loadUserComites(session.user.id)
-            ])
-            
-            if (mountedRef.current) {
-              const memberData = {
-                id: session.user.id,
-                email: session.user.email ?? null,
-                rol: userData.rol,
-                estado: userData.estado
+            // Refetch de datos frescos con timeout
+            try {
+              const timeoutPromise = new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 3000)
+              )
+              
+              const [userData, comites] = await Promise.race([
+                Promise.all([
+                  loadUserRole(session.user.id),
+                  loadUserComites(session.user.id)
+                ]),
+                timeoutPromise
+              ]) as [{ rol: string | null; estado: string | null }, any[]]
+              
+              if (mountedRef.current) {
+                const memberData = {
+                  id: session.user.id,
+                  email: session.user.email ?? null,
+                  rol: userData.rol,
+                  estado: userData.estado
+                }
+                
+                setMember(memberData)
+                setComitesUsuario(comites)
+                
+                console.log('✅ [AuthContext] Datos actualizados:', memberData)
               }
-              
-              setMember(memberData)
-              setComitesUsuario(comites)
-              
-              console.log('✅ [AuthContext] Datos actualizados:', memberData)
+            } catch (err) {
+              console.warn('⚠️ [AuthContext] Error actualizando datos:', err)
             }
           }
         } else if (event === 'SIGNED_OUT') {
