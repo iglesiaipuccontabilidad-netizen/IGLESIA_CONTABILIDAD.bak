@@ -29,6 +29,9 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Extraer las propiedades individuales del objeto filtros para evitar problemas de referencia
+  const { busqueda, estado, fechaInicio, fechaFin, miembroId, propositoId } = filtros
+
   useEffect(() => {
     const fetchVotos = async () => {
       const supabase = createClient()
@@ -45,35 +48,39 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
             estado,
             fecha_limite,
             created_at,
-            miembro:miembros!inner(
+            miembro:miembros(
               id,
               nombres,
               apellidos,
               email
+            ),
+            proposito_relacionado:propositos!inner(
+              id,
+              nombre
             ),
             pagos(monto)
           `)
           .order('created_at', { ascending: false })
 
         // Aplicar filtros
-        if (filtros.estado) {
-          query = query.eq('estado', filtros.estado)
+        if (estado) {
+          query = query.eq('estado', estado)
         }
 
-        if (filtros.fechaInicio) {
-          query = query.gte('created_at', filtros.fechaInicio)
+        if (fechaInicio) {
+          query = query.gte('created_at', fechaInicio)
         }
 
-        if (filtros.fechaFin) {
-          query = query.lte('created_at', filtros.fechaFin)
+        if (fechaFin) {
+          query = query.lte('created_at', fechaFin)
         }
 
-        if (filtros.miembroId) {
-          query = query.eq('miembro_id', filtros.miembroId)
+        if (miembroId) {
+          query = query.eq('miembro_id', miembroId)
         }
 
-        if (filtros.propositoId) {
-          query = query.eq('proposito_id', filtros.propositoId)
+        if (propositoId) {
+          query = query.eq('proposito_id', propositoId)
         }
 
         const { data: votos, error: queryError } = await query
@@ -87,7 +94,7 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
           
           return {
             id: voto.id,
-            proposito: voto.proposito || 'Sin propósito',
+            proposito: voto.proposito_relacionado?.nombre || 'Sin propósito',
             monto_total: montoTotal,
             recaudado: totalPagado,
             pendiente: montoTotal - totalPagado,
@@ -101,11 +108,11 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
 
         // Filtrar por búsqueda (nombre o propósito)
         let resultado = votosFormateados
-        if (filtros.busqueda) {
-          const busqueda = filtros.busqueda.toLowerCase()
+        if (busqueda) {
+          const busquedaLower = busqueda.toLowerCase()
           resultado = votosFormateados.filter(voto =>
-            voto.miembro_nombre.toLowerCase().includes(busqueda) ||
-            voto.proposito.toLowerCase().includes(busqueda)
+            voto.miembro_nombre.toLowerCase().includes(busquedaLower) ||
+            voto.proposito.toLowerCase().includes(busquedaLower)
           )
         }
 
@@ -119,7 +126,7 @@ export function useReportesVotos(filtros: FiltrosVotos = {}) {
     }
 
     fetchVotos()
-  }, [filtros.busqueda, filtros.estado, filtros.fechaInicio, filtros.fechaFin, filtros.miembroId, filtros.propositoId])
+  }, [busqueda, estado, fechaInicio, fechaFin, miembroId, propositoId])
 
   return { data, loading, error }
 }

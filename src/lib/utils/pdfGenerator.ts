@@ -12,9 +12,39 @@ interface PDFOptions {
   columnas: PDFColumn[]
   datos: any[]
   orientacion?: 'portrait' | 'landscape'
+  incluirLogo?: boolean
+  colorTema?: string
+  incluirResumen?: boolean
 }
 
-export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = 'portrait' }: PDFOptions) => {
+interface PDFConfig {
+  incluirLogo: boolean
+  colorTema: string
+  incluirResumen: boolean
+  orientacion: 'portrait' | 'landscape'
+  formato: 'a4' | 'letter'
+}
+
+// Función auxiliar para convertir color hex a RGB
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [59, 130, 246] // Color por defecto (blue-500)
+}
+
+export const generarPDF = ({ 
+  titulo, 
+  subtitulo, 
+  columnas, 
+  datos, 
+  orientacion = 'portrait',
+  incluirLogo = true,
+  colorTema = '#3B82F6',
+  incluirResumen = true
+}: PDFOptions) => {
   try {
     // Crear documento PDF
     const doc = new jsPDF({
@@ -23,19 +53,39 @@ export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = '
       format: 'a4'
     })
 
+    let yPos = 20
+
+    // Logo y encabezado mejorado
+    if (incluirLogo) {
+      // Dibujar logo simple (círculo con iniciales)
+      doc.setFillColor(colorTema)
+      doc.circle(20, 15, 8, 'F')
+      
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.setTextColor(255, 255, 255)
+      doc.text('IPUC', 20, 17, { align: 'center' })
+      
+      yPos = 35
+    }
+
     // Configurar fuentes
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(18)
+    doc.setTextColor(colorTema)
 
     // Título principal
-    doc.text(titulo, 14, 20)
+    doc.text(titulo, incluirLogo ? 35 : 14, yPos)
+
+    yPos += 8
 
     // Subtítulo (si existe)
     if (subtitulo) {
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(11)
       doc.setTextColor(100)
-      doc.text(subtitulo, 14, 28)
+      doc.text(subtitulo, incluirLogo ? 35 : 14, yPos)
+      yPos += 6
     }
 
     // Información adicional
@@ -48,28 +98,33 @@ export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = '
       hour: '2-digit',
       minute: '2-digit'
     })
-    doc.text(`Generado: ${fecha}`, 14, subtitulo ? 34 : 28)
-    doc.text('IPUC Contabilidad', doc.internal.pageSize.getWidth() - 14, subtitulo ? 34 : 28, { align: 'right' })
+    doc.text(`Generado: ${fecha}`, incluirLogo ? 35 : 14, yPos)
+    doc.text('Sistema Contable IPUC', doc.internal.pageSize.getWidth() - 14, yPos, { align: 'right' })
+
+    yPos += 6
 
     // Línea separadora
-    doc.setDrawColor(200)
-    doc.line(14, subtitulo ? 38 : 32, doc.internal.pageSize.getWidth() - 14, subtitulo ? 38 : 32)
+    doc.setDrawColor(colorTema)
+    doc.setLineWidth(0.5)
+    doc.line(incluirLogo ? 35 : 14, yPos, doc.internal.pageSize.getWidth() - 14, yPos)
+
+    yPos += 6
 
     // Tabla con datos
     autoTable(doc, {
-      startY: subtitulo ? 42 : 36,
+      startY: yPos,
       head: [columnas.map(col => col.header)],
       body: datos.map(row => columnas.map(col => {
         const value = row[col.dataKey]
         // Formatear números como moneda si es necesario
-        if (typeof value === 'number' && col.dataKey.includes('monto') || col.dataKey.includes('total') || col.dataKey.includes('pagado') || col.dataKey.includes('pendiente') || col.dataKey.includes('comprometido')) {
+        if (typeof value === 'number' && (col.dataKey.includes('monto') || col.dataKey.includes('total') || col.dataKey.includes('pagado') || col.dataKey.includes('pendiente') || col.dataKey.includes('comprometido'))) {
           return `$${value.toLocaleString('es-CO')}`
         }
         return value || '-'
       })),
       theme: 'striped',
       headStyles: {
-        fillColor: [59, 130, 246], // Azul
+        fillColor: colorTema,
         textColor: 255,
         fontStyle: 'bold',
         fontSize: 10
@@ -81,7 +136,7 @@ export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = '
       alternateRowStyles: {
         fillColor: [245, 247, 250]
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: incluirLogo ? 35 : 14, right: 14 },
       didDrawPage: (data) => {
         // Footer en cada página
         const pageCount = doc.getNumberOfPages()
@@ -98,7 +153,7 @@ export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = '
       }
     })
 
-    // Resumen al final (si hay datos numéricos)
+    // Resumen al final (si hay datos numéricos y está habilitado)
     const hasNumericData = columnas.some(col => 
       col.dataKey.includes('monto') || 
       col.dataKey.includes('total') || 
@@ -106,17 +161,18 @@ export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = '
       col.dataKey.includes('pendiente')
     )
 
-    if (hasNumericData && datos.length > 0) {
+    if (incluirResumen && hasNumericData && datos.length > 0) {
       const finalY = (doc as any).lastAutoTable.finalY + 10
       
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(10)
-      doc.setTextColor(50)
-      doc.text('Resumen:', 14, finalY)
+      doc.setTextColor(colorTema)
+      doc.text('Resumen:', incluirLogo ? 35 : 14, finalY)
       
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
-      doc.text(`Total de registros: ${datos.length}`, 14, finalY + 6)
+      doc.setTextColor(50)
+      doc.text(`Total de registros: ${datos.length}`, incluirLogo ? 35 : 14, finalY + 6)
     }
 
     // Descargar PDF
@@ -131,11 +187,19 @@ export const generarPDF = ({ titulo, subtitulo, columnas, datos, orientacion = '
 }
 
 // Función específica para reporte financiero avanzado
-export const generarPDFFinanciero = (datos: any) => {
+export const generarPDFFinanciero = (datos: any, config: Partial<PDFConfig> = {}) => {
+  const {
+    incluirLogo = true,
+    colorTema = '#3B82F6',
+    incluirResumen = true,
+    orientacion = 'portrait',
+    formato = 'a4'
+  } = config
+
   const doc = new jsPDF({
-    orientation: 'portrait',
+    orientation: orientacion,
     unit: 'mm',
-    format: 'a4'
+    format: formato
   })
 
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -169,11 +233,11 @@ export const generarPDFFinanciero = (datos: any) => {
     ensureSpace(15)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(13)
-    doc.setTextColor(59, 130, 246)
+    doc.setTextColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
     doc.text(titulo.toUpperCase(), marginLeft, yPos)
 
     // Línea bajo el título
-    doc.setDrawColor(59, 130, 246)
+    doc.setDrawColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
     doc.setLineWidth(0.5)
     doc.line(marginLeft, yPos + 2, pageWidth - marginLeft, yPos + 2)
 
@@ -181,9 +245,22 @@ export const generarPDFFinanciero = (datos: any) => {
   }
 
   // PORTADA
+  if (incluirLogo) {
+    // Logo en la portada
+    doc.setFillColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
+    doc.circle(pageWidth / 2, yPos + 8, 12, 'F')
+    
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16)
+    doc.setTextColor(255, 255, 255)
+    doc.text('IPUC', pageWidth / 2, yPos + 12, { align: 'center' })
+    
+    yPos += 25
+  }
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(28)
-  doc.setTextColor(59, 130, 246)
+  doc.setTextColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
   doc.text('REPORTE FINANCIERO', pageWidth / 2, yPos, { align: 'center' })
   
   yPos += 12
@@ -208,47 +285,48 @@ export const generarPDFFinanciero = (datos: any) => {
   yPos += 20
 
   // Línea decorativa
-  doc.setDrawColor(59, 130, 246)
+  doc.setDrawColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
   doc.setLineWidth(1)
   doc.line(marginLeft, yPos, pageWidth - marginLeft, yPos)
   yPos += 15
 
   // SECCIÓN 1: INDICADORES PRINCIPALES (KPIs)
-  addSectionTitle('Indicadores Principales')
+  if (incluirResumen) {
+    addSectionTitle('Indicadores Principales')
 
-  const kpis = [
-    { label: 'Total Comprometido', valor: datos.total_comprometido, color: [59, 130, 246] },
-    { label: 'Total Recaudado', valor: datos.total_recaudado, color: [34, 197, 94] },
-    { label: 'Total Pendiente', valor: datos.total_pendiente, color: [251, 146, 60] },
-    { label: 'Porcentaje Cumplimiento', valor: `${datos.porcentaje_cumplimiento.toFixed(1)}%`, color: [168, 85, 247] }
-  ]
+    const kpis = [
+      { label: 'Total Comprometido', valor: datos.total_comprometido, color: hexToRgb(colorTema) },
+      { label: 'Total Recaudado', valor: datos.total_recaudado, color: [34, 197, 94] },
+      { label: 'Total Pendiente', valor: datos.total_pendiente, color: [251, 146, 60] },
+      { label: 'Porcentaje Cumplimiento', valor: `${datos.porcentaje_cumplimiento.toFixed(1)}%`, color: [168, 85, 247] }
+    ]
 
-  kpis.forEach((kpi) => {
-    ensureSpace(16)
-    // Fondo de color con esquinas redondeadas
-    doc.setFillColor(kpi.color[0], kpi.color[1], kpi.color[2])
-    doc.setDrawColor(kpi.color[0], kpi.color[1], kpi.color[2])
-    doc.roundedRect(marginLeft, yPos - 3, contentWidth, 11, 2, 2, 'FD')
+    kpis.forEach((kpi) => {
+      ensureSpace(16)
+      // Fondo de color con esquinas redondeadas
+      doc.setFillColor(kpi.color[0], kpi.color[1], kpi.color[2])
+      doc.setDrawColor(kpi.color[0], kpi.color[1], kpi.color[2])
+      doc.roundedRect(marginLeft, yPos - 3, contentWidth, 11, 2, 2, 'FD')
 
-    // Label
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(255)
-    doc.text(kpi.label, marginLeft + 3, yPos + 2)
+      // Label
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(255)
+      doc.text(kpi.label, marginLeft + 3, yPos + 2)
 
-    // Valor
-    const valorFormateado = typeof kpi.valor === 'string'
-      ? kpi.valor
-      : `$${kpi.valor.toLocaleString('es-CO')}`
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.text(valorFormateado, pageWidth - marginLeft - 2, yPos + 2, { align: 'right' })
+      // Valor
+      const valorFormateado = typeof kpi.valor === 'string'
+        ? kpi.valor
+        : `$${kpi.valor.toLocaleString('es-CO')}`
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      doc.text(valorFormateado, pageWidth - marginLeft - 2, yPos + 2, { align: 'right' })
 
-    yPos += 16
-  })
+      yPos += 16
+    })
 
-  yPos += 5
-
+    yPos += 5
+  }
   // SECCIÓN 2: MÉTRICAS OPERATIVAS
   addSectionTitle('Metricas Operativas')
 
@@ -387,7 +465,7 @@ export const generarPDFFinanciero = (datos: any) => {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(255)
-    doc.setFillColor(59, 130, 246)
+    doc.setFillColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
     doc.rect(marginLeft, yPos - 4, contentWidth, 8, 'F')
 
     doc.text('#', marginLeft + 2, yPos + 2)
@@ -410,7 +488,7 @@ export const generarPDFFinanciero = (datos: any) => {
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(9)
         doc.setTextColor(255)
-        doc.setFillColor(59, 130, 246)
+        doc.setFillColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
         doc.rect(marginLeft, yPos - 4, contentWidth, 8, 'F')
 
         doc.text('#', marginLeft + 2, yPos + 2)
@@ -468,13 +546,13 @@ export const generarPDFFinanciero = (datos: any) => {
       doc.rect(marginLeft, yPos - 1, barWidth, 4)
       
       // Barra de progreso
-      doc.setFillColor(59, 130, 246)
+      doc.setFillColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
       doc.rect(marginLeft, yPos - 1, barWidth * progress, 4, 'F')
       
       // Porcentaje
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(9)
-      doc.setTextColor(59, 130, 246)
+      doc.setTextColor(hexToRgb(colorTema)[0], hexToRgb(colorTema)[1], hexToRgb(colorTema)[2])
       doc.text(`${prop.porcentaje_avance.toFixed(1)}%`, marginLeft + barWidth + 5, yPos + 1)
       
       yPos += 7
@@ -514,7 +592,7 @@ export const generarPDFFinanciero = (datos: any) => {
 }
 
 // Función específica para reporte de pagos
-export const generarPDFPagos = (datos: any[]) => {
+export const generarPDFPagos = (datos: any[], config: Partial<PDFConfig> = {}) => {
   return generarPDF({
     titulo: 'Historial de Pagos',
     subtitulo: `Total de pagos: ${datos.length}`,
@@ -526,12 +604,12 @@ export const generarPDFPagos = (datos: any[]) => {
       { header: 'Método', dataKey: 'metodo_pago' }
     ],
     datos,
-    orientacion: 'landscape'
+    ...config
   })
 }
 
 // Función específica para reporte avanzado de miembros
-export const generarPDFMiembros = (datos: any[]) => {
+export const generarPDFMiembros = (datos: any[], config: Partial<PDFConfig> = {}) => {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -851,11 +929,18 @@ export const generarPDFMiembros = (datos: any[]) => {
 }
 
 // Función específica para reporte avanzado de votos
-export const generarPDFVotos = (datos: any[]) => {
+export const generarPDFVotos = (datos: any[], config: Partial<PDFConfig> = {}) => {
+  const {
+    incluirLogo = true,
+    colorTema = '#3B82F6',
+    incluirResumen = true,
+    orientacion = 'portrait',
+    formato = 'a4'
+  } = config
   const doc = new jsPDF({
-    orientation: 'portrait',
+    orientation: orientacion,
     unit: 'mm',
-    format: 'a4'
+    format: formato
   })
 
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -881,13 +966,18 @@ export const generarPDFVotos = (datos: any[]) => {
     const minSpaceRequired = 25 // Espacio mínimo requerido al final de página
     if (yPos + neededSpace > pageHeight - minSpaceRequired) {
       addNewPage()
+      // Asegurar que hay suficiente espacio después de la nueva página
+      if (yPos + neededSpace > pageHeight - minSpaceRequired) {
+        // Si aún no hay espacio suficiente, forzar otra página
+        addNewPage()
+      }
     }
   }
 
   // Función para agregar sección con título
   const addSectionTitle = (titulo: string, forceNewPage: boolean = false) => {
     const titleSpace = 15
-    if (forceNewPage) {
+    if (forceNewPage || yPos + titleSpace > pageHeight - 25) {
       addNewPage()
     } else {
       ensureSpace(titleSpace)
@@ -905,6 +995,22 @@ export const generarPDFVotos = (datos: any[]) => {
     yPos += 10
   }
 
+  // Función para verificar si una tabla cabe en la página actual
+  const canFitTable = (estimatedRows: number, rowHeight: number = 8) => {
+    const availableSpace = pageHeight - yPos - 25 // 25px de margen inferior
+    const neededSpace = estimatedRows * rowHeight
+    return availableSpace >= neededSpace
+  }
+
+  // Función para agregar espacio entre secciones
+  const addSectionSpacing = (spacing: number = 5) => {
+    yPos += spacing
+    // Si el espaciado hace que nos acerquemos al final, verificar espacio
+    if (yPos > pageHeight - 30) {
+      addNewPage()
+    }
+  }
+
   // Calcular métricas avanzadas
   const totalVotos = datos.length
   const votosActivos = datos.filter(v => v.estado === 'activo').length
@@ -916,30 +1022,85 @@ export const generarPDFVotos = (datos: any[]) => {
   const promedioVoto = totalVotos > 0 ? totalComprometido / totalVotos : 0
   const porcentajeCumplimiento = totalComprometido > 0 ? (totalRecaudado / totalComprometido) * 100 : 0
 
-  // Agrupar por propósito
+  // Calcular métricas adicionales importantes
+  const hoy = new Date()
+  const proximos7Dias = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const votosProximosVencer = datos.filter(v => {
+    if (!v.fecha_limite || v.estado !== 'activo') return false
+    const fechaLimite = new Date(v.fecha_limite)
+    return fechaLimite >= hoy && fechaLimite <= proximos7Dias
+  }).length
+
+  const votosMayorRecaudacion = datos
+    .filter(v => v.recaudado > 0)
+    .sort((a, b) => b.recaudado - a.recaudado)
+    .slice(0, 5)
+
+  const votosMayorPendiente = datos
+    .filter(v => (v.monto_total - v.recaudado) > 0)
+    .sort((a, b) => (b.monto_total - b.recaudado) - (a.monto_total - a.recaudado))
+    .slice(0, 5)
+
+  // Distribución por rangos de montos
+  const rangosMontos = {
+    pequenos: datos.filter(v => (v.monto_total || 0) < 500000).length,
+    medianos: datos.filter(v => (v.monto_total || 0) >= 500000 && (v.monto_total || 0) < 2000000).length,
+    grandes: datos.filter(v => (v.monto_total || 0) >= 2000000).length
+  }
+
+  // Agrupar por propósito con más detalles
   const propositosMap = new Map()
   datos.forEach(voto => {
     const prop = voto.proposito || 'Sin propósito'
     if (!propositosMap.has(prop)) {
-      propositosMap.set(prop, { count: 0, comprometido: 0, recaudado: 0 })
+      propositosMap.set(prop, { 
+        count: 0, 
+        comprometido: 0, 
+        recaudado: 0,
+        miembros: new Set(),
+        completados: 0,
+        activos: 0,
+        vencidos: 0
+      })
     }
     const data = propositosMap.get(prop)
     data.count++
     data.comprometido += voto.monto_total || 0
     data.recaudado += voto.recaudado || 0
+    data.miembros.add(voto.miembro_nombre)
+    if (voto.estado === 'completado') data.completados++
+    if (voto.estado === 'activo') data.activos++
+    if (voto.estado === 'vencido') data.vencidos++
   })
   const analisisPropositos = Array.from(propositosMap.entries()).map(([nombre, data]) => ({
     nombre,
     votos_count: data.count,
+    miembros_unicos: data.miembros.size,
     total_comprometido: data.comprometido,
     total_recaudado: data.recaudado,
-    porcentaje_avance: data.comprometido > 0 ? (data.recaudado / data.comprometido) * 100 : 0
+    porcentaje_avance: data.comprometido > 0 ? (data.recaudado / data.comprometido) * 100 : 0,
+    completados: data.completados,
+    activos: data.activos,
+    vencidos: data.vencidos
   })).sort((a, b) => b.total_comprometido - a.total_comprometido)
 
   // PORTADA
+  if (incluirLogo) {
+    // Logo
+    doc.setFillColor(colorTema)
+    doc.circle(pageWidth / 2, 25, 12, 'F')
+    
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(16)
+    doc.setTextColor(255, 255, 255)
+    doc.text('IPUC', pageWidth / 2, 28, { align: 'center' })
+    
+    yPos = 50
+  }
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(28)
-  doc.setTextColor(59, 130, 246)
+  doc.setTextColor(colorTema)
   doc.text('REPORTE DE', pageWidth / 2, yPos, { align: 'center' })
   
   yPos += 12
@@ -976,6 +1137,8 @@ export const generarPDFVotos = (datos: any[]) => {
     { label: 'Total de Votos', valor: totalVotos, color: [59, 130, 246] },
     { label: 'Votos Activos', valor: votosActivos, color: [34, 197, 94] },
     { label: 'Votos Completados', valor: votosCompletados, color: [251, 146, 60] },
+    { label: 'Votos Vencidos', valor: votosVencidos, color: [239, 68, 68] },
+    { label: 'Próximos a Vencer (7 días)', valor: votosProximosVencer, color: [245, 158, 11] },
     { label: 'Total Comprometido', valor: `$${totalComprometido.toLocaleString('es-CO')}`, color: [168, 85, 247] }
   ]
 
@@ -1000,37 +1163,95 @@ export const generarPDFVotos = (datos: any[]) => {
     yPos += 16
   })
 
-  yPos += 5
+  addSectionSpacing(5)
 
-  // SECCIÓN 2: MÉTRICAS OPERATIVAS
-  addSectionTitle('Metricas Operativas')
+  // SECCIÓN 2: VOTOS PRÓXIMOS A VENCER (Información Crítica)
+  if (votosProximosVencer > 0) {
+    addSectionTitle('Votos Proximos a Vencer (7 dias)')
 
-  const metricasData = [
-    ['Promedio por Voto', `$${promedioVoto.toLocaleString('es-CO')}`],
-    ['Total Recaudado', `$${totalRecaudado.toLocaleString('es-CO')}`],
-    ['Total Pendiente', `$${totalPendiente.toLocaleString('es-CO')}`],
-    ['Porcentaje Cumplimiento', `${porcentajeCumplimiento.toFixed(1)}%`],
-    ['Votos Vencidos', votosVencidos],
-    ['Propositos Diferentes', analisisPropositos.length]
+    const votosUrgentes = datos
+      .filter(v => {
+        if (!v.fecha_limite || v.estado !== 'activo') return false
+        const fechaLimite = new Date(v.fecha_limite)
+        return fechaLimite >= hoy && fechaLimite <= proximos7Dias
+      })
+      .sort((a, b) => new Date(a.fecha_limite).getTime() - new Date(b.fecha_limite).getTime())
+      .slice(0, 5)
+
+    votosUrgentes.forEach((voto, idx) => {
+      ensureSpace(12)
+      
+      // Fondo de alerta
+      doc.setFillColor(255, 243, 224)
+      doc.setDrawColor(251, 146, 60)
+      doc.setLineWidth(0.5)
+      doc.roundedRect(marginLeft, yPos - 2, contentWidth, 10, 1, 1, 'FD')
+
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(31, 41, 55)
+      doc.text(`${idx + 1}. ${voto.proposito || 'Sin propósito'}`, marginLeft + 3, yPos + 3)
+      
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100)
+      const diasRestantes = Math.ceil((new Date(voto.fecha_limite).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+      doc.text(
+        `${voto.miembro_nombre} | $${((voto.monto_total || 0) - (voto.recaudado || 0)).toLocaleString('es-CO')} pendiente | Vence en ${diasRestantes} días`,
+        marginLeft + 3,
+        yPos + 7
+      )
+      
+      yPos += 12
+    })
+
+    addSectionSpacing(5)
+  }
+
+  // SECCIÓN 3: DISTRIBUCIÓN POR RANGOS DE MONTOS
+  addSectionTitle('Distribucion por Rangos de Montos')
+
+  const distribucionMontos = [
+    [`Votos Pequeños (< $500K)`, rangosMontos.pequenos, rangosMontos.pequenos / totalVotos],
+    [`Votos Medianos ($500K - $2M)`, rangosMontos.medianos, rangosMontos.medianos / totalVotos],
+    [`Votos Grandes (> $2M)`, rangosMontos.grandes, rangosMontos.grandes / totalVotos]
   ]
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
   doc.setTextColor(50)
 
-  metricasData.forEach(([label, valor]) => {
-    ensureSpace(9)
+  distribucionMontos.forEach(([label, cantidad, porcentaje]) => {
+    ensureSpace(14)
     doc.text(label.toString(), marginLeft + 2, yPos)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.text(valor.toString(), pageWidth - marginLeft - 2, yPos, { align: 'right' })
-    doc.setFont('helvetica', 'normal')
-    yPos += 9
+    doc.text(cantidad.toString(), marginLeft + 80, yPos)
+    
+    // Barra de progreso
+    const barWidth = contentWidth - 100
+    const progress = porcentaje as number
+    
+    // Fondo de barra
+    doc.setDrawColor(200)
+    doc.setLineWidth(0.3)
+    doc.rect(marginLeft + 90, yPos - 1, barWidth, 4)
+    
+    // Barra de progreso
+    doc.setFillColor(59, 130, 246)
+    doc.rect(marginLeft + 90, yPos - 1, barWidth * progress, 4, 'F')
+    
+    // Porcentaje
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(59, 130, 246)
+    doc.text(`${(porcentaje as number * 100).toFixed(1)}%`, marginLeft + 90 + barWidth + 5, yPos + 1)
+    
+    yPos += 10
   })
 
-  yPos += 5
+  addSectionSpacing(5)
 
-  // SECCIÓN 3: ESTADO DE VOTOS
+  // SECCIÓN 4: ESTADO DE VOTOS
   addSectionTitle('Estado de Votos')
 
   const estadoVotos = [
@@ -1071,9 +1292,9 @@ export const generarPDFVotos = (datos: any[]) => {
     yPos += 10
   })
 
-  yPos += 5
+  addSectionSpacing(5)
 
-  // SECCIÓN 4: ANÁLISIS POR PROPÓSITOS
+  // SECCIÓN 5: ANÁLISIS POR PROPÓSITOS
   if (analisisPropositos.length > 0) {
     addSectionTitle('Analisis por Propositos')
 
@@ -1126,12 +1347,12 @@ export const generarPDFVotos = (datos: any[]) => {
       
       yPos += 6
 
-      // Información adicional
+      // Información adicional más detallada
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(8)
       doc.setTextColor(100)
       doc.text(
-        `${prop.votos_count} votos | Recaudado: $${prop.total_recaudado.toLocaleString('es-CO')}`,
+        `${prop.votos_count} votos | ${prop.miembros_unicos} miembros | Recaudado: $${prop.total_recaudado.toLocaleString('es-CO')} | ${prop.completados} completados`,
         marginLeft,
         yPos
       )
@@ -1148,40 +1369,158 @@ export const generarPDFVotos = (datos: any[]) => {
     }
   }
 
-  yPos += 5
+  addSectionSpacing(5)
 
-  // SECCIÓN 5: LISTA DETALLADA DE VOTOS - Forzar nueva página para tabla grande
+  // SECCIÓN 6: TOP VOTOS POR RECAUDACIÓN
+  if (votosMayorRecaudacion.length > 0) {
+    addSectionTitle('Top Votos por Recaudacion')
+
+    votosMayorRecaudacion.forEach((voto, idx) => {
+      ensureSpace(10)
+      
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(34, 197, 94)
+      doc.text(`${idx + 1}.`, marginLeft + 2, yPos + 2)
+      
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(31, 41, 55)
+      doc.text(voto.proposito || 'Sin propósito', marginLeft + 10, yPos + 2)
+      
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(34, 197, 94)
+      doc.text(`$${voto.recaudado.toLocaleString('es-CO')}`, pageWidth - marginLeft - 2, yPos + 2, { align: 'right' })
+      
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100)
+      doc.text(`${voto.miembro_nombre} | ${voto.estado}`, marginLeft + 10, yPos + 6)
+      
+      yPos += 10
+    })
+
+    addSectionSpacing(5)
+  }
+
+  // SECCIÓN 7: VOTOS CON MAYOR PENDIENTE
+  if (votosMayorPendiente.length > 0) {
+    addSectionTitle('Votos con Mayor Pendiente')
+
+    votosMayorPendiente.forEach((voto, idx) => {
+      ensureSpace(10)
+      
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(239, 68, 68)
+      doc.text(`${idx + 1}.`, marginLeft + 2, yPos + 2)
+      
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9)
+      doc.setTextColor(31, 41, 55)
+      doc.text(voto.proposito || 'Sin propósito', marginLeft + 10, yPos + 2)
+      
+      const pendiente = (voto.monto_total || 0) - (voto.recaudado || 0)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(9)
+      doc.setTextColor(239, 68, 68)
+      doc.text(`$${pendiente.toLocaleString('es-CO')}`, pageWidth - marginLeft - 2, yPos + 2, { align: 'right' })
+      
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(100)
+      doc.text(`${voto.miembro_nombre} | ${voto.estado}`, marginLeft + 10, yPos + 6)
+      
+      yPos += 10
+    })
+
+    addSectionSpacing(5)
+  }
+
+  // SECCIÓN 8: MÉTRICAS OPERATIVAS (Detalles Adicionales)
+  addSectionTitle('Metricas Operativas Detalladas')
+
+  const metricasData = [
+    ['Promedio por Voto', `$${promedioVoto.toLocaleString('es-CO')}`],
+    ['Total Recaudado', `$${totalRecaudado.toLocaleString('es-CO')}`],
+    ['Total Pendiente', `$${totalPendiente.toLocaleString('es-CO')}`],
+    ['Porcentaje Cumplimiento General', `${porcentajeCumplimiento.toFixed(1)}%`],
+    ['Votos Vencidos', votosVencidos],
+    ['Propositos Diferentes', analisisPropositos.length],
+    ['Miembros Participantes', new Set(datos.map(v => v.miembro_nombre)).size],
+    ['Votos con Mayor Recaudación', votosMayorRecaudacion.length]
+  ]
+
+  // Verificar si las métricas caben en la página actual
+  if (!canFitTable(metricasData.length, 9)) {
+    addNewPage()
+  }
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(50)
+
+  metricasData.forEach(([label, valor]) => {
+    ensureSpace(9)
+    doc.text(label.toString(), marginLeft + 2, yPos)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.text(valor.toString(), pageWidth - marginLeft - 2, yPos, { align: 'right' })
+    doc.setFont('helvetica', 'normal')
+    yPos += 9
+  })
+
+  addSectionSpacing(5)
+
+  // SECCIÓN 9: LISTA DETALLADA DE VOTOS - Forzar nueva página para tabla grande
   addNewPage()
   addSectionTitle('Lista Detallada de Votos', true)
 
-  // Tabla con autoTable
-  const tablaData = datos.map((voto: any) => [
-    voto.proposito || 'Sin propósito',
-    voto.miembro_nombre,
-    `$${voto.monto_total?.toLocaleString('es-CO') || 0}`,
-    `$${voto.recaudado?.toLocaleString('es-CO') || 0}`,
-    `$${voto.pendiente?.toLocaleString('es-CO') || 0}`,
-    voto.estado || 'activo',
-    voto.fecha_limite
-  ])
+  // Tabla con autoTable mejorada
+  const tablaData = datos.map((voto: any) => {
+    const pendiente = (voto.monto_total || 0) - (voto.recaudado || 0)
+    const porcentajeIndividual = voto.monto_total > 0 ? ((voto.recaudado || 0) / voto.monto_total) * 100 : 0
+    
+    return [
+      voto.proposito || 'Sin propósito',
+      voto.miembro_nombre,
+      `$${voto.monto_total?.toLocaleString('es-CO') || 0}`,
+      `$${voto.recaudado?.toLocaleString('es-CO') || 0}`,
+      `$${pendiente.toLocaleString('es-CO')}`,
+      `${porcentajeIndividual.toFixed(1)}%`,
+      voto.estado || 'activo',
+      voto.fecha_limite ? new Date(voto.fecha_limite).toLocaleDateString('es-CO') : 'Sin fecha'
+    ]
+  })
 
   autoTable(doc, {
     startY: yPos,
-    head: [['Propósito', 'Miembro', 'Monto Total', 'Recaudado', 'Pendiente', 'Estado', 'Fecha Límite']],
+    head: [['Propósito', 'Miembro', 'Monto Total', 'Recaudado', 'Pendiente', '% Cumpl.', 'Estado', 'Fecha Límite']],
     body: tablaData,
     theme: 'striped',
     headStyles: {
       fillColor: [59, 130, 246],
       textColor: 255,
       fontStyle: 'bold',
-      fontSize: 9
+      fontSize: 8
     },
     bodyStyles: {
-      fontSize: 8,
+      fontSize: 7,
       textColor: 50
     },
     alternateRowStyles: {
       fillColor: [245, 247, 250]
+    },
+    columnStyles: {
+      0: { cellWidth: 35 }, // Propósito
+      1: { cellWidth: 30 }, // Miembro
+      2: { halign: 'right' }, // Monto Total
+      3: { halign: 'right' }, // Recaudado
+      4: { halign: 'right' }, // Pendiente
+      5: { halign: 'center' }, // % Cumplimiento
+      6: { halign: 'center' }, // Estado
+      7: { halign: 'center', cellWidth: 25 } // Fecha Límite
     },
     margin: { left: 14, right: 14 },
     didDrawPage: (data) => {
@@ -1224,16 +1563,24 @@ export const generarPDFVotos = (datos: any[]) => {
 // ============================================================
 // EXPORTACIÓN: Reporte de Ventas por Producto
 // ============================================================
-export const generarPDFVentas = (datos: any[]) => {
+export const generarPDFVentas = (datos: any[], config: Partial<PDFConfig> = {}) => {
   if (!datos || datos.length === 0) {
     return { success: false, mensaje: 'No hay datos de ventas para exportar' }
   }
 
   try {
+    const {
+      incluirLogo = true,
+      colorTema = '#3B82F6',
+      incluirResumen = true,
+      orientacion = 'landscape',
+      formato = 'a4'
+    } = config
+
     const doc = new jsPDF({
-      orientation: 'landscape',
+      orientation: orientacion,
       unit: 'mm',
-      format: 'a4'
+      format: formato
     })
 
     // Configuración
@@ -1243,11 +1590,31 @@ export const generarPDFVentas = (datos: any[]) => {
     const marginRight = 14
     const contentWidth = pageWidth - marginLeft - marginRight
 
-    // Header
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(18)
-    doc.setTextColor(31, 41, 55)
-    doc.text('Reporte de Ventas por Producto', marginLeft, 20)
+    let yPos = 20
+
+    // Logo y encabezado mejorado
+    if (incluirLogo) {
+      // Dibujar logo simple (círculo con iniciales)
+      doc.setFillColor(colorTema)
+      doc.circle(marginLeft + 8, yPos + 8, 8, 'F')
+      
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(12)
+      doc.setTextColor(255, 255, 255)
+      doc.text('IPUC', marginLeft + 8, yPos + 12, { align: 'center' })
+      
+      // Título
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.setTextColor(31, 41, 55)
+      doc.text('Reporte de Ventas por Producto', marginLeft + 25, yPos + 8)
+    } else {
+      // Header sin logo
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(18)
+      doc.setTextColor(31, 41, 55)
+      doc.text('Reporte de Ventas por Producto', marginLeft, yPos + 8)
+    }
 
     // Subtítulo
     doc.setFont('helvetica', 'normal')
@@ -1260,12 +1627,14 @@ export const generarPDFVentas = (datos: any[]) => {
       hour: '2-digit',
       minute: '2-digit'
     })
-    doc.text(`Generado: ${fecha}`, marginLeft, 28)
-    doc.text('IPUC Contabilidad', pageWidth - marginRight, 28, { align: 'right' })
+    doc.text(`Generado: ${fecha}`, marginLeft, yPos + 18)
+    doc.text('IPUC Contabilidad', pageWidth - marginRight, yPos + 18, { align: 'right' })
 
     // Línea separadora
     doc.setDrawColor(200)
-    doc.line(marginLeft, 32, pageWidth - marginRight, 32)
+    doc.line(marginLeft, yPos + 22, pageWidth - marginRight, yPos + 22)
+
+    yPos += 30
 
     // Calcular totales
     const totalUnidades = datos.reduce((sum, p) => sum + (p.unidades_vendidas || 0), 0)
@@ -1273,38 +1642,39 @@ export const generarPDFVentas = (datos: any[]) => {
     const totalPendiente = datos.reduce((sum, p) => sum + (p.total_pendiente || 0), 0)
     const totalVentas = datos.reduce((sum, p) => sum + (p.cantidad_ventas || 0), 0)
 
-    // Resumen ejecutivo en cards
-    let yPos = 40
-    const cardWidth = (contentWidth - 10) / 4
-    const cardHeight = 20
+    // Resumen ejecutivo en cards (solo si incluirResumen es true)
+    if (incluirResumen) {
+      const cardWidth = (contentWidth - 10) / 4
+      const cardHeight = 20
 
-    const cards = [
-      { label: 'Productos', value: datos.length.toString(), color: [59, 130, 246] },
-      { label: 'Unidades Vendidas', value: totalUnidades.toString(), color: [16, 185, 129] },
-      { label: 'Total Recaudado', value: `$${totalRecaudado.toLocaleString('es-CO')}`, color: [34, 197, 94] },
-      { label: 'Pendiente', value: `$${totalPendiente.toLocaleString('es-CO')}`, color: [251, 146, 60] }
-    ]
+      const cards = [
+        { label: 'Productos', value: datos.length.toString(), color: hexToRgb(colorTema) },
+        { label: 'Unidades Vendidas', value: totalUnidades.toString(), color: [16, 185, 129] },
+        { label: 'Total Recaudado', value: `$${totalRecaudado.toLocaleString('es-CO')}`, color: [34, 197, 94] },
+        { label: 'Pendiente', value: `$${totalPendiente.toLocaleString('es-CO')}`, color: [251, 146, 60] }
+      ]
 
-    cards.forEach((card, index) => {
-      const xPos = marginLeft + (cardWidth + 2.5) * index
-      
-      // Fondo del card
-      doc.setFillColor(card.color[0], card.color[1], card.color[2])
-      doc.roundedRect(xPos, yPos, cardWidth, cardHeight, 2, 2, 'F')
-      
-      // Label
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(9)
-      doc.setTextColor(255, 255, 255)
-      doc.text(card.label, xPos + cardWidth / 2, yPos + 8, { align: 'center' })
-      
-      // Value
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(12)
-      doc.text(card.value, xPos + cardWidth / 2, yPos + 15, { align: 'center' })
-    })
+      cards.forEach((card, index) => {
+        const xPos = marginLeft + (cardWidth + 2.5) * index
+        
+        // Fondo del card
+        doc.setFillColor(card.color[0], card.color[1], card.color[2])
+        doc.roundedRect(xPos, yPos, cardWidth, cardHeight, 2, 2, 'F')
+        
+        // Label
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9)
+        doc.setTextColor(255, 255, 255)
+        doc.text(card.label, xPos + cardWidth / 2, yPos + 8, { align: 'center' })
+        
+        // Value
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(12)
+        doc.text(card.value, xPos + cardWidth / 2, yPos + 15, { align: 'center' })
+      })
 
-    yPos += cardHeight + 10
+      yPos += cardHeight + 10
+    }
 
     // Tabla de ventas por producto
     autoTable(doc, {
@@ -1321,7 +1691,7 @@ export const generarPDFVentas = (datos: any[]) => {
       ]),
       theme: 'striped',
       headStyles: {
-        fillColor: [59, 130, 246],
+        fillColor: hexToRgb(colorTema),
         textColor: 255,
         fontStyle: 'bold',
         fontSize: 10

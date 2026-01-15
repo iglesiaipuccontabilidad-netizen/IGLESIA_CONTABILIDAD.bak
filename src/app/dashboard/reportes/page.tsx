@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { FileText, Download, FileSpreadsheet, TrendingUp, ShoppingCart, Loader2 } from 'lucide-react'
+import { FileText, Download, FileSpreadsheet, TrendingUp, ShoppingCart, Loader2, Settings, X } from 'lucide-react'
 import ReportFilter, { FilterState } from '@/components/reportes/ReportFilter'
 import ReportTable from '@/components/reportes/ReportTable'
 import ReportActions from '@/components/reportes/ReportActions'
@@ -52,6 +52,14 @@ export default function ReportesPage() {
   })
   const [exportingPDF, setExportingPDF] = useState(false)
   const [exportingExcel, setExportingExcel] = useState(false)
+  const [showPDFOptions, setShowPDFOptions] = useState(false)
+  const [pdfConfig, setPdfConfig] = useState({
+    incluirLogo: true,
+    colorTema: '#3B82F6',
+    incluirResumen: true,
+    orientacion: 'portrait' as 'portrait' | 'landscape',
+    formato: 'a4' as 'a4' | 'letter'
+  })
   const { toasts, removeToast, success, error: showError } = useToast()
 
   // Hooks de datos
@@ -204,9 +212,8 @@ export default function ReportesPage() {
 
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={handleExportPDF}
+                onClick={() => setShowPDFOptions(true)}
                 disabled={
-                  exportingPDF ||
                   (tipoReporte === 'votos' && votosData.loading) ||
                   (tipoReporte === 'pagos' && pagosData.loading) ||
                   (tipoReporte === 'miembros' && miembrosData.loading) ||
@@ -215,12 +222,8 @@ export default function ReportesPage() {
                 }
                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md"
               >
-                {exportingPDF ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                <span className="text-sm font-medium">{exportingPDF ? 'Exportando...' : 'Exportar PDF'}</span>
+                <Download className="h-4 w-4" />
+                <span className="text-sm font-medium">Configurar PDF</span>
               </button>
               <button
                 onClick={handleExportExcel}
@@ -250,6 +253,9 @@ export default function ReportesPage() {
           <ReportFilter onFilterChange={setFiltros} />
         </div>
 
+        {/* Resumen rápido */}
+        {renderResumenRapido()}
+
         {/* Contenido del reporte */}
         <div className="p-6">
           {renderReporteContent()}
@@ -258,8 +264,189 @@ export default function ReportesPage() {
 
       {/* Toast Container para notificaciones */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      {/* Modal de opciones de PDF */}
+      {showPDFOptions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">Configurar PDF</h3>
+              <button
+                onClick={() => setShowPDFOptions(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={pdfConfig.incluirLogo}
+                    onChange={(e) => setPdfConfig(prev => ({ ...prev, incluirLogo: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Incluir logo IPUC</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    checked={pdfConfig.incluirResumen}
+                    onChange={(e) => setPdfConfig(prev => ({ ...prev, incluirResumen: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Incluir resumen</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Color del tema
+                </label>
+                <select
+                  value={pdfConfig.colorTema}
+                  onChange={(e) => setPdfConfig(prev => ({ ...prev, colorTema: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="#3B82F6">Azul</option>
+                  <option value="#10B981">Verde</option>
+                  <option value="#F59E0B">Ámbar</option>
+                  <option value="#EF4444">Rojo</option>
+                  <option value="#8B5CF6">Púrpura</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Orientación
+                </label>
+                <select
+                  value={pdfConfig.orientacion}
+                  onChange={(e) => setPdfConfig(prev => ({ ...prev, orientacion: e.target.value as 'portrait' | 'landscape' }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="portrait">Vertical</option>
+                  <option value="landscape">Horizontal</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Formato
+                </label>
+                <select
+                  value={pdfConfig.formato}
+                  onChange={(e) => setPdfConfig(prev => ({ ...prev, formato: e.target.value as 'a4' | 'letter' }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="a4">A4</option>
+                  <option value="letter">Carta</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-slate-200">
+              <button
+                onClick={() => setShowPDFOptions(false)}
+                className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleExportPDF}
+                disabled={exportingPDF}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                {exportingPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Exportando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar PDF
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+
+  // Función para renderizar resumen rápido
+  function renderResumenRapido() {
+    switch (tipoReporte) {
+      case 'votos':
+        const totalVotos = votosData.data.length
+        const totalRecaudado = votosData.data.reduce((sum, v) => sum + Number(v.recaudado), 0)
+        const totalPendiente = votosData.data.reduce((sum, v) => sum + Number(v.pendiente), 0)
+        return (
+          <div className="px-6 py-4 bg-blue-50 border-b border-slate-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{totalVotos}</div>
+                <div className="text-sm text-blue-600">Total Votos</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">${totalRecaudado.toLocaleString()}</div>
+                <div className="text-sm text-green-600">Recaudado</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">${totalPendiente.toLocaleString()}</div>
+                <div className="text-sm text-orange-600">Pendiente</div>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'pagos':
+        const totalPagos = pagosData.data.length
+        const sumaPagos = pagosData.data.reduce((sum, p) => sum + Number(p.monto), 0)
+        return (
+          <div className="px-6 py-4 bg-green-50 border-b border-slate-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{totalPagos}</div>
+                <div className="text-sm text-green-600">Total Pagos</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">${sumaPagos.toLocaleString()}</div>
+                <div className="text-sm text-green-600">Monto Total</div>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'miembros':
+        const totalMiembros = miembrosData.data.length
+        const totalComprometido = miembrosData.data.reduce((sum, m) => sum + Number(m.total_comprometido), 0)
+        return (
+          <div className="px-6 py-4 bg-purple-50 border-b border-slate-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">{totalMiembros}</div>
+                <div className="text-sm text-purple-600">Total Miembros</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">${totalComprometido.toLocaleString()}</div>
+                <div className="text-sm text-purple-600">Comprometido Total</div>
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
 
   // Función para renderizar el contenido según el tipo de reporte
   function renderReporteContent() {
@@ -268,15 +455,16 @@ export default function ReportesPage() {
         return (
           <ReportTable
             columns={[
-              { key: 'miembro_nombre', label: 'Miembro' },
-              { key: 'proposito', label: 'Propósito' },
-              { key: 'monto_total', label: 'Monto Total', format: (v) => `$${Number(v).toLocaleString()}` },
-              { key: 'recaudado', label: 'Recaudado', format: (v) => `$${Number(v).toLocaleString()}` },
-              { key: 'pendiente', label: 'Pendiente', format: (v) => `$${Number(v).toLocaleString()}` },
-              { key: 'estado', label: 'Estado' }
+              { key: 'miembro_nombre', label: 'Miembro', sortable: true },
+              { key: 'proposito', label: 'Propósito', sortable: true },
+              { key: 'monto_total', label: 'Monto Total', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true },
+              { key: 'recaudado', label: 'Recaudado', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true },
+              { key: 'pendiente', label: 'Pendiente', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true },
+              { key: 'estado', label: 'Estado', sortable: true }
             ]}
             data={votosData.data}
             loading={votosData.loading}
+            error={votosData.error}
           />
         )
 
@@ -287,14 +475,15 @@ export default function ReportesPage() {
         return (
           <ReportTable
             columns={[
-              { key: 'miembro_nombre', label: 'Miembro' },
-              { key: 'voto_proposito', label: 'Propósito' },
-              { key: 'monto', label: 'Monto', format: (v) => `$${Number(v).toLocaleString()}` },
-              { key: 'fecha_pago', label: 'Fecha' },
-              { key: 'metodo_pago', label: 'Método' }
+              { key: 'miembro_nombre', label: 'Miembro', sortable: true },
+              { key: 'voto_proposito', label: 'Propósito', sortable: true },
+              { key: 'monto', label: 'Monto', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true },
+              { key: 'fecha_pago', label: 'Fecha', sortable: true },
+              { key: 'metodo_pago', label: 'Método', sortable: true }
             ]}
             data={pagosData.data}
             loading={pagosData.loading}
+            error={pagosData.error}
           />
         )
 
@@ -302,15 +491,16 @@ export default function ReportesPage() {
         return (
           <ReportTable
             columns={[
-              { key: 'nombre_completo', label: 'Nombre' },
-              { key: 'email', label: 'Email' },
-              { key: 'votos_activos', label: 'Votos Activos' },
-              { key: 'total_comprometido', label: 'Comprometido', format: (v) => `$${Number(v).toLocaleString()}` },
-              { key: 'total_pagado', label: 'Pagado', format: (v) => `$${Number(v).toLocaleString()}` },
-              { key: 'total_pendiente', label: 'Pendiente', format: (v) => `$${Number(v).toLocaleString()}` }
+              { key: 'nombre_completo', label: 'Nombre', sortable: true },
+              { key: 'email', label: 'Email', sortable: true },
+              { key: 'votos_activos', label: 'Votos Activos', sortable: true },
+              { key: 'total_comprometido', label: 'Comprometido', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true },
+              { key: 'total_pagado', label: 'Pagado', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true },
+              { key: 'total_pendiente', label: 'Pendiente', format: (v) => `$${Number(v).toLocaleString()}`, sortable: true }
             ]}
             data={miembrosData.data}
             loading={miembrosData.loading}
+            error={miembrosData.error}
           />
         )
 
@@ -371,6 +561,7 @@ export default function ReportesPage() {
   // Funciones de exportación
   async function handleExportPDF() {
     setExportingPDF(true)
+    setShowPDFOptions(false) // Cerrar modal
     try {
       const pdfModule = await importPDFGenerators()
 
@@ -387,7 +578,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFVotos(votosData.data)
+          resultado = pdfModule.generarPDFVotos(votosData.data, pdfConfig)
           break
 
         case 'ventas':
@@ -395,7 +586,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFVentas(ventasData.datos)
+          resultado = pdfModule.generarPDFVentas(ventasData.datos, pdfConfig)
           break
 
         case 'pagos':
@@ -403,7 +594,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFPagos(pagosData.data)
+          resultado = pdfModule.generarPDFPagos(pagosData.data, pdfConfig)
           break
 
         case 'miembros':
@@ -411,7 +602,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFMiembros(miembrosData.data)
+          resultado = pdfModule.generarPDFMiembros(miembrosData.data, pdfConfig)
           break
 
         case 'financiero':
@@ -419,7 +610,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFFinanciero(financieroData.data)
+          resultado = pdfModule.generarPDFFinanciero(financieroData.data, pdfConfig)
           break
 
         default:

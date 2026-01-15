@@ -34,24 +34,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mountedRef = useRef(true)
   const supabaseRef = useRef(getSupabaseBrowserClient())
 
-  // Cargar el rol del usuario - SIN CACHÉ para siempre obtener datos frescos
+  // Cargar el rol y estado del usuario - SIN CACHÉ para siempre obtener datos frescos
   const loadUserRole = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabaseRef.current
         .from('usuarios')
-        .select('rol')
+        .select('rol, estado')
         .eq('id', userId)
         .maybeSingle()
 
       if (error) {
-        console.error('Error cargando rol:', error)
-        return null
+        console.error('Error cargando rol y estado:', error)
+        return { rol: null, estado: null }
       }
 
-      return data?.rol || null
+      return { rol: data?.rol || null, estado: data?.estado || null }
     } catch (err) {
       console.error('Error en loadUserRole:', err)
-      return null
+      return { rol: null, estado: null }
     }
   }, [])
 
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user)
           
           // Cargar el rol y comités en paralelo
-          const [rol, comites] = await Promise.all([
+          const [userData, comites] = await Promise.all([
             loadUserRole(session.user.id),
             loadUserComites(session.user.id)
           ])
@@ -104,7 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setMember({
               id: session.user.id,
               email: session.user.email ?? null,
-              rol: rol
+              rol: userData.rol,
+              estado: userData.estado
             })
             setComitesUsuario(comites)
           }
@@ -133,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(session.user)
             
             // Refetch completo de datos frescos
-            const [rol, comites] = await Promise.all([
+            const [userData, comites] = await Promise.all([
               loadUserRole(session.user.id),
               loadUserComites(session.user.id)
             ])
@@ -142,7 +143,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setMember({
                 id: session.user.id,
                 email: session.user.email ?? null,
-                rol: rol
+                rol: userData.rol,
+                estado: userData.estado
               })
               setComitesUsuario(comites)
             }

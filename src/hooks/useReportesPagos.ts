@@ -27,6 +27,9 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Extraer las propiedades individuales del objeto filtros para evitar problemas de referencia
+  const { busqueda, fechaInicio, fechaFin, metodoPago, miembroId, propositoId } = filtros
+
   useEffect(() => {
     const fetchPagos = async () => {
       const supabase = createClient()
@@ -54,20 +57,20 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
           .order('fecha_pago', { ascending: false })
 
         // Aplicar filtros de fecha
-        if (filtros.fechaInicio) {
-          query = query.gte('fecha_pago', filtros.fechaInicio)
+        if (fechaInicio) {
+          query = query.gte('fecha_pago', fechaInicio)
         }
 
-        if (filtros.fechaFin) {
-          query = query.lte('fecha_pago', filtros.fechaFin)
+        if (fechaFin) {
+          query = query.lte('fecha_pago', fechaFin)
         }
 
-        if (filtros.metodoPago) {
-          query = query.eq('metodo_pago', filtros.metodoPago)
+        if (metodoPago) {
+          query = query.eq('metodo_pago', metodoPago)
         }
 
-        if (filtros.propositoId) {
-          query = query.eq('voto.proposito_id', filtros.propositoId)
+        if (propositoId) {
+          query = query.eq('voto.proposito_id', propositoId)
         }
 
         const { data: pagos, error: queryError } = await query
@@ -90,11 +93,11 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
 
         // Filtrar por búsqueda
         let resultado = pagosFormateados
-        if (filtros.busqueda) {
-          const busqueda = filtros.busqueda.toLowerCase()
+        if (busqueda) {
+          const busquedaLower = busqueda.toLowerCase()
           resultado = pagosFormateados.filter(pago =>
-            pago.miembro_nombre.toLowerCase().includes(busqueda) ||
-            pago.voto_proposito.toLowerCase().includes(busqueda)
+            pago.miembro_nombre.toLowerCase().includes(busquedaLower) ||
+            pago.voto_proposito.toLowerCase().includes(busquedaLower)
           )
         }
 
@@ -108,7 +111,7 @@ export function useReportesPagos(filtros: FiltrosPagos = {}) {
     }
 
     fetchPagos()
-  }, [filtros.busqueda, filtros.fechaInicio, filtros.fechaFin, filtros.metodoPago, filtros.miembroId, filtros.propositoId])
+  }, [busqueda, fechaInicio, fechaFin, metodoPago, miembroId, propositoId])
 
   return { data, loading, error }
 }

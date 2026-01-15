@@ -24,6 +24,9 @@ export function useReportesMiembros(filtros: FiltrosMiembros = {}) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Extraer las propiedades individuales del objeto filtros para evitar problemas de referencia
+  const { busqueda, estado } = filtros
+
   useEffect(() => {
     const fetchMiembros = async () => {
       const supabase = createClient()
@@ -50,8 +53,8 @@ export function useReportesMiembros(filtros: FiltrosMiembros = {}) {
           .order('nombres', { ascending: true })
 
         // Aplicar filtro de estado
-        if (filtros.estado) {
-          query = query.eq('estado', filtros.estado)
+        if (estado) {
+          query = query.eq('estado', estado)
         }
 
         const { data: miembros, error: queryError } = await query
@@ -89,11 +92,11 @@ export function useReportesMiembros(filtros: FiltrosMiembros = {}) {
 
         // Filtrar por búsqueda
         let resultado = miembrosFormateados
-        if (filtros.busqueda) {
-          const busqueda = filtros.busqueda.toLowerCase()
+        if (busqueda) {
+          const busquedaLower = busqueda.toLowerCase()
           resultado = miembrosFormateados.filter(miembro =>
-            miembro.nombre_completo.toLowerCase().includes(busqueda) ||
-            miembro.email.toLowerCase().includes(busqueda)
+            miembro.nombre_completo.toLowerCase().includes(busquedaLower) ||
+            miembro.email.toLowerCase().includes(busquedaLower)
           )
         }
 
@@ -107,7 +110,7 @@ export function useReportesMiembros(filtros: FiltrosMiembros = {}) {
     }
 
     fetchMiembros()
-  }, [filtros.busqueda, filtros.estado])
+  }, [busqueda, estado])
 
   return { data, loading, error }
 }

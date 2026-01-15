@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, Calendar, Filter } from 'lucide-react'
 import { usePropositos } from '@/hooks/usePropositos'
 
@@ -26,13 +26,32 @@ export default function ReportFilter({ onFilterChange }: ReportFilterProps) {
     miembroId: '',
     propositoId: ''
   })
+  const [isInitialMount, setIsInitialMount] = useState(true)
 
   const { propositos } = usePropositos()
 
+  // Aplicar filtros iniciales inmediatamente en el primer render
+  useEffect(() => {
+    if (isInitialMount) {
+      onFilterChange(localFilters)
+      setIsInitialMount(false)
+    }
+  }, [])
+
+  // Debounced filter application para cambios posteriores
+  useEffect(() => {
+    // Saltar el primer render ya que lo manejamos arriba
+    if (isInitialMount) return
+
+    const timeoutId = setTimeout(() => {
+      onFilterChange(localFilters)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timeoutId)
+  }, [localFilters, onFilterChange, isInitialMount])
+
   const handleChange = (key: keyof FilterState, value: string) => {
-    const newFilters = { ...localFilters, [key]: value }
-    setLocalFilters(newFilters)
-    onFilterChange(newFilters)
+    setLocalFilters(prev => ({ ...prev, [key]: value }))
   }
 
   const handleClear = () => {
@@ -45,6 +64,7 @@ export default function ReportFilter({ onFilterChange }: ReportFilterProps) {
       propositoId: ''
     }
     setLocalFilters(emptyFilters)
+    // Aplicar inmediatamente al limpiar
     onFilterChange(emptyFilters)
   }
 

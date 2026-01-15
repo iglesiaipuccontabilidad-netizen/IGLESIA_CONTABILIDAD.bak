@@ -1,23 +1,52 @@
 'use client'
 
-import { useState } from 'react'
-import { FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { FileText, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
 
 interface Column {
   key: string
   label: string
   format?: (value: any) => string
+  sortable?: boolean
 }
 
 interface ReportTableProps {
   columns: Column[]
   data: any[]
   loading?: boolean
+  error?: string | null
   itemsPerPage?: number
 }
 
-export default function ReportTable({ columns, data, loading = false, itemsPerPage = 10 }: ReportTableProps) {
+export default function ReportTable({ columns, data, loading = false, error = null, itemsPerPage = 10 }: ReportTableProps) {
   const [currentPage, setCurrentPage] = useState(1)
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  // Ordenar datos
+  const sortedData = useMemo(() => {
+    if (!sortColumn) return data
+
+    return [...data].sort((a, b) => {
+      const aVal = a[sortColumn]
+      const bVal = b[sortColumn]
+
+      // Manejar valores numéricos
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal
+      }
+
+      // Manejar strings
+      const aStr = String(aVal || '').toLowerCase()
+      const bStr = String(bVal || '').toLowerCase()
+
+      if (sortDirection === 'asc') {
+        return aStr.localeCompare(bStr)
+      } else {
+        return bStr.localeCompare(aStr)
+      }
+    })
+  }, [data, sortColumn, sortDirection])
 
   if (loading) {
     return (
@@ -30,7 +59,23 @@ export default function ReportTable({ columns, data, loading = false, itemsPerPa
     )
   }
 
-  if (data.length === 0) {
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <div className="inline-flex p-4 bg-red-100 rounded-full mb-4">
+          <FileText className="h-12 w-12 text-red-400" />
+        </div>
+        <h3 className="text-lg font-medium text-red-900 mb-2">
+          Error al cargar datos
+        </h3>
+        <p className="text-sm text-red-600">
+          {error}
+        </p>
+      </div>
+    )
+  }
+
+  if (sortedData.length === 0) {
     return (
       <div className="text-center py-16">
         <div className="inline-flex p-4 bg-slate-100 rounded-full mb-4">
@@ -46,11 +91,21 @@ export default function ReportTable({ columns, data, loading = false, itemsPerPa
     )
   }
 
+  const handleSort = (columnKey: string) => {
+    if (sortColumn === columnKey) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortColumn(columnKey)
+      setSortDirection('asc')
+    }
+    setCurrentPage(1) // Reset to first page when sorting
+  }
+
   // Calcular paginación
-  const totalPages = Math.ceil(data.length / itemsPerPage)
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const currentData = data.slice(startIndex, endIndex)
+  const currentData = sortedData.slice(startIndex, endIndex)
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)))
@@ -66,9 +121,26 @@ export default function ReportTable({ columns, data, loading = false, itemsPerPa
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                  className={`px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider ${
+                    column.sortable ? 'cursor-pointer hover:bg-slate-100 select-none' : ''
+                  }`}
+                  onClick={column.sortable ? () => handleSort(column.key) : undefined}
                 >
-                  {column.label}
+                  <div className="flex items-center gap-1">
+                    {column.label}
+                    {column.sortable && sortColumn === column.key && (
+                      sortDirection === 'asc' ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )
+                    )}
+                    {column.sortable && sortColumn !== column.key && (
+                      <div className="h-4 w-4 opacity-30">
+                        <ChevronUp className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>
@@ -107,7 +179,7 @@ export default function ReportTable({ columns, data, loading = false, itemsPerPa
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-6">
           <div className="text-sm text-slate-600">
-            Mostrando {startIndex + 1} a {Math.min(endIndex, data.length)} de {data.length} resultados
+            Mostrando {startIndex + 1} a {Math.min(endIndex, sortedData.length)} de {sortedData.length} resultados
           </div>
           <div className="flex items-center gap-2">
             <button
