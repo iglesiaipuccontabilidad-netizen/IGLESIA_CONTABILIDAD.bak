@@ -1,10 +1,51 @@
-'use server'
+    'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { Database } from '@/lib/database.types'
 
 type Tables = Database['public']['Tables']
+
+export async function getAllPropositos(): Promise<{
+  success: boolean;
+  data: Array<{ id: string; nombre: string; descripcion: string | null }> | null;
+  error: any | null;
+}> {
+  const supabase = await createClient()
+
+  try {
+    // Verificar autenticación
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('No autenticado')
+    }
+
+    const { data: userData } = await supabase
+      .from('usuarios')
+      .select('rol, estado')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData || (userData as any).estado !== 'activo') {
+      throw new Error('Usuario no autorizado')
+    }
+
+    // Obtener todos los propósitos
+    const { data: propositos, error: fetchError } = await supabase
+      .from('propositos')
+      .select('id, nombre, descripcion')
+      .order('nombre', { ascending: true })
+
+    if (fetchError) {
+      throw fetchError
+    }
+
+    return { success: true, data: propositos, error: null }
+  } catch (error) {
+    console.error('Error al obtener propósitos:', error)
+    return { success: false, data: null, error }
+  }
+}
 
 export async function deleteProposito(id: string): Promise<{
   success: boolean;

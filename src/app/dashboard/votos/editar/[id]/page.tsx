@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { getVotoById, updateVoto } from '@/app/actions/votos-actions'
+import { getAllPropositos } from '@/app/actions/propositos-actions'
 import type { VotoDetalle } from '@/types/votos'
 
 export default function EditarVotoPage() {
@@ -15,9 +16,11 @@ export default function EditarVotoPage() {
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [propositos, setPropositos] = useState<Array<{ id: string; nombre: string; descripcion: string | null }>>([])
 
   const [formData, setFormData] = useState({
-    proposito: '',
+    proposito_id: '',
+    proposito_personalizado: '',
     monto_total: '',
     fecha_limite: '',
     estado: 'activo'
@@ -25,6 +28,7 @@ export default function EditarVotoPage() {
 
   useEffect(() => {
     cargarVoto()
+    cargarPropositos()
   }, [votoId])
 
   const cargarVoto = async () => {
@@ -39,7 +43,8 @@ export default function EditarVotoPage() {
 
       setVoto(data)
       setFormData({
-        proposito: data.proposito || '',
+        proposito_id: data.proposito_id || '',
+        proposito_personalizado: data.proposito_id ? '' : (data.proposito || ''),
         monto_total: data.monto_total.toString(),
         fecha_limite: data.fecha_limite.split('T')[0],
         estado: data.estado
@@ -52,10 +57,30 @@ export default function EditarVotoPage() {
     }
   }
 
+  const cargarPropositos = async () => {
+    try {
+      const { data, error } = await getAllPropositos()
+      if (error) {
+        console.error('Error al cargar propósitos:', error)
+        return
+      }
+      if (data) {
+        setPropositos(data)
+      }
+    } catch (err) {
+      console.error('Error al cargar propósitos:', err)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.proposito || !formData.monto_total || !formData.fecha_limite) {
+    // Validar que se haya seleccionado o escrito un propósito
+    const propositoFinal = formData.proposito_id ? 
+      propositos.find(p => p.id === formData.proposito_id)?.nombre || '' : 
+      formData.proposito_personalizado
+
+    if (!propositoFinal || !formData.monto_total || !formData.fecha_limite) {
       setError('Por favor completa todos los campos obligatorios')
       return
     }
@@ -65,7 +90,8 @@ export default function EditarVotoPage() {
       setError(null)
 
       const resultado = await updateVoto(votoId, {
-        proposito: formData.proposito,
+        proposito: propositoFinal,
+        proposito_id: formData.proposito_id || null,
         monto_total: parseFloat(formData.monto_total),
         fecha_limite: formData.fecha_limite,
         estado: formData.estado as 'activo' | 'completado' | 'vencido'
@@ -150,15 +176,42 @@ export default function EditarVotoPage() {
               <label htmlFor="proposito" className="block text-sm font-semibold text-slate-700 mb-2">
                 Propósito *
               </label>
+              <select
+                id="proposito"
+                value={formData.proposito_id}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  proposito_id: e.target.value,
+                  proposito_personalizado: e.target.value ? '' : formData.proposito_personalizado
+                })}
+                className="input w-full mb-2"
+              >
+                <option value="">Seleccionar propósito existente...</option>
+                {propositos.map((proposito) => (
+                  <option key={proposito.id} value={proposito.id}>
+                    {proposito.nombre}
+                  </option>
+                ))}
+              </select>
+              
+              <div className="text-sm text-slate-500 mb-2">O</div>
+              
               <input
                 type="text"
-                id="proposito"
-                value={formData.proposito}
-                onChange={(e) => setFormData({ ...formData, proposito: e.target.value })}
+                id="proposito_personalizado"
+                value={formData.proposito_personalizado}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  proposito_personalizado: e.target.value,
+                  proposito_id: e.target.value ? '' : formData.proposito_id
+                })}
                 className="input w-full"
-                placeholder="Ej: Construcción del templo"
-                required
+                placeholder="Escribir propósito personalizado"
+                disabled={!!formData.proposito_id}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                Selecciona un propósito existente o escribe uno personalizado
+              </p>
             </div>
 
             <div>

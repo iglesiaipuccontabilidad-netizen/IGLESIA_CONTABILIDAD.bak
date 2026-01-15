@@ -21,6 +21,7 @@ export type VotoDetalle = VotoBase & {
 export type VotoInput = {
   miembro_id: string
   proposito: string
+  proposito_id?: string | null
   monto_total: number
   fecha_limite: string
   estado?: 'activo' | 'completado' | 'cancelado' | 'vencido'
