@@ -6,6 +6,7 @@ import DashboardHeader from '@/components/DashboardHeader'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/context/AuthContext'
 import { useRefreshAuth } from '@/hooks/useRefreshAuth'
+import { UserValidator } from '@/components/auth/UserValidator'
 import styles from '@/app/dashboard/layout.module.css'
 
 interface DashboardLayoutClientProps {
@@ -27,10 +28,15 @@ function LoadingFallback() {
 }
 
 function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
+  const [mounted, setMounted] = useState(false)
+  const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false)
+  
+  // TODOS los hooks deben estar ANTES de cualquier return condicional
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  
+  // Forzar refetch de la sesión si es necesario
+  useRefreshAuth()
 
   console.log('🔍 [DashboardLayoutClient] Estado:', { 
     mounted, 
@@ -38,9 +44,6 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
     hasUser: !!user,
     userEmail: user?.email 
   })
-
-  // Forzar refetch de la sesión si es necesario
-  useRefreshAuth()
 
   const handleMobileMenuToggle = () => {
     setIsMobileMenuVisible(prev => !prev)
@@ -59,7 +62,7 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
     }
   }, [user, isLoading, router, mounted])
 
-  // Renderizado condicional después de todos los hooks
+  // AHORA sí, después de todos los hooks, hacer los returns condicionales
   // No renderizar nada hasta que el componente esté montado en el cliente
   if (!mounted) {
     console.log('⏳ [DashboardLayoutClient] Esperando montaje...')
@@ -83,6 +86,9 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   // Renderizar el dashboard completo
   return (
     <div className={styles.dashboardLayout}>
+      {/* Validador de usuario - detecta discrepancias */}
+      <UserValidator />
+      
       <Sidebar 
         isMobileMenuVisible={isMobileMenuVisible} 
         onMobileMenuClose={() => setIsMobileMenuVisible(false)} 

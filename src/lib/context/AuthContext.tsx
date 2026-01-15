@@ -99,30 +99,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('🔐 [AuthContext] Iniciando autenticación...')
         setIsLoading(true)
+        
+        // Limpiar estado anterior primero
+        console.log('🧹 [AuthContext] Limpiando estado anterior...')
+        setUser(null)
+        setMember(null)
+        setComitesUsuario([])
+        
         const { data: { session } } = await supabaseRef.current.auth.getSession()
         console.log('📝 [AuthContext] Sesión obtenida:', session ? '✅ Usuario encontrado' : '❌ Sin sesión')
         
         if (session?.user && mountedRef.current) {
-          console.log('👤 [AuthContext] Usuario ID:', session.user.id)
+          console.log('👤 [AuthContext] Usuario en sesión:')
+          console.log('  - ID:', session.user.id)
+          console.log('  - Email:', session.user.email)
+          console.log('  - Created:', session.user.created_at)
+          
           setUser(session.user)
           
           // Cargar el rol y comités en paralelo
-          console.log('📥 [AuthContext] Cargando datos del usuario...')
+          console.log('📥 [AuthContext] Cargando datos del usuario desde BD...')
           const [userData, comites] = await Promise.all([
             loadUserRole(session.user.id),
             loadUserComites(session.user.id)
           ])
-          console.log('✅ [AuthContext] Datos cargados - Rol:', userData.rol, 'Comités:', comites.length)
+          
+          console.log('✅ [AuthContext] Datos cargados desde BD:')
+          console.log('  - Rol:', userData.rol)
+          console.log('  - Estado:', userData.estado)
+          console.log('  - Comités:', comites.length)
           
           if (mountedRef.current) {
-            setMember({
+            const memberData = {
               id: session.user.id,
               email: session.user.email ?? null,
               rol: userData.rol,
               estado: userData.estado
-            })
+            }
+            
+            setMember(memberData)
             setComitesUsuario(comites)
-            console.log('✅ [AuthContext] Member actualizado')
+            
+            console.log('✅ [AuthContext] Member actualizado:', memberData)
           }
         } else {
           console.log('⚠️ [AuthContext] No hay sesión o componente desmontado')
@@ -152,6 +170,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Refrescar datos del usuario cuando cambia la sesión
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (session?.user) {
+            console.log('🔄 [AuthContext] Actualizando datos de sesión para:', session.user.email)
+            
+            // Limpiar estado anterior primero
+            setUser(null)
+            setMember(null)
+            setComitesUsuario([])
+            
+            // Pequeña pausa para asegurar limpieza
+            await new Promise(resolve => setTimeout(resolve, 50))
+            
             setUser(session.user)
             
             // Refetch completo de datos frescos
@@ -161,16 +189,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ])
             
             if (mountedRef.current) {
-              setMember({
+              const memberData = {
                 id: session.user.id,
                 email: session.user.email ?? null,
                 rol: userData.rol,
                 estado: userData.estado
-              })
+              }
+              
+              setMember(memberData)
               setComitesUsuario(comites)
+              
+              console.log('✅ [AuthContext] Datos actualizados:', memberData)
             }
           }
         } else if (event === 'SIGNED_OUT') {
+          console.log('🚪 [AuthContext] Cerrando sesión y limpiando datos...')
           // Limpiar todos los datos al cerrar sesión
           setUser(null)
           setMember(null)

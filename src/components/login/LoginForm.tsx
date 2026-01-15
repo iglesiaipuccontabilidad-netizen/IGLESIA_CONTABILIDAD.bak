@@ -18,9 +18,24 @@ export default function LoginForm() {
     setError(null);
 
     try {
-      console.log('🔐 [Login] Iniciando sesión...');
+      console.log('🔐 [Login] Iniciando proceso de autenticación...');
       const supabase = getSupabaseBrowserClient();
       
+      // PASO 1: Limpiar cualquier sesión anterior
+      console.log('🧹 [Login] Limpiando sesión anterior...');
+      await supabase.auth.signOut({ scope: 'local' });
+      
+      // Limpiar localStorage y sessionStorage
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Pequeña pausa para asegurar que la limpieza se complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // PASO 2: Iniciar sesión con las nuevas credenciales
+      console.log('🔐 [Login] Iniciando nueva sesión para:', email);
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -31,18 +46,52 @@ export default function LoginForm() {
         throw signInError;
       }
 
-      console.log('✅ [Login] Sesión iniciada:', user?.email);
+      if (!user) {
+        throw new Error('No se pudo obtener el usuario');
+      }
+
+      console.log('✅ [Login] Sesión iniciada correctamente');
+      console.log('👤 [Login] Usuario ID:', user.id);
+      console.log('📧 [Login] Email:', user.email);
       
-      // Esperar un poco para que la sesión se propague
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // PASO 3: Validar que la sesión es correcta
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      // Usar router.push en lugar de window.location para navegación SPA
+      if (sessionError || !session) {
+        throw new Error('No se pudo validar la sesión');
+      }
+      
+      console.log('✅ [Login] Sesión validada correctamente');
+      console.log('🔑 [Login] Session user:', session.user.email);
+      
+      // PASO 4: Verificar que el usuario existe en la tabla usuarios
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .select('id, email, rol, estado')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (userError) {
+        console.error('❌ [Login] Error al verificar usuario:', userError);
+        throw new Error('Error al verificar usuario en la base de datos');
+      }
+      
+      if (!userData) {
+        throw new Error('Usuario no encontrado en la base de datos');
+      }
+      
+      console.log('✅ [Login] Usuario verificado en BD');
+      console.log('👤 [Login] Datos usuario:', { email: userData.email, rol: userData.rol, estado: userData.estado });
+      
+      // Esperar un poco más para que la sesión se propague completamente
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // PASO 5: Redirigir al dashboard usando window.location para forzar recarga completa
       console.log('🚀 [Login] Redirigiendo a dashboard...');
-      router.push('/dashboard');
-      router.refresh();
-    } catch (err) {
+      window.location.href = '/dashboard';
+    } catch (err: any) {
       console.error('❌ [Login] Error al iniciar sesión:', err);
-      setError('Error al iniciar sesión');
+      setError(err.message || 'Error al iniciar sesión');
       setLoading(false);
     }
   };

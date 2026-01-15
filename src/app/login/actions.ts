@@ -6,14 +6,23 @@ import { revalidatePath } from 'next/cache'
 import { type Database } from '@/lib/database.types'
 
 export async function logout() {
+  console.log('🚪 [Logout] Iniciando cierre de sesión...')
+  
   const supabase = await createActionClient()
-  const { error } = await supabase.auth.signOut()
+  
+  // Cerrar sesión en el servidor
+  const { error } = await supabase.auth.signOut({ scope: 'global' })
   
   if (error) {
-    console.error('Error al cerrar sesión:', error.message)
+    console.error('❌ [Logout] Error al cerrar sesión:', error.message)
+  } else {
+    console.log('✅ [Logout] Sesión cerrada correctamente')
   }
   
+  // Revalidar todas las rutas para limpiar caché
   revalidatePath('/', 'layout')
+  
+  console.log('🔄 [Logout] Redirigiendo a login...')
   redirect('/login')
 }
 
