@@ -32,6 +32,13 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   const [isMobileMenuVisible, setIsMobileMenuVisible] = useState(false)
   const [mounted, setMounted] = useState(false)
 
+  console.log('🔍 [DashboardLayoutClient] Estado:', { 
+    mounted, 
+    isLoading, 
+    hasUser: !!user,
+    userEmail: user?.email 
+  })
+
   // Forzar refetch de la sesión si es necesario
   useRefreshAuth()
 
@@ -40,13 +47,14 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   }
 
   useEffect(() => {
+    console.log('🎬 [DashboardLayoutClient] Montando componente')
     setMounted(true)
   }, [])
 
   // Redirigir a login si no hay usuario después de que termine de cargar
   useEffect(() => {
     if (mounted && !isLoading && !user) {
-      console.log('❌ No hay usuario autenticado, redirigiendo a login')
+      console.log('❌ [DashboardLayoutClient] No hay usuario autenticado, redirigiendo a login')
       router.replace('/login')
     }
   }, [user, isLoading, router, mounted])
@@ -54,18 +62,23 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
   // Renderizado condicional después de todos los hooks
   // No renderizar nada hasta que el componente esté montado en el cliente
   if (!mounted) {
+    console.log('⏳ [DashboardLayoutClient] Esperando montaje...')
     return null
   }
 
   // Mostrar loading mientras carga
   if (isLoading) {
+    console.log('⏳ [DashboardLayoutClient] Mostrando loading...')
     return <LoadingFallback />
   }
 
   // Si no hay usuario, no mostrar nada (se redirigirá en el useEffect)
   if (!user) {
+    console.log('⚠️ [DashboardLayoutClient] Sin usuario, esperando redirección...')
     return null
   }
+
+  console.log('✅ [DashboardLayoutClient] Renderizando dashboard completo')
 
   // Renderizar el dashboard completo
   return (

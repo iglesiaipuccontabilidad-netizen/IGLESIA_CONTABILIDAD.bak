@@ -85,20 +85,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     mountedRef.current = true
+    console.log('🚀 [AuthContext] Iniciando useEffect')
+    
+    // Timeout de seguridad - si después de 10 segundos no carga, forzar a terminar
+    const timeoutId = setTimeout(() => {
+      if (mountedRef.current && isLoading) {
+        console.warn('⚠️ [AuthContext] Timeout de carga alcanzado, terminando carga...')
+        setIsLoading(false)
+      }
+    }, 10000)
     
     async function initializeAuth() {
       try {
+        console.log('🔐 [AuthContext] Iniciando autenticación...')
         setIsLoading(true)
         const { data: { session } } = await supabaseRef.current.auth.getSession()
+        console.log('📝 [AuthContext] Sesión obtenida:', session ? '✅ Usuario encontrado' : '❌ Sin sesión')
         
         if (session?.user && mountedRef.current) {
+          console.log('👤 [AuthContext] Usuario ID:', session.user.id)
           setUser(session.user)
           
           // Cargar el rol y comités en paralelo
+          console.log('📥 [AuthContext] Cargando datos del usuario...')
           const [userData, comites] = await Promise.all([
             loadUserRole(session.user.id),
             loadUserComites(session.user.id)
           ])
+          console.log('✅ [AuthContext] Datos cargados - Rol:', userData.rol, 'Comités:', comites.length)
           
           if (mountedRef.current) {
             setMember({
@@ -108,13 +122,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               estado: userData.estado
             })
             setComitesUsuario(comites)
+            console.log('✅ [AuthContext] Member actualizado')
           }
+        } else {
+          console.log('⚠️ [AuthContext] No hay sesión o componente desmontado')
         }
       } catch (error) {
-        console.error('Error inicializando auth:', error)
+        console.error('❌ [AuthContext] Error inicializando auth:', error)
       } finally {
+        clearTimeout(timeoutId)
         if (mountedRef.current) {
+          console.log('🏁 [AuthContext] Finalizando carga - setIsLoading(false)')
           setIsLoading(false)
+        } else {
+          console.log('⚠️ [AuthContext] Componente desmontado, no actualizar estado')
         }
       }
     }
@@ -126,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mountedRef.current) return
 
-        console.log('🔄 Auth state changed:', event)
+        console.log('🔄 [AuthContext] Auth state changed:', event)
 
         // Refrescar datos del usuario cuando cambia la sesión
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
@@ -161,10 +182,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
 
     return () => {
+      console.log('🧹 [AuthContext] Limpiando useEffect')
+      clearTimeout(timeoutId)
       mountedRef.current = false
       subscription?.unsubscribe()
     }
-  }, [loadUserRole, loadUserComites]) // Solo los callbacks estables
+  }, []) // Array vacío - solo ejecutar una vez al montar
 
   return (
     <AuthContext.Provider value={{ user, isLoading, member, comitesUsuario }}>

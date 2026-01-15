@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/context/AuthContext'
-import { createClient } from '@/lib/supabase/client'
+import { getSupabaseBrowserClient } from '@/lib/supabase-client'
 
 /**
  * Hook que fuerza a refetch la sesión del usuario
@@ -10,24 +10,27 @@ import { createClient } from '@/lib/supabase/client'
  */
 export function useRefreshAuth() {
   const { user, isLoading } = useAuth()
-  const supabaseRef = useRef(createClient())
+  const hasRun = useRef(false)
 
   useEffect(() => {
-    // Si estamos cargando o ya tenemos usuario, no hacer nada
-    if (isLoading || user) {
+    // Si estamos cargando, ya tenemos usuario, o ya corrimos, no hacer nada
+    if (isLoading || user || hasRun.current) {
       return
     }
+
+    hasRun.current = true
 
     // Intentar obtener el usuario nuevamente
     // Esto es útil en caso de timing issues con la sesión
     const refreshSession = async () => {
       try {
-        const { data, error } = await supabaseRef.current.auth.getUser()
+        const supabase = getSupabaseBrowserClient()
+        const { data, error } = await supabase.auth.getUser()
         if (!error && data?.user) {
-          console.log('Session refreshed:', data.user.email)
+          console.log('🔄 [useRefreshAuth] Session refreshed:', data.user.email)
         }
       } catch (err) {
-        console.error('Error refreshing session:', err)
+        console.error('❌ [useRefreshAuth] Error refreshing session:', err)
       }
     }
 

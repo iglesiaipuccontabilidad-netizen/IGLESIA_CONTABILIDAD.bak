@@ -3,12 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { getSupabaseBrowserClient } from '@/lib/supabase-client';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -23,17 +18,31 @@ export default function LoginForm() {
     setError(null);
 
     try {
+      console.log('🔐 [Login] Iniciando sesión...');
+      const supabase = getSupabaseBrowserClient();
+      
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (signInError) throw signInError;
+      if (signInError) {
+        console.error('❌ [Login] Error:', signInError);
+        throw signInError;
+      }
 
-      window.location.href = '/dashboard';
+      console.log('✅ [Login] Sesión iniciada:', user?.email);
+      
+      // Esperar un poco para que la sesión se propague
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Usar router.push en lugar de window.location para navegación SPA
+      console.log('🚀 [Login] Redirigiendo a dashboard...');
+      router.push('/dashboard');
+      router.refresh();
     } catch (err) {
+      console.error('❌ [Login] Error al iniciar sesión:', err);
       setError('Error al iniciar sesión');
-    } finally {
       setLoading(false);
     }
   };
