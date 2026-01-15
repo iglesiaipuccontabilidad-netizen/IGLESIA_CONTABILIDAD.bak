@@ -16,6 +16,7 @@ type AuthContextType = {
   isLoading: boolean
   member: MemberType | null
   comitesUsuario: any[]
+  refreshUserData: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   member: null,
   comitesUsuario: [],
+  refreshUserData: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -32,40 +34,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [comitesUsuario, setComitesUsuario] = useState<any[]>([])
   
   const mountedRef = useRef(true)
-  const initializingRef = useRef(false) // Evitar inicializaciones múltiples
   const supabaseRef = useRef(getSupabaseBrowserClient())
 
-  // Cargar el rol y estado del usuario - SIN CACHÉ para siempre obtener datos frescos
-  const loadUserRole = useCallback(async (userId: string) => {
-    try {
-      console.log('📊 [AuthContext] Consultando tabla usuarios para ID:', userId)
-      
-      const { data, error } = await supabaseRef.current
-        .from('usuarios')
-        .select('rol, estado')
-        .eq('id', userId)
-        .maybeSingle()
+  // Cargar el rol y estado del usuario con reintentos
+  const loadUserRole = useCallback(async (userId: string, retries = 3): Promise<{ rol: string | null; estado: string | null }> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`📊 [AuthContext] Consultando rol usuario (intento ${attempt}/${retries}):`, userId)
+        
+        const { data, error } = await supabaseRef.current
+          .from('usuarios')
+          .select('rol, estado')
+          .eq('id', userId)
+          .maybeSingle()
 
-      if (error) {
-        console.error('❌ [AuthContext] Error cargando rol y estado:', error)
-        return { rol: null, estado: null }
+        if (error) {
+          console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message)
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 500 * attempt)) // Espera exponencial
+            continue
+          }
+          return { rol: null, estado: null }
+        }
+
+        if (!data) {
+          console.warn('⚠️ [AuthContext] Usuario no encontrado en tabla usuarios. ID:', userId)
+          return { rol: null, estado: null }
+        }
+
+        console.log('✅ [AuthContext] Rol cargado:', data.rol)
+        return { rol: data.rol || null, estado: data.estado || null }
+      } catch (err) {
+        console.error(`❌ [AuthContext] Error en loadUserRole (intento ${attempt}):`, err)
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 500 * attempt))
+          continue
+        }
       }
-
-      if (!data) {
-        console.error('❌ [AuthContext] Usuario no encontrado en tabla usuarios. ID:', userId)
-        console.error('   Este usuario existe en auth.users pero NO en la tabla usuarios')
-        return { rol: null, estado: null }
-      }
-
-      console.log('✅ [AuthContext] Rol y estado cargados:', data)
-      return { rol: data?.rol || null, estado: data?.estado || null }
-    } catch (err) {
-      console.error('❌ [AuthContext] Error en loadUserRole:', err)
-      return { rol: null, estado: null }
     }
+    return { rol: null, estado: null }
   }, [])
 
-  // Cargar los comités del usuario - SIN CACHÉ para siempre obtener datos frescos
+  // Cargar los comités del usuario
   const loadUserComites = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabaseRef.current
@@ -82,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('usuario_id', userId)
       
       if (error) {
-        console.error('Error cargando comités del usuario:', error)
+        console.error('Error cargando comités:', error.message)
         return []
       }
 
@@ -93,194 +103,146 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Función para cargar todos los datos del usuario
+  const loadUserData = useCallback(async (authUser: User) => {
+    console.log('📥 [AuthContext] Cargando datos para:', authUser.email)
+    
+    setUser(authUser)
+    
+    // Cargar rol y comités en paralelo
+    const [userData, comites] = await Promise.all([
+      loadUserRole(authUser.id),
+      loadUserComites(authUser.id)
+    ])
+    
+    if (mountedRef.current) {
+      const memberData = {
+        id: authUser.id,
+        email: authUser.email ?? null,
+        rol: userData.rol,
+        estado: userData.estado
+      }
+      
+      setMember(memberData)
+      setComitesUsuario(comites)
+      
+      console.log('✅ [AuthContext] Datos completos:', {
+        email: memberData.email,
+        rol: memberData.rol,
+        estado: memberData.estado,
+        comites: comites.length
+      })
+    }
+  }, [loadUserRole, loadUserComites])
+
+  // Función pública para refrescar datos del usuario
+  const refreshUserData = useCallback(async () => {
+    if (!user) return
+    console.log('🔄 [AuthContext] Refrescando datos del usuario...')
+    await loadUserData(user)
+  }, [user, loadUserData])
+
   useEffect(() => {
     mountedRef.current = true
+    let timeoutId: NodeJS.Timeout
     
-    // Evitar inicializaciones múltiples
-    if (initializingRef.current) {
-      console.log('⏳ [AuthContext] Ya inicializando, saltando...')
-      return
-    }
-    initializingRef.current = true
-    
-    console.log('🚀 [AuthContext] Iniciando useEffect')
-    
-    // Timeout de seguridad reducido - 5 segundos es suficiente
-    const timeoutId = setTimeout(() => {
-      if (mountedRef.current && isLoading) {
-        console.warn('⚠️ [AuthContext] Timeout de carga alcanzado, terminando carga...')
-        setIsLoading(false)
-      }
-    }, 5000)
+    console.log('🚀 [AuthContext] Iniciando...')
     
     async function initializeAuth() {
       try {
-        console.log('🔐 [AuthContext] Iniciando autenticación...')
+        // Timeout de seguridad - 8 segundos
+        timeoutId = setTimeout(() => {
+          if (mountedRef.current && isLoading) {
+            console.warn('⚠️ [AuthContext] Timeout alcanzado, finalizando carga')
+            setIsLoading(false)
+          }
+        }, 8000)
         
-        // Usar getUser() en lugar de getSession() - más seguro y confiable
-        // getUser() valida el JWT contra el servidor de Supabase
+        // Usar getUser() para validar el JWT contra el servidor
         const { data: { user: authUser }, error } = await supabaseRef.current.auth.getUser()
         
-        if (error) {
-          console.log('⚠️ [AuthContext] Error obteniendo usuario:', error.message)
-          // No es un error crítico, simplemente no hay sesión
+        if (error || !authUser) {
+          console.log('ℹ️ [AuthContext] Sin sesión activa')
           if (mountedRef.current) {
             setIsLoading(false)
           }
           return
         }
         
-        console.log('📝 [AuthContext] Usuario obtenido:', authUser ? '✅ Usuario encontrado' : '❌ Sin usuario')
+        console.log('👤 [AuthContext] Usuario encontrado:', authUser.email)
         
-        if (authUser && mountedRef.current) {
-          console.log('👤 [AuthContext] Usuario autenticado:')
-          console.log('  - ID:', authUser.id)
-          console.log('  - Email:', authUser.email)
-          
-          setUser(authUser)
-          
-          // Cargar el rol y comités en paralelo con timeout
-          console.log('📥 [AuthContext] Cargando datos del usuario desde BD...')
-          
-          const loadDataWithTimeout = async () => {
-            const timeoutPromise = new Promise<never>((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout')), 3000)
-            )
-            
-            try {
-              const [userData, comites] = await Promise.race([
-                Promise.all([
-                  loadUserRole(authUser.id),
-                  loadUserComites(authUser.id)
-                ]),
-                timeoutPromise
-              ]) as [{ rol: string | null; estado: string | null }, any[]]
-              
-              return { userData, comites }
-            } catch (err) {
-              console.warn('⚠️ [AuthContext] Timeout cargando datos, usando valores por defecto')
-              return { userData: { rol: null, estado: null }, comites: [] }
-            }
-          }
-          
-          const { userData, comites } = await loadDataWithTimeout()
-          
-          console.log('✅ [AuthContext] Datos cargados desde BD:')
-          console.log('  - Rol:', userData.rol)
-          console.log('  - Estado:', userData.estado)
-          console.log('  - Comités:', comites.length)
-          
-          if (mountedRef.current) {
-            const memberData = {
-              id: authUser.id,
-              email: authUser.email ?? null,
-              rol: userData.rol,
-              estado: userData.estado
-            }
-            
-            setMember(memberData)
-            setComitesUsuario(comites)
-            
-            console.log('✅ [AuthContext] Member actualizado:', memberData)
-          }
-        } else {
-          console.log('⚠️ [AuthContext] No hay sesión o componente desmontado')
-        }
+        // Cargar datos del usuario
+        await loadUserData(authUser)
+        
       } catch (error) {
-        console.error('❌ [AuthContext] Error inicializando auth:', error)
+        console.error('❌ [AuthContext] Error:', error)
       } finally {
         clearTimeout(timeoutId)
         if (mountedRef.current) {
-          console.log('🏁 [AuthContext] Finalizando carga - setIsLoading(false)')
           setIsLoading(false)
-        } else {
-          console.log('⚠️ [AuthContext] Componente desmontado, no actualizar estado')
         }
       }
     }
 
     initializeAuth()
 
-    // Escuchar cambios de autenticación - Mejor práctica de Supabase
+    // Escuchar cambios de autenticación
     const { data: { subscription } } = supabaseRef.current.auth.onAuthStateChange(
       async (event, session) => {
         if (!mountedRef.current) return
 
-        console.log('🔄 [AuthContext] Auth state changed:', event)
+        console.log('🔔 [AuthContext] Evento:', event)
 
-        // Ignorar INITIAL_SESSION ya que lo manejamos en initializeAuth
-        if (event === 'INITIAL_SESSION') {
-          console.log('⏭️ [AuthContext] INITIAL_SESSION ignorado (ya manejado)')
-          return
-        }
-
-        // Refrescar datos del usuario cuando cambia la sesión
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          if (session?.user) {
-            console.log('🔄 [AuthContext] Actualizando datos de sesión para:', session.user.email)
-            
-            // NO limpiar el estado si es el mismo usuario - evita flash/redirecciones
-            const isSameUser = user?.id === session.user.id
-            
-            if (!isSameUser) {
-              console.log('👤 [AuthContext] Usuario diferente detectado, actualizando...')
-            }
-            
-            setUser(session.user)
-            
-            // Refetch de datos frescos con timeout
-            try {
-              const timeoutPromise = new Promise<never>((_, reject) => 
-                setTimeout(() => reject(new Error('Timeout')), 3000)
-              )
+        switch (event) {
+          case 'SIGNED_IN':
+            if (session?.user) {
+              console.log('✨ [AuthContext] Login detectado:', session.user.email)
+              setIsLoading(true)
               
-              const [userData, comites] = await Promise.race([
-                Promise.all([
-                  loadUserRole(session.user.id),
-                  loadUserComites(session.user.id)
-                ]),
-                timeoutPromise
-              ]) as [{ rol: string | null; estado: string | null }, any[]]
+              // Pequeña pausa para asegurar que la sesión está establecida
+              await new Promise(r => setTimeout(r, 100))
+              
+              await loadUserData(session.user)
               
               if (mountedRef.current) {
-                const memberData = {
-                  id: session.user.id,
-                  email: session.user.email ?? null,
-                  rol: userData.rol,
-                  estado: userData.estado
-                }
-                
-                setMember(memberData)
-                setComitesUsuario(comites)
-                
-                console.log('✅ [AuthContext] Datos actualizados:', memberData)
+                setIsLoading(false)
               }
-            } catch (err) {
-              console.warn('⚠️ [AuthContext] Error actualizando datos:', err)
             }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('🚪 [AuthContext] Cerrando sesión y limpiando datos...')
-          // Limpiar todos los datos al cerrar sesión
-          setUser(null)
-          setMember(null)
-          setComitesUsuario([])
+            break
+            
+          case 'TOKEN_REFRESHED':
+          case 'USER_UPDATED':
+            if (session?.user) {
+              console.log('🔄 [AuthContext] Actualizando datos...')
+              await loadUserData(session.user)
+            }
+            break
+            
+          case 'SIGNED_OUT':
+            console.log('🚪 [AuthContext] Sesión cerrada')
+            setUser(null)
+            setMember(null)
+            setComitesUsuario([])
+            setIsLoading(false)
+            break
+            
+          case 'INITIAL_SESSION':
+            // Ignorar - ya manejado en initializeAuth
+            break
         }
-        
-        setIsLoading(false)
       }
     )
 
     return () => {
-      console.log('🧹 [AuthContext] Limpiando useEffect')
+      console.log('🧹 [AuthContext] Limpiando...')
       clearTimeout(timeoutId)
       mountedRef.current = false
       subscription?.unsubscribe()
     }
-  }, []) // Array vacío - solo ejecutar una vez al montar
+  }, [loadUserData])
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, member, comitesUsuario }}>
+    <AuthContext.Provider value={{ user, isLoading, member, comitesUsuario, refreshUserData }}>
       {children}
     </AuthContext.Provider>
   )
