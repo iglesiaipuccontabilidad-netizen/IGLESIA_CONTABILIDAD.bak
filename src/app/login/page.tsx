@@ -91,8 +91,14 @@ function LoginForm({ mensaje }: LoginFormProps) {
         if (result && result.error) {
           setError(result.error)
         } else if (result && result.success && result.redirect) {
-          // Usar router.push para la navegación del cliente
-          router.push(result.redirect)
+          // Refrescar el estado del router para sincronizar cookies
+          router.refresh()
+          
+          // Pequeña pausa para asegurar que las cookies se propaguen
+          await new Promise(resolve => setTimeout(resolve, 200))
+          
+          // Usar window.location para una navegación limpia que recarga el estado
+          window.location.href = result.redirect
         }
       } catch (e: any) {
         setError(e.message || 'Ha ocurrido un error al iniciar sesión')

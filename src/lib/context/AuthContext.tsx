@@ -191,9 +191,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mountedRef.current) return
 
-        console.log('🔔 [AuthContext] Evento:', event)
+        console.log('🔔 [AuthContext] Evento:', event, session?.user?.email || 'sin usuario')
 
         switch (event) {
+          case 'INITIAL_SESSION':
+            // Si hay sesión inicial y aún no tenemos usuario cargado, cargar datos
+            if (session?.user && !user) {
+              console.log('🎯 [AuthContext] Sesión inicial detectada:', session.user.email)
+              await loadUserData(session.user)
+              if (mountedRef.current) {
+                setIsLoading(false)
+              }
+            }
+            break
+            
           case 'SIGNED_IN':
             if (session?.user) {
               console.log('✨ [AuthContext] Login detectado:', session.user.email)
@@ -224,10 +235,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setMember(null)
             setComitesUsuario([])
             setIsLoading(false)
-            break
-            
-          case 'INITIAL_SESSION':
-            // Ignorar - ya manejado en initializeAuth
             break
         }
       }
