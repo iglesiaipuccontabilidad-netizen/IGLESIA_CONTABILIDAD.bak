@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getVotosWithDetails } from '@/app/actions/votos-actions'
 import { getCurrentUserRole } from '@/lib/auth'
@@ -28,6 +29,7 @@ const PROPOSITOS_VOTO = {
 } as const
 
 export default function VotosPage() {
+  const router = useRouter()
   const [votos, setVotos] = useState<VotoDetalle[]>([])
   const [filtros, setFiltros] = useState<FiltrosVotos>({
     busqueda: '',
@@ -122,6 +124,10 @@ export default function VotosPage() {
       porcentajeGlobal
     }
   }, [votos])
+
+  const handleRowClick = useCallback((votoId: string) => {
+    router.push(`/dashboard/votos/${votoId}`)
+  }, [router])
 
   const aplicarFiltros = useCallback((voto: VotoDetalle) => {
     const { busqueda, proposito, estado, fecha_inicio, fecha_fin } = filtros
@@ -340,49 +346,191 @@ export default function VotosPage() {
 
         {/* Tabla */}
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur-sm shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50">
-                <tr>
-                  <th scope="col" className="px-6 py-5 text-left">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Miembro</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-left">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Propósito</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-right">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Monto total</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-right">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Recaudado</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-left">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Progreso</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-center">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Estado</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-center">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Fecha límite</span>
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-right">
-                    <span className="text-xs font-black uppercase tracking-wider text-slate-600">Acciones</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {votosFiltrados.length > 0 ? (
-                  votosFiltrados.map((voto, index) => {
-                    const progreso = calcularProgreso(voto)
-                    const avatar = voto.miembro ? `${voto.miembro.nombres.charAt(0)}${voto.miembro.apellidos.charAt(0)}` : 'NA'
+          {/* Vista móvil: tarjetas */}
+          <div className="block md:hidden">
+            <div className="divide-y divide-slate-100">
+              {votosFiltrados.length > 0 ? (
+                votosFiltrados.map((voto, index) => {
+                  const progreso = calcularProgreso(voto)
+                  const avatar = voto.miembro ? `${voto.miembro.nombres.charAt(0)}${voto.miembro.apellidos.charAt(0)}` : 'NA'
 
-                    return (
-                      <Link
-                        key={voto.id}
-                        href={`/dashboard/votos/${voto.id}`}
-                        className="block"
-                      >
+                  return (
+                    <div
+                      key={voto.id}
+                      onClick={() => handleRowClick(voto.id)}
+                      className="group p-4 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-cyan-50/30 cursor-pointer"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="relative flex-shrink-0">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-600 to-cyan-600 text-sm font-bold text-white shadow-lg group-hover:shadow-xl transition-shadow">
+                            {avatar}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-emerald-500"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors truncate">
+                                {voto.miembro
+                                  ? `${voto.miembro.nombres} ${voto.miembro.apellidos}`
+                                  : 'Sin asignar'}
+                              </h3>
+                              <p className="text-xs font-medium text-slate-500">
+                                Creado el {new Date(voto.created_at).toLocaleDateString('es-CO')}
+                              </p>
+                            </div>
+                            <span className={`inline-flex items-center rounded-lg px-2 py-1 text-xs font-bold shadow-sm ml-2 flex-shrink-0 ${
+                              voto.estado === ESTADOS_VOTO.ACTIVO
+                                ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200'
+                                : voto.estado === ESTADOS_VOTO.COMPLETADO
+                                  ? 'bg-gradient-to-r from-primary-100 to-blue-50 text-primary-700 border border-primary-200'
+                                  : 'bg-gradient-to-r from-rose-100 to-red-50 text-rose-700 border border-rose-200'
+                            }`}>
+                              <span className={`mr-1.5 block h-1.5 w-1.5 rounded-full ${
+                                voto.estado === ESTADOS_VOTO.ACTIVO
+                                  ? 'bg-emerald-500'
+                                  : voto.estado === ESTADOS_VOTO.COMPLETADO
+                                    ? 'bg-primary-500'
+                                    : 'bg-rose-500'
+                              }`} />
+                              {voto.estado}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary-500 flex-shrink-0"></div>
+                            <span className="font-semibold text-slate-900 text-sm truncate">{voto.proposito}</span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Monto Total</p>
+                              <p className="font-bold text-slate-900 text-sm">{formatearMonto(Number(voto.monto_total))}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Recaudado</p>
+                              <p className="font-bold text-emerald-600 text-sm">{formatearMonto(voto.total_pagado)}</p>
+                            </div>
+                          </div>
+
+                          <div className="mb-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Progreso</span>
+                              <span className="text-xs font-bold text-slate-700">{progreso.toFixed(0)}%</span>
+                            </div>
+                            <div className="relative h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-primary-600 via-blue-500 to-cyan-500 shadow-sm transition-all duration-500 ease-out"
+                                style={{ width: `${progreso}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Fecha Límite</p>
+                              <p className="font-semibold text-slate-600 text-sm">
+                                {new Date(voto.fecha_limite).toLocaleDateString('es-CO')}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Link
+                                href={`/dashboard/votos/${voto.id}`}
+                                className="group/btn relative inline-flex items-center gap-1 overflow-hidden rounded-lg border border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 px-2.5 py-1.5 text-xs font-bold text-primary-700 transition-all hover:border-primary-300 hover:shadow-md hover:shadow-primary-200/50"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                                </svg>
+                                <span>Ver</span>
+                              </Link>
+                              {userRole && ['admin', 'tesorero'].includes(userRole) && (
+                                <Link
+                                  href={`/dashboard/votos/editar/${voto.id}`}
+                                  className="group/btn relative inline-flex items-center gap-1 overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-2.5 py-1.5 text-xs font-bold text-amber-700 transition-all hover:border-amber-300 hover:shadow-md hover:shadow-amber-200/50"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21H21v-3.75l-5.83-5.83a3 3 0 0 0-4.24 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m15 11 4.24-4.24a3 3 0 0 0-4.24-4.24L11 6.76a3 3 0 0 0 0 4.24z" />
+                                  </svg>
+                                  <span>Editar</span>
+                                </Link>
+                              )}
+                              <Link
+                                href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
+                                className="group/btn relative inline-flex items-center gap-1 overflow-hidden rounded-lg border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:shadow-md hover:shadow-emerald-200/50"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-3.5 w-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.171-.879-1.172-2.303 0-3.182C10.536 7.719 11.768 7.5 12 7.5c1.45 0 2.9.549 4.003 1.657" />
+                                </svg>
+                                <span>Pago</span>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="px-6 py-20 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-slate-400">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-bold text-slate-600">No se encontraron votos que coincidan con los filtros aplicados.</p>
+                    <p className="text-xs text-slate-500">Intenta ajustar los filtros o crear un nuevo voto.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Vista desktop: tabla */}
+          <div className="hidden md:block">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+                  <tr>
+                    <th scope="col" className="px-6 py-5 text-left">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Miembro</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-left">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Propósito</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-right">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Monto total</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-right">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Recaudado</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-left">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Progreso</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-center">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Estado</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-center">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Fecha límite</span>
+                    </th>
+                    <th scope="col" className="px-6 py-5 text-right">
+                      <span className="text-xs font-black uppercase tracking-wider text-slate-600">Acciones</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {votosFiltrados.length > 0 ? (
+                    votosFiltrados.map((voto, index) => {
+                      const progreso = calcularProgreso(voto)
+                      const avatar = voto.miembro ? `${voto.miembro.nombres.charAt(0)}${voto.miembro.apellidos.charAt(0)}` : 'NA'
+
+                      return (
                         <tr
+                          key={voto.id}
+                          onClick={() => handleRowClick(voto.id)}
                           className="group transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-cyan-50/30 cursor-pointer"
                           style={{ animationDelay: `${index * 30}ms` }}
                         >
@@ -404,118 +552,118 @@ export default function VotosPage() {
                               </div>
                             </div>
                           </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-primary-500"></div>
-                            <span className="font-bold text-slate-900">{voto.proposito}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <span className="font-black text-slate-900">
-                            {formatearMonto(Number(voto.monto_total))}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <span className="font-black text-emerald-600">
-                            {formatearMonto(voto.total_pagado)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                            <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                              <div
-                                className="h-full rounded-full bg-gradient-to-r from-primary-600 via-blue-500 to-cyan-500 shadow-sm transition-all duration-500 ease-out"
-                                style={{ width: `${progreso}%` }}
-                              />
-                              <div 
-                                className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"
-                                style={{ width: `${progreso}%` }}
-                              />
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-primary-500"></div>
+                              <span className="font-bold text-slate-900">{voto.proposito}</span>
                             </div>
-                            <span className="w-12 text-right text-xs font-black text-slate-700">
-                              {progreso.toFixed(0)}%
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <span className="font-black text-slate-900">
+                              {formatearMonto(Number(voto.monto_total))}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 text-center">
-                          <span className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black shadow-md ${
-                            voto.estado === ESTADOS_VOTO.ACTIVO
-                              ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200'
-                              : voto.estado === ESTADOS_VOTO.COMPLETADO
-                                ? 'bg-gradient-to-r from-primary-100 to-blue-50 text-primary-700 border border-primary-200'
-                                : 'bg-gradient-to-r from-rose-100 to-red-50 text-rose-700 border border-rose-200'
-                          }`}>
-                            <span className={`mr-2 block h-2 w-2 rounded-full animate-pulse ${
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <span className="font-black text-emerald-600">
+                              {formatearMonto(voto.total_pagado)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-3">
+                              <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-primary-600 via-blue-500 to-cyan-500 shadow-sm transition-all duration-500 ease-out"
+                                  style={{ width: `${progreso}%` }}
+                                />
+                                <div 
+                                  className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"
+                                  style={{ width: `${progreso}%` }}
+                                />
+                              </div>
+                              <span className="w-12 text-right text-xs font-black text-slate-700">
+                                {progreso.toFixed(0)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 text-center">
+                            <span className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black shadow-md ${
                               voto.estado === ESTADOS_VOTO.ACTIVO
-                                ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
+                                ? 'bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-700 border border-emerald-200'
                                 : voto.estado === ESTADOS_VOTO.COMPLETADO
-                                  ? 'bg-primary-500 shadow-lg shadow-primary-500/50'
-                                  : 'bg-rose-500 shadow-lg shadow-rose-500/50'
-                            }`} />
-                            {voto.estado.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-center">
-                          <span className="font-bold text-slate-600">
-                            {new Date(voto.fecha_limite).toLocaleDateString('es-CO')}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Link
-                              href={`/dashboard/votos/${voto.id}`}
-                              className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 px-3 py-2 text-xs font-bold text-primary-700 transition-all hover:border-primary-300 hover:shadow-lg hover:shadow-primary-200/50 hover:-translate-y-0.5"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
-                              </svg>
-                              <span>Ver</span>
-                            </Link>
-                            {userRole && ['admin', 'tesorero'].includes(userRole) && (
+                                  ? 'bg-gradient-to-r from-primary-100 to-blue-50 text-primary-700 border border-primary-200'
+                                  : 'bg-gradient-to-r from-rose-100 to-red-50 text-rose-700 border border-rose-200'
+                            }`}>
+                              <span className={`mr-2 block h-2 w-2 rounded-full animate-pulse ${
+                                voto.estado === ESTADOS_VOTO.ACTIVO
+                                  ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
+                                  : voto.estado === ESTADOS_VOTO.COMPLETADO
+                                    ? 'bg-primary-500 shadow-lg shadow-primary-500/50'
+                                    : 'bg-rose-500 shadow-lg shadow-rose-500/50'
+                              }`} />
+                              {voto.estado.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5 text-center">
+                            <span className="font-bold text-slate-600">
+                              {new Date(voto.fecha_limite).toLocaleDateString('es-CO')}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            <div className="flex items-center justify-end gap-2">
                               <Link
-                                href={`/dashboard/votos/editar/${voto.id}`}
-                                className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2 text-xs font-bold text-amber-700 transition-all hover:border-amber-300 hover:shadow-lg hover:shadow-amber-200/50 hover:-translate-y-0.5"
+                                href={`/dashboard/votos/${voto.id}`}
+                                className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-primary-200 bg-gradient-to-r from-primary-50 to-blue-50 px-3 py-2 text-xs font-bold text-primary-700 transition-all hover:border-primary-300 hover:shadow-lg hover:shadow-primary-200/50 hover:-translate-y-0.5"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21H21v-3.75l-5.83-5.83a3 3 0 0 0-4.24 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="m15 11 4.24-4.24a3 3 0 0 0-4.24-4.24L11 6.76a3 3 0 0 0 0 4.24z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
                                 </svg>
-                                <span>Editar</span>
+                                <span>Ver</span>
                               </Link>
-                            )}
-                            <Link
-                              href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
-                              className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-200/50 hover:-translate-y-0.5"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.171-.879-1.172-2.303 0-3.182C10.536 7.719 11.768 7.5 12 7.5c1.45 0 2.9.549 4.003 1.657" />
-                              </svg>
-                              <span>Pago</span>
-                            </Link>
+                              {userRole && ['admin', 'tesorero'].includes(userRole) && (
+                                <Link
+                                  href={`/dashboard/votos/editar/${voto.id}`}
+                                  className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 px-3 py-2 text-xs font-bold text-amber-700 transition-all hover:border-amber-300 hover:shadow-lg hover:shadow-amber-200/50 hover:-translate-y-0.5"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17 17.25 21H21v-3.75l-5.83-5.83a3 3 0 0 0-4.24 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m15 11 4.24-4.24a3 3 0 0 0-4.24-4.24L11 6.76a3 3 0 0 0 0 4.24z" />
+                                  </svg>
+                                  <span>Editar</span>
+                                </Link>
+                              )}
+                              <Link
+                                href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
+                                className="group/btn relative inline-flex items-center gap-1.5 overflow-hidden rounded-xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 text-xs font-bold text-emerald-700 transition-all hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-200/50 hover:-translate-y-0.5"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.171-.879-1.172-2.303 0-3.182C10.536 7.719 11.768 7.5 12 7.5c1.45 0 2.9.549 4.003 1.657" />
+                                </svg>
+                                <span>Pago</span>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-slate-400">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                            </svg>
                           </div>
-                        </td>
-                      </tr>
-                      </Link>
-                    )
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8 text-slate-400">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
-                          </svg>
+                          <p className="text-sm font-bold text-slate-600">No se encontraron votos que coincidan con los filtros aplicados.</p>
+                          <p className="text-xs text-slate-500">Intenta ajustar los filtros o crear un nuevo voto.</p>
                         </div>
-                        <p className="text-sm font-bold text-slate-600">No se encontraron votos que coincidan con los filtros aplicados.</p>
-                        <p className="text-xs text-slate-500">Intenta ajustar los filtros o crear un nuevo voto.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
