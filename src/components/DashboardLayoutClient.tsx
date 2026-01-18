@@ -55,13 +55,13 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
     console.log('🎬 [DashboardLayoutClient] Montando componente')
     setMounted(true)
     
-    // Timeout de seguridad: si después de 6 segundos sigue cargando, forzar recarga
+    // Timeout de seguridad: si después de 20 segundos sigue cargando, mostrar timeout
     const timeoutId = setTimeout(() => {
       if (isLoading) {
-        console.warn('⚠️ [DashboardLayoutClient] Timeout de carga alcanzado')
+        console.warn('⚠️ [DashboardLayoutClient] Timeout de carga alcanzado después de 20s')
         setLoadingTimeout(true)
       }
-    }, 6000)
+    }, 20000)
     
     return () => clearTimeout(timeoutId)
   }, [isLoading])

@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { getSupabaseBrowserClient } from '@/lib/supabase-client'
+import { getCookie, saveUserToCookies, validateAuthCookies, clearAuthCookies } from '@/lib/utils/supabaseWithTimeout'
 
 type MemberType = {
   id: string
@@ -38,6 +39,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Cargar el rol y estado del usuario con reintentos
   const loadUserRole = useCallback(async (userId: string, retries = 3): Promise<{ rol: string | null; estado: string | null }> => {
+    console.log('🔎 [AuthContext] loadUserRole llamado para userId:', userId)
+    
+    // FASE 1: Intentar leer de cookies primero (RÁPIDO - sin query a BD)
+    const rolCookie = getCookie('user_rol')
+    const estadoCookie = getCookie('user_estado')
+    const userIdCookie = getCookie('user_id')
+    
+    console.log('🍪 [AuthContext] Cookies encontradas:', { rol: rolCookie, estado: estadoCookie, cookieUserId: userIdCookie })
+    
+    // CRÍTICO: Solo usar cookies si:
+    // 1. Existen rol y estado
+    // 2. Existe user_id en cookie
+    // 3. user_id cookie === userId de la sesión actual
+    if (rolCookie && estadoCookie && userIdCookie) {
+      console.log('🔐 [AuthContext] Comparando user_id... Cookie:', userIdCookie, 'vs Session:', userId)
+      
+      if (userIdCookie === userId) {
+        console.log('✅ [AuthContext] Cookies VÁLIDAS - mismo usuario. Rol:', rolCookie)
+        return { rol: rolCookie, estado: estadoCookie }
+      } else {
+        console.error('❌ [AuthContext] COOKIE CONTAMINATION DETECTADA!')
+        console.error('   Cookie pertenece a:', userIdCookie.substring(0, 8) + '...')
+        console.error('   Sesión actual es:', userId.substring(0, 8) + '...')
+        // Limpiar cookies contaminadas INMEDIATAMENTE
+        clearAuthCookies()
+        console.log('🧹 [AuthContext] Cookies contaminadas eliminadas')
+      }
+    } else if (rolCookie || estadoCookie) {
+      // Hay cookies parciales sin user_id - también limpiar
+      console.warn('⚠️ [AuthContext] Cookies parciales sin user_id, limpiando...')
+      clearAuthCookies()
+    }
+    
+    console.log('📡 [AuthContext] Consultando rol desde BD para:', userId)
+    
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         console.log(`📊 [AuthContext] Consultando rol usuario (intento ${attempt}/${retries}):`, userId)
@@ -53,11 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { rol: null, estado: null }
         }
         
-        const { data, error } = await supabaseRef.current
+        // FASE 1: Agregar timeout de 10s a la query usando Promise.race
+        const queryPromise = supabaseRef.current
           .from('usuarios')
           .select('rol, estado')
           .eq('id', userId)
           .maybeSingle()
+        
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout al cargar rol del usuario (intento ${attempt})`)), 10000)
+        )
+        
+        const result = await Promise.race([queryPromise, timeoutPromise])
+        const { data, error } = result as any
 
         if (error) {
           console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message, error.code)
@@ -73,7 +117,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { rol: null, estado: null }
         }
 
-        console.log('✅ [AuthContext] Rol cargado:', data.rol)
+        console.log('✅ [AuthContext] Rol cargado de BD:', data.rol)
+        
+        // FASE 1: Guardar datos completos en cookies para próxima vez
+        if (data.rol && data.estado) {
+          // Necesitamos el email del usuario - intentar obtenerlo de la sesión
+          const { data: { session } } = await supabaseRef.current.auth.getSession()
+          
+          saveUserToCookies({
+            id: userId,
+            email: session?.user?.email || null,
+            rol: data.rol,
+            estado: data.estado
+          }, 604800) // 7 días
+        }
+        
         return { rol: data.rol || null, estado: data.estado || null }
       } catch (err) {
         console.error(`❌ [AuthContext] Error en loadUserRole (intento ${attempt}):`, err)
@@ -178,13 +236,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     async function initializeAuth() {
       try {
-        // Timeout de seguridad - 8 segundos
+        // FASE 1: Timeout de seguridad aumentado a 15 segundos
         timeoutId = setTimeout(() => {
           if (mountedRef.current && isLoading) {
-            console.warn('⚠️ [AuthContext] Timeout alcanzado, finalizando carga')
+            console.warn('⚠️ [AuthContext] Timeout alcanzado después de 15 segundos')
+            console.warn('⚠️ [AuthContext] Esto puede indicar problemas de conexión')
             setIsLoading(false)
           }
-        }, 8000)
+        }, 15000)
         
         // Usar getUser() para validar el JWT contra el servidor
         const { data: { user: authUser }, error } = await supabaseRef.current.auth.getUser()
@@ -235,6 +294,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
           case 'SIGNED_IN':
             if (session?.user) {
+              // SIGNED_IN se dispara al refocus de pestaña - verificar si es el mismo usuario
+              if (user && user.id === session.user.id) {
+                console.log('🔄 [AuthContext] Refocus detectado - usuario ya cargado:', session.user.email)
+                // No recargar datos si ya tenemos el mismo usuario
+                return
+              }
+              
               console.log('✨ [AuthContext] Login detectado:', session.user.email)
               setIsLoading(true)
               
@@ -265,7 +331,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             break
             
           case 'SIGNED_OUT':
-            console.log('🚪 [AuthContext] Sesión cerrada')
+            console.log('🚪 [AuthContext] Sesión cerrada - limpiando estado y cookies del cliente')
+            clearAuthCookies() // Limpiar cookies en cliente también
             setUser(null)
             setMember(null)
             setComitesUsuario([])

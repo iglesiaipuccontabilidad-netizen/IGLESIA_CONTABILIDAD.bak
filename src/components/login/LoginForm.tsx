@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase-client';
+import { setCookie, deleteCookie, clearAuthCookies, saveUserToCookies } from '@/lib/utils/supabaseWithTimeout';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -25,11 +26,16 @@ export default function LoginForm() {
       console.log('🧹 [Login] Limpiando sesión anterior...');
       await supabase.auth.signOut({ scope: 'local' });
       
+      // Limpiar cookies de usuario anterior para evitar contaminación
+      clearAuthCookies();
+      
       // Limpiar localStorage y sessionStorage
       if (typeof window !== 'undefined') {
         localStorage.clear();
         sessionStorage.clear();
       }
+      
+      console.log('✅ [Login] Limpieza completa - cookies, localStorage y sessionStorage');
       
       // Pequeña pausa para asegurar que la limpieza se complete
       await new Promise(resolve => setTimeout(resolve, 200));
@@ -83,12 +89,25 @@ export default function LoginForm() {
       console.log('✅ [Login] Usuario verificado en BD');
       console.log('👤 [Login] Datos usuario:', { email: userData.email, rol: userData.rol, estado: userData.estado });
       
-      // Esperar un poco más para que la sesión se propague completamente
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // FASE 1: Guardar datos completos del usuario en cookies
+      const cookiesSaved = saveUserToCookies({
+        id: user.id,
+        email: user.email || null,
+        rol: userData.rol || '',
+        estado: userData.estado || ''
+      }, 604800); // 7 días
       
-      // PASO 5: Redirigir al dashboard usando window.location para forzar recarga completa
+      if (!cookiesSaved) {
+        console.warn('⚠️ [Login] Algunas cookies no se guardaron correctamente');
+      }
+      
+      // Esperar un poco más para que la sesión se propague completamente
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // PASO 5: Redirigir al dashboard
       console.log('🚀 [Login] Redirigiendo a dashboard...');
-      window.location.href = '/dashboard';
+      // Usar router.push para aprovechar el caché de Next.js
+      router.push('/dashboard');
     } catch (err: any) {
       console.error('❌ [Login] Error al iniciar sesión:', err);
       setError(err.message || 'Error al iniciar sesión');

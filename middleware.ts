@@ -36,6 +36,27 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => 
     request.nextUrl.pathname.startsWith(route)
   )
+  
+  // FASE 2: Pre-cargar rol del usuario para optimizar AuthContext
+  if (user && !isPublicRoute) {
+    try {
+      const { data: userData } = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', user.id)
+        .maybeSingle()
+      
+      if (userData) {
+        // Agregar headers personalizados con el rol (solo para lectura del cliente)
+        supabaseResponse.headers.set('X-User-Rol', userData.rol || 'sin_rol')
+        supabaseResponse.headers.set('X-User-Estado', userData.estado || 'pendiente')
+        console.log('✅ [Middleware] Rol precargado:', userData.rol)
+      }
+    } catch (err) {
+      // No fallar el middleware si falla la precarga del rol
+      console.warn('⚠️ [Middleware] Error al precargar rol:', err)
+    }
+  }
 
   // Si no hay usuario y no es ruta pública, redirigir a login
   if (!user && !isPublicRoute && request.nextUrl.pathname !== '/') {

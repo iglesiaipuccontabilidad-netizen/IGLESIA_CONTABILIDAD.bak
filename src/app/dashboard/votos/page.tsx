@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getVotosWithDetails } from '@/app/actions/votos-actions'
 import { getCurrentUserRole } from '@/lib/auth'
 import type { VotoDetalle } from '@/types/votos'
+import { LoadingWithTimeout } from '@/components/ui/LoadingWithTimeout'
 
 interface FiltrosVotos {
   busqueda: string
@@ -161,10 +162,14 @@ export default function VotosPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4 text-slate-600">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-        <p className="text-sm font-medium">Cargando votos...</p>
-      </div>
+      <LoadingWithTimeout
+        isLoading={loading}
+        timeoutMs={15000}
+        loadingMessage="Cargando votos..."
+        timeoutMessage="La carga de votos está tardando más de lo esperado"
+      >
+        <div></div>
+      </LoadingWithTimeout>
     )
   }
 

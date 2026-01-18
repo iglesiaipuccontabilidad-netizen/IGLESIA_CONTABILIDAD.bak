@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { queryWithTimeout } from '@/lib/utils/supabaseWithTimeout'
 
 export interface MiembroReporte {
   id: string
@@ -57,7 +58,12 @@ export function useReportesMiembros(filtros: FiltrosMiembros = {}) {
           query = query.eq('estado', estado)
         }
 
-        const { data: miembros, error: queryError } = await query
+        // FASE 1: Agregar timeout de 15s a query de miembros
+        const { data: miembros, error: queryError } = await queryWithTimeout(
+          query,
+          15000,
+          'Timeout al cargar reporte de miembros después de 15 segundos'
+        )
 
         if (queryError) throw queryError
 

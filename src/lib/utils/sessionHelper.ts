@@ -67,11 +67,13 @@ export async function withValidSession<T>(
 
 /**
  * Retry logic para acciones que pueden fallar temporalmente
+ * FASE 2: Ahora incluye timeout integrado
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
   maxRetries = 2,
-  delayMs = 1000
+  delayMs = 1000,
+  timeoutMs = 15000
 ): Promise<T> {
   let lastError: Error | null = null
 
@@ -80,8 +82,18 @@ export async function withRetry<T>(
       // Intentar asegurar sesión válida, pero no fallar si no hay sesión
       await ensureValidSession()
 
-      // Ejecutar función
-      return await fn()
+      // FASE 2: Ejecutar función con timeout
+      const result = await Promise.race([
+        fn(),
+        new Promise<T>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(`Timeout de operación después de ${timeoutMs}ms (intento ${attempt + 1})`)),
+            timeoutMs
+          )
+        )
+      ])
+      
+      return result
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Error desconocido')
       console.warn(`⚠️ Intento ${attempt + 1}/${maxRetries} falló:`, lastError.message)

@@ -13,6 +13,7 @@ import ResetPasswordModal from '@/components/admin/ResetPasswordModal'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { ToastContainer } from '@/components/ui/Toast'
 import { useToast } from '@/lib/hooks/useToast'
+import { LoadingWithTimeout } from '@/components/ui/LoadingWithTimeout'
 
 // Helper para los iconos de Tabler
 const Icon = ({ icon: IconComponent, size = 24, className = '' }: { icon: React.ComponentType<{ size?: number; className?: string }>; size?: number; className?: string }) => {
@@ -63,23 +64,34 @@ export default function Page() {
   const cargarUsuarios = async () => {
     try {
       console.log('📥 Cargando usuarios...')
-      const { data: usuarios, error } = await supabase
+      
+      // FASE 1: Agregar timeout de 10s a la query usando Promise.race
+      const queryPromise = supabase
         .from('usuarios')
         .select('*')
         .neq('estado', 'inactivo') // Excluir usuarios eliminados (soft delete)
         .order('created_at', { ascending: false })
+      
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout al cargar usuarios después de 10 segundos')), 10000)
+      )
+      
+      const result = await Promise.race([queryPromise, timeoutPromise])
+      const { data: usuarios, error } = result as any
 
       if (error) {
         console.error('❌ Error al cargar usuarios:', error)
         toast.error('Error al cargar usuarios: ' + error.message)
+        setIsLoading(false) // Asegurar que se finaliza el loading
         return
       }
 
       console.log('✅ Usuarios cargados:', usuarios?.length || 0, usuarios)
       setUsuarios(usuarios || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error al cargar datos:', error)
-      toast.error('Error al cargar los datos')
+      toast.error(error?.message || 'Error al cargar los datos')
+      setIsLoading(false) // Asegurar que se finaliza el loading
     }
   }
 

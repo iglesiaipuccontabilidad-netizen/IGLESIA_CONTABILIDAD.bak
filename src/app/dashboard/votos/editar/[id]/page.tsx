@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getVotoById, updateVoto } from '@/app/actions/votos-actions'
 import { getAllPropositos } from '@/app/actions/propositos-actions'
 import type { VotoDetalle } from '@/types/votos'
+import { LoadingWithTimeout } from '@/components/ui/LoadingWithTimeout'
 
 export default function EditarVotoPage() {
   const router = useRouter()
@@ -113,10 +114,14 @@ export default function EditarVotoPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4 text-slate-600">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-        <p className="text-sm font-medium">Cargando voto...</p>
-      </div>
+      <LoadingWithTimeout
+        isLoading={loading}
+        timeoutMs={12000}
+        loadingMessage="Cargando voto..."
+        timeoutMessage="La carga del voto está tardando más de lo esperado"
+      >
+        <div></div>
+      </LoadingWithTimeout>
     )
   }
 

@@ -4,13 +4,17 @@ import { createActionClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { type Database } from '@/lib/database.types'
+import { clearUserCookiesServer } from '@/lib/utils/cookieCleanup.server'
 
 export async function logout() {
   console.log('🚪 [Logout] Iniciando cierre de sesión...')
   
   const supabase = await createActionClient()
   
-  // Cerrar sesión en el servidor
+  // 1. Limpiar cookies primero (servidor)
+  await clearUserCookiesServer()
+  
+  // 2. Cerrar sesión en Supabase
   const { error } = await supabase.auth.signOut({ scope: 'global' })
   
   if (error) {
@@ -19,7 +23,7 @@ export async function logout() {
     console.log('✅ [Logout] Sesión cerrada correctamente')
   }
   
-  // Revalidar todas las rutas para limpiar caché
+  // 3. Revalidar todas las rutas para limpiar caché
   revalidatePath('/', 'layout')
   
   console.log('🔄 [Logout] Redirigiendo a login...')

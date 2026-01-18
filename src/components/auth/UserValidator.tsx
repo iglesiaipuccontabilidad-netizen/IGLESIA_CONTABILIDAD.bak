@@ -10,7 +10,6 @@ import { getSupabaseBrowserClient } from '@/lib/supabase-client'
  */
 export function UserValidator() {
   const { user, member } = useAuth()
-  const hasReloadedRef = useRef(false)
   const lastValidationRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -40,13 +39,8 @@ export function UserValidator() {
           console.error('❌ [UserValidator] DISCREPANCIA DETECTADA!')
           console.error('  - Usuario en contexto:', user.id, user.email)
           console.error('  - Usuario en sesión:', session.user.id, session.user.email)
-          
-          // Solo recargar una vez para evitar bucles infinitos
-          if (!hasReloadedRef.current) {
-            hasReloadedRef.current = true
-            console.error('  - FORZANDO RECARGA...')
-            window.location.reload()
-          }
+          console.error('  - NOTA: Considera hacer logout y login nuevamente')
+          // NO RECARGAR automáticamente - puede causar bucles infinitos
           return
         }
 

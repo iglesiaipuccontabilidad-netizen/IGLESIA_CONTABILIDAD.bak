@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { queryWithTimeout } from '@/lib/utils/supabaseWithTimeout'
 
 export interface ReporteFinanciero {
   // Métricas básicas
@@ -108,15 +109,26 @@ export function useReporteFinanciero(filtros: FiltrosFinanciero = {}) {
           queryVotos = queryVotos.lte('created_at', filtros.fechaFin)
         }
 
-        const { data: votos, error: votosError } = await queryVotos
+        // FASE 1: Agregar timeout de 20s (query compleja con joins)
+        const { data: votos, error: votosError } = await queryWithTimeout(
+          queryVotos,
+          20000,
+          'Timeout al cargar datos financieros después de 20 segundos'
+        )
 
         if (votosError) throw votosError
 
-        // Consultar miembros activos
-        const { count: miembrosActivos, error: miembrosError } = await supabase
+        // FASE 1: Agregar timeout a query de miembros activos
+        const miembrosPromise = supabase
           .from('miembros')
           .select('id', { count: 'exact', head: true })
           .eq('estado', 'activo')
+        
+        const { count: miembrosActivos, error: miembrosError } = await queryWithTimeout(
+          miembrosPromise,
+          10000,
+          'Timeout al contar miembros activos'
+        )
 
         if (miembrosError) throw miembrosError
 
