@@ -56,7 +56,7 @@ function generateHash(value: string): string {
 /**
  * Codifica un valor con versión y hash para validación
  */
-function encodeValue(value: string): string {
+export function encodeValue(value: string): string {
   const hash = generateHash(value)
   return `${COOKIE_VERSION}:${value}:${hash}`
 }

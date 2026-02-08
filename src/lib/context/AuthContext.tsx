@@ -36,6 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const mountedRef = useRef(true)
   const supabaseRef = useRef(getSupabaseBrowserClient())
+  const userRef = useRef<User | null>(null)
+  const isLoadingRef = useRef(true)
 
   // Cargar el rol y estado del usuario con reintentos
   const loadUserRole = useCallback(async (userId: string, retries = 3): Promise<{ rol: string | null; estado: string | null }> => {
@@ -144,10 +146,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { rol: null, estado: null }
   }, [])
 
-  // Cargar los comités del usuario
+  // Cargar los comités del usuario (con timeout de 10s)
   const loadUserComites = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabaseRef.current
+      const queryPromise = supabaseRef.current
         .from('comite_usuarios')
         .select(`
           comite_id,
@@ -159,6 +161,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           )
         `)
         .eq('usuario_id', userId)
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout al cargar comités del usuario')), 10000)
+      )
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any
       
       if (error) {
         console.error('Error cargando comités:', error.message)
@@ -167,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return data || []
     } catch (err) {
-      console.error('Error en loadUserComites:', err)
+      console.warn('⚠️ [AuthContext] loadUserComites falló (timeout o red):', err)
       return []
     }
   }, [])
@@ -177,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('📥 [AuthContext] Cargando datos para:', authUser.email, authUser.id)
     
     setUser(authUser)
+    userRef.current = authUser
     
     // Esperar un momento para asegurar que la sesión esté completamente sincronizada
     await new Promise(r => setTimeout(r, 300))
@@ -238,10 +247,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         // FASE 1: Timeout de seguridad aumentado a 15 segundos
         timeoutId = setTimeout(() => {
-          if (mountedRef.current && isLoading) {
+          if (mountedRef.current && isLoadingRef.current) {
             console.warn('⚠️ [AuthContext] Timeout alcanzado después de 15 segundos')
             console.warn('⚠️ [AuthContext] Esto puede indicar problemas de conexión')
             setIsLoading(false)
+            isLoadingRef.current = false
           }
         }, 15000)
         
@@ -267,6 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clearTimeout(timeoutId)
         if (mountedRef.current) {
           setIsLoading(false)
+          isLoadingRef.current = false
         }
       }
     }
@@ -283,19 +294,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         switch (event) {
           case 'INITIAL_SESSION':
             // Si hay sesión inicial y aún no tenemos usuario cargado, cargar datos
-            if (session?.user && !user) {
+            if (session?.user && !userRef.current) {
               console.log('🎯 [AuthContext] Sesión inicial detectada:', session.user.email)
               await loadUserData(session.user)
               if (mountedRef.current) {
                 setIsLoading(false)
+                isLoadingRef.current = false
               }
             }
             break
             
           case 'SIGNED_IN':
             if (session?.user) {
-              // SIGNED_IN se dispara al refocus de pestaña - verificar si es el mismo usuario
-              if (user && user.id === session.user.id) {
+              // SIGNED_IN se dispara al refocus de pestaña - usar ref para evitar stale closure
+              const currentUser = userRef.current
+              if (currentUser && currentUser.id === session.user.id) {
                 console.log('🔄 [AuthContext] Refocus detectado - usuario ya cargado:', session.user.email)
                 // No recargar datos si ya tenemos el mismo usuario
                 return
@@ -303,6 +316,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               console.log('✨ [AuthContext] Login detectado:', session.user.email)
               setIsLoading(true)
+              isLoadingRef.current = true
               
               // Esperar 500ms para asegurar que cookies y sesión están completamente sincronizadas
               await new Promise(r => setTimeout(r, 500))
@@ -318,6 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               
               if (mountedRef.current) {
                 setIsLoading(false)
+                isLoadingRef.current = false
               }
             }
             break
@@ -334,6 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('🚪 [AuthContext] Sesión cerrada - limpiando estado y cookies del cliente')
             clearAuthCookies() // Limpiar cookies en cliente también
             setUser(null)
+            userRef.current = null
             setMember(null)
             setComitesUsuario([])
             setIsLoading(false)

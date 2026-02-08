@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { encodeValue } from '@/lib/utils/supabaseWithTimeout'
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -47,10 +48,26 @@ export async function middleware(request: NextRequest) {
         .maybeSingle()
       
       if (userData) {
-        // Agregar headers personalizados con el rol (solo para lectura del cliente)
+        // Agregar headers personalizados con el rol
         supabaseResponse.headers.set('X-User-Rol', userData.rol || 'sin_rol')
         supabaseResponse.headers.set('X-User-Estado', userData.estado || 'pendiente')
-        console.log('✅ [Middleware] Rol precargado:', userData.rol)
+        
+        // Setear cookies con formato compatible con AuthContext
+        // Esto evita que el cliente tenga que hacer queries directas a Supabase
+        const cookieOptions = {
+          path: '/',
+          maxAge: 604800, // 7 días
+          sameSite: 'lax' as const,
+          secure: process.env.NODE_ENV === 'production',
+          httpOnly: false, // El cliente necesita leerlas via document.cookie
+        }
+        supabaseResponse.cookies.set('__auth_user_rol', encodeValue(userData.rol || 'sin_rol'), cookieOptions)
+        supabaseResponse.cookies.set('__auth_user_estado', encodeValue(userData.estado || 'pendiente'), cookieOptions)
+        supabaseResponse.cookies.set('__auth_user_id', encodeValue(user.id), cookieOptions)
+        if (user.email) {
+          supabaseResponse.cookies.set('__auth_user_email', encodeValue(user.email), cookieOptions)
+        }
+        console.log('✅ [Middleware] Rol precargado en cookies:', userData.rol)
       }
     } catch (err) {
       // No fallar el middleware si falla la precarga del rol

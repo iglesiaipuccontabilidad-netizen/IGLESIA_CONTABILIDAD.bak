@@ -56,15 +56,20 @@ function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
     setMounted(true)
     
     // Timeout de seguridad: si después de 20 segundos sigue cargando, mostrar timeout
+    // Solo se ejecuta una vez al montar - NO depende de isLoading para evitar re-creación
     const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        console.warn('⚠️ [DashboardLayoutClient] Timeout de carga alcanzado después de 20s')
-        setLoadingTimeout(true)
-      }
+      setLoadingTimeout(true)
     }, 20000)
     
     return () => clearTimeout(timeoutId)
-  }, [isLoading])
+  }, [])
+
+  // Resetear el timeout si el loading termina correctamente
+  useEffect(() => {
+    if (!isLoading && loadingTimeout) {
+      setLoadingTimeout(false)
+    }
+  }, [isLoading, loadingTimeout])
 
   // Redirigir a login si no hay usuario después de que termine de cargar
   useEffect(() => {
