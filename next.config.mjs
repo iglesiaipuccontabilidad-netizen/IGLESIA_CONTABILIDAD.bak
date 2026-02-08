@@ -1,9 +1,3 @@
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -13,14 +7,13 @@ const nextConfig = {
   },
   serverExternalPackages: ['@supabase/supabase-js'],
 
-  // Turbopack configuración top-level (Next.js 16+)
-  turbopack: {
-    root: __dirname,
-  },
-
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'localhost:3001'],
+      allowedOrigins: [
+        'localhost:3000',
+        'localhost:3001',
+        'sistema-contable-ipuc.vercel.app',
+      ],
     },
     optimizePackageImports: ['@/components', '@/lib'],
   },
@@ -39,16 +32,6 @@ const nextConfig = {
 
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
-  },
-
-  webpack: (config) => {
-    config.cache = {
-      type: 'filesystem',
-      buildDependencies: {
-        config: [__filename],
-      },
-    }
-    return config
   },
 }
 
