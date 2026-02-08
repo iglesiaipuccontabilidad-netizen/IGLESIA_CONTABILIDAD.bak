@@ -22,6 +22,15 @@
 	 "mcpui": {
       "command": "npx",
       "args": ["aceternityui-mcp"]
+    },
+
+		"TestSprite": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["@testsprite/testsprite-mcp@latest"],
+      "env": {
+        "API_KEY": "sk-user-hocJNdoK3nZOWPp3HLYTspTYHtV2hNm2Uf1AWhHKK9Y7Q3QNvO3H-CnDGWYZkXQqsEwqDA083l1GaqVquN5Davxs7BRORsvl9j6a6_iw66f36C-6JVZDc4VvcI3qNBevJbU"
+      }
     }
 		
 	},

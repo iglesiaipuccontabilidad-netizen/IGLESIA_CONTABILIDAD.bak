@@ -1,0 +1,539 @@
+[
+  {
+    "id": "TC001",
+    "title": "Valid Login with Correct Credentials",
+    "description": "Verify that a user can successfully login using valid username/email and password with proper JWT token generation and role assignment.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Input valid username/email and password"
+      },
+      {
+        "type": "action",
+        "description": "Submit login form"
+      },
+      {
+        "type": "assertion",
+        "description": "System returns a valid JWT token"
+      },
+      {
+        "type": "assertion",
+        "description": "User is redirected to the appropriate dashboard based on role"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Invalid Login with Incorrect Credentials",
+    "description": "Verify that login fails when incorrect username/email or password is used and appropriate error messages are shown.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Input invalid username/email and/or password"
+      },
+      {
+        "type": "action",
+        "description": "Submit login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Login is rejected with correct HTTP error and error message displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "No JWT token is issued"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Role-Based Access Control Enforcement",
+    "description": "Validate that users are only able to access resources and functionalities permitted by their assigned roles (admin, tesorero, usuario).",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as user with 'usuario' role"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to access admin-only pages and API endpoints"
+      },
+      {
+        "type": "assertion",
+        "description": "Access is denied and proper error or redirect occurs"
+      },
+      {
+        "type": "action",
+        "description": "Login as admin role"
+      },
+      {
+        "type": "action",
+        "description": "Access all administration features"
+      },
+      {
+        "type": "assertion",
+        "description": "All admin-level features are accessible without errors"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Dashboard Real-Time Data Representation",
+    "description": "Verify that the main dashboard displays real-time statistics, active votes, recent transactions, and proposals accurately and updates dynamically.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login and navigate to dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Dashboard shows correct live statistics for offerings, expenses, and active votes"
+      },
+      {
+        "type": "action",
+        "description": "Trigger new vote creation or new transaction"
+      },
+      {
+        "type": "assertion",
+        "description": "Dashboard updates display dynamically without manual refresh"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Committee CRUD Operations",
+    "description": "Test full create, read, update, and delete operations for committee management including member assignments across dynamic routes.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to committees management page"
+      },
+      {
+        "type": "action",
+        "description": "Create a new committee with valid data"
+      },
+      {
+        "type": "assertion",
+        "description": "New committee is created and visible in the list"
+      },
+      {
+        "type": "action",
+        "description": "View committee details on its page"
+      },
+      {
+        "type": "assertion",
+        "description": "Committee details are correctly displayed"
+      },
+      {
+        "type": "action",
+        "description": "Edit committee information"
+      },
+      {
+        "type": "assertion",
+        "description": "Changes are saved and reflected accurately"
+      },
+      {
+        "type": "action",
+        "description": "Delete a committee"
+      },
+      {
+        "type": "assertion",
+        "description": "Committee is removed from the list and database"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Committee Member Management",
+    "description": "Verify that members can be added, edited, viewed, and removed from committees properly with UI and backend synchronization.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access a specific committee member management page"
+      },
+      {
+        "type": "action",
+        "description": "Add a new member with valid details"
+      },
+      {
+        "type": "assertion",
+        "description": "Member is added to the committee and displayed in the member list"
+      },
+      {
+        "type": "action",
+        "description": "Edit a member's information"
+      },
+      {
+        "type": "assertion",
+        "description": "Member updates are saved and correctly displayed"
+      },
+      {
+        "type": "action",
+        "description": "Remove a member from committee"
+      },
+      {
+        "type": "assertion",
+        "description": "Member is no longer listed in committee members"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Voting Creation and Lifecycle Management",
+    "description": "Validate creation of new votes, tracking active votes, expiration handling, and approval workflow for committee decisions.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to voting section of a committee"
+      },
+      {
+        "type": "action",
+        "description": "Create a new vote with valid parameters"
+      },
+      {
+        "type": "assertion",
+        "description": "New vote appears in the active votes list with correct details"
+      },
+      {
+        "type": "action",
+        "description": "Simulate voting by committee members"
+      },
+      {
+        "type": "assertion",
+        "description": "Vote status updates reflect correctly in UI"
+      },
+      {
+        "type": "action",
+        "description": "Simulate vote expiration or approval"
+      },
+      {
+        "type": "assertion",
+        "description": "Vote lifecycle ends correctly with status update and no further voting allowed"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Vote Expiration Edge Case Handling",
+    "description": "Verify system behavior when a vote reaches expiration time, ensuring no votes are accepted and status changes correctly.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a vote with an expiration timestamp in the near future"
+      },
+      {
+        "type": "action",
+        "description": "Wait until the expiration time passes"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to cast a vote after expiration"
+      },
+      {
+        "type": "assertion",
+        "description": "System rejects vote submission due to expiration"
+      },
+      {
+        "type": "assertion",
+        "description": "Vote status is updated to expired"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Offerings CRUD with Categorization and Validation",
+    "description": "Verify offerings can be created, viewed, edited, and deleted with correct category assignments and frontend Zod validation on all forms.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to offerings management page of a committee"
+      },
+      {
+        "type": "action",
+        "description": "Create a new offering with valid amount and category"
+      },
+      {
+        "type": "assertion",
+        "description": "Offering is listed with correct details"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to create offering with invalid data (e.g. negative amount, missing category)"
+      },
+      {
+        "type": "assertion",
+        "description": "Form validation prevents submission with appropriate error messages"
+      },
+      {
+        "type": "action",
+        "description": "Edit an existing offering's category and amount"
+      },
+      {
+        "type": "assertion",
+        "description": "Offering updates are saved and displayed correctly"
+      },
+      {
+        "type": "action",
+        "description": "Delete an offering entry"
+      },
+      {
+        "type": "assertion",
+        "description": "Offering is removed from the list and database"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Expenses Registration and Budget Oversight",
+    "description": "Validate expense creation, editing, viewing, and deletion with categories and budget tracking functionality including validation checks.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to expenses management page within a committee"
+      },
+      {
+        "type": "action",
+        "description": "Create a new expense record with valid category, amount, and description"
+      },
+      {
+        "type": "assertion",
+        "description": "Expense is listed and properly categorized"
+      },
+      {
+        "type": "action",
+        "description": "Try submitting expense with invalid data (e.g., exceeding budget, missing category)"
+      },
+      {
+        "type": "assertion",
+        "description": "Frontend validation using Zod prevents submission and shows errors"
+      },
+      {
+        "type": "action",
+        "description": "Edit an existing expense record"
+      },
+      {
+        "type": "assertion",
+        "description": "Updates are saved and reflected correctly"
+      },
+      {
+        "type": "action",
+        "description": "Delete an expense"
+      },
+      {
+        "type": "assertion",
+        "description": "Expense is removed from UI and backend"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Admin User Management: Role and Permission Updates",
+    "description": "Test admin functionalities for managing users including assigning roles, updating permissions, and toggling user account status.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as admin and navigate to user administration panel"
+      },
+      {
+        "type": "action",
+        "description": "Select a user and modify their assigned role"
+      },
+      {
+        "type": "action",
+        "description": "Update user's permissions accordingly"
+      },
+      {
+        "type": "assertion",
+        "description": "Changes are saved and reflected in backend and UI"
+      },
+      {
+        "type": "action",
+        "description": "Disable a user account"
+      },
+      {
+        "type": "assertion",
+        "description": "User is prevented from logging in or accessing sensitive pages"
+      },
+      {
+        "type": "action",
+        "description": "Re-enable a previously disabled user"
+      },
+      {
+        "type": "assertion",
+        "description": "User can log in again and role permissions apply"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "PDF Report Generation and Download for Offerings",
+    "description": "Verify that PDF financial reports for offerings can be generated on demand with accurate data and downloaded without corruption or errors.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to offerings reporting page"
+      },
+      {
+        "type": "action",
+        "description": "Request generation of offerings PDF report for a specific committee/time range"
+      },
+      {
+        "type": "assertion",
+        "description": "Report is generated correctly with all relevant offerings data"
+      },
+      {
+        "type": "action",
+        "description": "Download the generated PDF"
+      },
+      {
+        "type": "assertion",
+        "description": "PDF file downloads successfully and opens without errors displaying expected content"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "API Endpoint Response Status and Schema Validation",
+    "description": "Confirm that all backend RESTful API endpoints respond with correct HTTP status codes and data matching the expected schema.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send authenticated API requests for CRUD operations for committees, offerings, votes, and users"
+      },
+      {
+        "type": "assertion",
+        "description": "Each endpoint responds with expected HTTP status code (200, 201, 400, 401, 403, 404, as applicable)"
+      },
+      {
+        "type": "assertion",
+        "description": "Response payloads conform to the defined JSON schemas without missing or extra fields"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Form Input Validation with Zod and React Hook Form",
+    "description": "Validate that all forms related to committees, votes, offerings, and expenses enforce frontend input validation using Zod schemas integrated with React Hook Form.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access each data entry form (committee creation, vote creation, offering input, expense entry)"
+      },
+      {
+        "type": "action",
+        "description": "Submit the form with missing required fields, invalid data types, or out-of-range values"
+      },
+      {
+        "type": "assertion",
+        "description": "Form submission is blocked and descriptive validation error messages are shown inline"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Edge Case: Large Volume Data in Dashboard Components",
+    "description": "Test dashboard and list components behavior when handling large volumes of active votes, recent transactions, and propositions ensuring performance and usability.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Seed the database with large number of votes, transactions, and propositions"
+      },
+      {
+        "type": "action",
+        "description": "Load the dashboard page"
+      },
+      {
+        "type": "assertion",
+        "description": "Dashboard loads within acceptable time and renders lists with proper pagination or scrolling"
+      },
+      {
+        "type": "assertion",
+        "description": "No UI overlap or rendering errors occur"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Database Row Level Security (RLS) Enforcement",
+    "description": "Verify that Supabase RLS policies restrict data access appropriately based on user roles and ownership for all sensitive tables.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as different user roles and attempt to CRUD records in committees, offerings, votes, expenses, and users"
+      },
+      {
+        "type": "assertion",
+        "description": "Operations not permitted by RLS policies are rejected with appropriate errors"
+      },
+      {
+        "type": "assertion",
+        "description": "Users can only access and modify records they have permissions for"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Application Build and Production Runtime Check",
+    "description": "Ensure that the application builds successfully with no TypeScript errors and runs smoothly in production mode without runtime crashes.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Run the full production build process"
+      },
+      {
+        "type": "assertion",
+        "description": "Build completes without errors or warnings"
+      },
+      {
+        "type": "action",
+        "description": "Deploy the built application to a production environment or simulate production run"
+      },
+      {
+        "type": "assertion",
+        "description": "Application loads and functions correctly without runtime errors or crashes"
+      }
+    ]
+  }
+]

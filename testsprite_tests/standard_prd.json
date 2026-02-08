@@ -1,0 +1,168 @@
+{
+  "meta": {
+    "project": "IPUC Contabilidad",
+    "date": "2026-02-06",
+    "prepared_by": "Software Development Manager"
+  },
+  "product_overview": "IPUC Contabilidad is a comprehensive accounting and committee management system tailored for the IPUC Church. It leverages modern web technologies to facilitate committee operations, financial tracking, user role management, and real-time dashboards with secure authentication.",
+  "core_goals": [
+    "Provide robust JWT-based authentication and role-based access control to secure sensitive church data.",
+    "Enable comprehensive committee management with full CRUD operations and dynamic routing.",
+    "Facilitate transparent financial tracking via offerings and expenses management with detailed reporting.",
+    "Implement an efficient voting system for committee decision-making with lifecycle management of votes.",
+    "Offer an intuitive dashboard with real-time statistics and summaries to keep users informed.",
+    "Support admin-level user management including roles, permissions, and account status.",
+    "Generate downloadable PDF reports for financial records and summaries for ease of auditing and sharing."
+  ],
+  "key_features": [
+    "JWT-based Authentication and Authorization with role-based access control (admin, tesorero, usuario).",
+    "Main dashboard featuring live statistics, active votes, recent transactions, and proposals.",
+    "Full CRUD for committees and member management across 26 dynamic routes.",
+    "Voting system supporting vote creation, tracking, expiration, and approvals for committee decisions.",
+    "Management of offerings by category with financial tracking and reporting.",
+    "Expense registration and management with categorization and budget oversight.",
+    "Admin panel for user and permissions management with validation.",
+    "PDF report generation for offerings, expenses, and summary reports.",
+    "Backend RESTful API endpoints supporting all CRUD operations, authentication, and data retrieval.",
+    "Server actions integrated with Supabase for database interaction and security, including Row Level Security (RLS) policies."
+  ],
+  "user_flow_summary": [
+    "User logs in via secure JWT authentication and is authorized based on assigned role.",
+    "User navigates to the dashboard to view real-time statistics and active votes.",
+    "Admins can create and manage committees and assign members through a detailed CRUD interface.",
+    "Committee members can vote on proposals, with vote status tracked until expiration or approval.",
+    "Users can input offerings and expenses categorized appropriately, viewable in financial reports.",
+    "Admins manage users, roles, and permissions via a dedicated user administration panel.",
+    "Users generate and download PDF financial reports directly from the interface for review or record-keeping."
+  ],
+  "validation_criteria": [
+    "System enforces role-based access control for all sensitive actions and data endpoints.",
+    "All forms for committees, offerings, votes, and expenses include frontend validation using Zod and React Hook Form.",
+    "Dashboard data updates in real-time with accurate representation of votes, transactions, and proposals.",
+    "PDF reports are generated correctly with accurate financial data and downloadable without errors.",
+    "API endpoints respond with correct status codes and data conforming to the expected schemas.",
+    "Test coverage ensures all critical flows such as authentication, CRUD operations and reporting function as intended.",
+    "Build completes successfully with no TypeScript errors and the application runs smoothly in production mode."
+  ],
+  "code_summary": {
+    "tech_stack": [
+      "TypeScript",
+      "React 18.3.1",
+      "Next.js 16.1.0",
+      "Tailwind CSS",
+      "Supabase (Auth & Database)",
+      "PostgreSQL",
+      "React Query",
+      "React Hook Form",
+      "Zod (Validation)",
+      "jsPDF (Reports)",
+      "Recharts (Charts)",
+      "Lucide React (Icons)"
+    ],
+    "features": [
+      {
+        "name": "Authentication & Authorization",
+        "description": "JWT-based authentication with Supabase, role-based access control (admin, tesorero, usuario), and permission management",
+        "files": [
+          "src/lib/auth/auth-service.ts",
+          "src/lib/auth/permissions.ts",
+          "src/lib/auth/comite-permissions.ts",
+          "src/lib/auth/verify-admin.ts",
+          "src/app/login/page.tsx",
+          "src/app/login/actions.ts"
+        ]
+      },
+      {
+        "name": "Dashboard & Statistics",
+        "description": "Main dashboard showing statistics, active votes, recent transactions, and proposals with real-time updates",
+        "files": [
+          "src/app/dashboard/page.tsx",
+          "src/components/dashboard/DashboardCards.tsx",
+          "src/components/dashboard/ProgressSection.tsx",
+          "src/components/dashboard/QuickSummarySection.tsx",
+          "src/components/dashboard/RecentPropositionsSection.tsx"
+        ]
+      },
+      {
+        "name": "Committee Management",
+        "description": "Complete CRUD for committees, member management, and committee-specific dashboards with 26 routes",
+        "files": [
+          "src/app/dashboard/comites/page.tsx",
+          "src/app/dashboard/comites/nuevo/page.tsx",
+          "src/app/dashboard/comites/[id]/page.tsx",
+          "src/app/dashboard/comites/[id]/dashboard/page.tsx",
+          "src/components/comites/ComiteCard.tsx",
+          "src/components/comites/ComiteForm.tsx"
+        ]
+      },
+      {
+        "name": "Voting System",
+        "description": "Vote management with creation, tracking, expiration, and approval workflows for committee decisions",
+        "files": [
+          "src/app/dashboard/comites/[id]/votos/page.tsx",
+          "src/app/dashboard/comites/[id]/votos/nuevo/page.tsx",
+          "src/app/dashboard/comites/[id]/votos/[votoId]/page.tsx",
+          "src/components/comites/VotosComiteTable.tsx",
+          "src/components/comites/ComiteVotoForm.tsx"
+        ]
+      },
+      {
+        "name": "Offerings Management",
+        "description": "Track and manage offerings with categorization, amounts, and financial reporting",
+        "files": [
+          "src/app/dashboard/comites/[id]/ofrendas/page.tsx",
+          "src/app/dashboard/comites/[id]/ofrendas/nueva/page.tsx",
+          "src/components/comites/OfrendaForm.tsx"
+        ]
+      },
+      {
+        "name": "Expenses Management",
+        "description": "Register and manage expenses with categories, descriptions, and budget tracking",
+        "files": [
+          "src/app/dashboard/comites/[id]/gastos/page.tsx",
+          "src/app/dashboard/comites/[id]/gastos/nuevo/page.tsx",
+          "src/app/dashboard/comites/[id]/gastos/[gastoId]/page.tsx"
+        ]
+      },
+      {
+        "name": "User Administration",
+        "description": "Admin panel for managing users, roles, permissions, and user status with validation",
+        "files": [
+          "src/app/dashboard/admin/usuarios/page.tsx",
+          "src/app/api/admin/usuarios/route.ts",
+          "src/app/api/admin/usuarios/[id]/route.ts",
+          "src/app/api/admin/usuarios/[id]/reset-password/route.ts",
+          "src/components/admin/UsuariosTable.tsx"
+        ]
+      },
+      {
+        "name": "PDF Reports Generation",
+        "description": "Generate and download PDF reports for offerings, expenses, and financial summaries",
+        "files": [
+          "src/app/api/reportes/ofrendas/route.ts",
+          "src/lib/pdf/reporteOfrendas.ts",
+          "src/lib/pdf/reporteGastos.ts"
+        ]
+      },
+      {
+        "name": "API Routes",
+        "description": "Backend API endpoints for CRUD operations, authentication, and data retrieval",
+        "files": [
+          "src/app/api/admin/usuarios/route.ts",
+          "src/app/api/usuarios/activos/route.ts",
+          "src/app/api/reportes/ofrendas/route.ts"
+        ]
+      },
+      {
+        "name": "Database & Server Actions",
+        "description": "35+ server actions for data fetching, mutations, and 8 main tables with RLS policies",
+        "files": [
+          "src/app/actions/comites-actions.ts",
+          "src/app/api/miembros/actions.ts",
+          "src/lib/supabase/server.ts",
+          "src/lib/supabase/client.ts"
+        ]
+      }
+    ]
+  }
+}

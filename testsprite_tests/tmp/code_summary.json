@@ -1,0 +1,121 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "React 18.3.1",
+    "Next.js 16.1.0",
+    "Tailwind CSS",
+    "Supabase (Auth & Database)",
+    "PostgreSQL",
+    "React Query",
+    "React Hook Form",
+    "Zod (Validation)",
+    "jsPDF (Reports)",
+    "Recharts (Charts)",
+    "Lucide React (Icons)"
+  ],
+  "features": [
+    {
+      "name": "Authentication & Authorization",
+      "description": "JWT-based authentication with Supabase, role-based access control (admin, tesorero, usuario), and permission management",
+      "files": [
+        "src/lib/auth/auth-service.ts",
+        "src/lib/auth/permissions.ts",
+        "src/lib/auth/comite-permissions.ts",
+        "src/lib/auth/verify-admin.ts",
+        "src/app/login/page.tsx",
+        "src/app/login/actions.ts"
+      ]
+    },
+    {
+      "name": "Dashboard & Statistics",
+      "description": "Main dashboard showing statistics, active votes, recent transactions, and proposals with real-time updates",
+      "files": [
+        "src/app/dashboard/page.tsx",
+        "src/components/dashboard/DashboardCards.tsx",
+        "src/components/dashboard/ProgressSection.tsx",
+        "src/components/dashboard/QuickSummarySection.tsx",
+        "src/components/dashboard/RecentPropositionsSection.tsx"
+      ]
+    },
+    {
+      "name": "Committee Management",
+      "description": "Complete CRUD for committees, member management, and committee-specific dashboards with 26 routes",
+      "files": [
+        "src/app/dashboard/comites/page.tsx",
+        "src/app/dashboard/comites/nuevo/page.tsx",
+        "src/app/dashboard/comites/[id]/page.tsx",
+        "src/app/dashboard/comites/[id]/dashboard/page.tsx",
+        "src/components/comites/ComiteCard.tsx",
+        "src/components/comites/ComiteForm.tsx"
+      ]
+    },
+    {
+      "name": "Voting System",
+      "description": "Vote management with creation, tracking, expiration, and approval workflows for committee decisions",
+      "files": [
+        "src/app/dashboard/comites/[id]/votos/page.tsx",
+        "src/app/dashboard/comites/[id]/votos/nuevo/page.tsx",
+        "src/app/dashboard/comites/[id]/votos/[votoId]/page.tsx",
+        "src/components/comites/VotosComiteTable.tsx",
+        "src/components/comites/ComiteVotoForm.tsx"
+      ]
+    },
+    {
+      "name": "Offerings Management",
+      "description": "Track and manage offerings with categorization, amounts, and financial reporting",
+      "files": [
+        "src/app/dashboard/comites/[id]/ofrendas/page.tsx",
+        "src/app/dashboard/comites/[id]/ofrendas/nueva/page.tsx",
+        "src/components/comites/OfrendaForm.tsx"
+      ]
+    },
+    {
+      "name": "Expenses Management",
+      "description": "Register and manage expenses with categories, descriptions, and budget tracking",
+      "files": [
+        "src/app/dashboard/comites/[id]/gastos/page.tsx",
+        "src/app/dashboard/comites/[id]/gastos/nuevo/page.tsx",
+        "src/app/dashboard/comites/[id]/gastos/[gastoId]/page.tsx"
+      ]
+    },
+    {
+      "name": "User Administration",
+      "description": "Admin panel for managing users, roles, permissions, and user status with validation",
+      "files": [
+        "src/app/dashboard/admin/usuarios/page.tsx",
+        "src/app/api/admin/usuarios/route.ts",
+        "src/app/api/admin/usuarios/[id]/route.ts",
+        "src/app/api/admin/usuarios/[id]/reset-password/route.ts",
+        "src/components/admin/UsuariosTable.tsx"
+      ]
+    },
+    {
+      "name": "PDF Reports Generation",
+      "description": "Generate and download PDF reports for offerings, expenses, and financial summaries",
+      "files": [
+        "src/app/api/reportes/ofrendas/route.ts",
+        "src/lib/pdf/reporteOfrendas.ts",
+        "src/lib/pdf/reporteGastos.ts"
+      ]
+    },
+    {
+      "name": "API Routes",
+      "description": "Backend API endpoints for CRUD operations, authentication, and data retrieval",
+      "files": [
+        "src/app/api/admin/usuarios/route.ts",
+        "src/app/api/usuarios/activos/route.ts",
+        "src/app/api/reportes/ofrendas/route.ts"
+      ]
+    },
+    {
+      "name": "Database & Server Actions",
+      "description": "35+ server actions for data fetching, mutations, and 8 main tables with RLS policies",
+      "files": [
+        "src/app/actions/comites-actions.ts",
+        "src/app/api/miembros/actions.ts",
+        "src/lib/supabase/server.ts",
+        "src/lib/supabase/client.ts"
+      ]
+    }
+  ]
+}

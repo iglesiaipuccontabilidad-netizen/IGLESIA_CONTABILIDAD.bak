@@ -1,0 +1,16 @@
+{
+  "status": "init",
+  "scope": "codebase",
+  "type": "frontend",
+  "localEndpoint": "http://localhost:3000/",
+  "serverPort": 46799,
+  "executionArgs": {
+    "projectName": "ipuc-contabilidad",
+    "projectPath": "/home/juanda/ipuc-contabilidad",
+    "testIds": [],
+    "additionalInstruction": "Execute all 17 test cases from the frontend test plan focusing on critical functionality: login, RBAC, committee CRUD, votes, offerings, and admin management",
+    "envs": {
+      "API_KEY": "sk-user-hocJNdoK3nZOWPp3HLYTspTYHtV2hNm2Uf1AWhHKK9Y7Q3QNvO3H-CnDGWYZkXQqsEwqDA083l1GaqVquN5Davxs7BRORsvl9j6a6_iw66f36C-6JVZDc4VvcI3qNBevJbU"
+    }
+  }
+}
