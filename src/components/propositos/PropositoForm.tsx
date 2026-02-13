@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useActionState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { updateProposito } from '@/app/actions/propositos-actions'
 import toast from 'react-hot-toast'
 import { Save, X } from 'lucide-react'

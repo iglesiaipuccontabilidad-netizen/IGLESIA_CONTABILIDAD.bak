@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import PropositoForm from '@/components/propositos/PropositoForm'
 import { ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 
 export const dynamic = 'force-dynamic'
 

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { Plus, TrendingUp, Target, Calendar } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { requireAdminOrTesorero } from '@/lib/auth/permissions'

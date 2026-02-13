@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { ArrowLeft, Edit, TrendingUp, Target, Calendar, Users, DollarSign, Trash2, AlertTriangle } from 'lucide-react'
 import { deleteProposito } from '@/app/actions/propositos-actions'
 import toast from 'react-hot-toast'

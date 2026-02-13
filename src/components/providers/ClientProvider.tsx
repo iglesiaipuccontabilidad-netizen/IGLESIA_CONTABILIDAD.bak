@@ -1,6 +1,7 @@
 'use client'
 
 import { AuthProvider } from "@/lib/context/AuthContext";
+import { OrganizationProvider } from "@/lib/context/OrganizationContext";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 
 export default function ClientProvider({
@@ -10,7 +11,9 @@ export default function ClientProvider({
 }) {
   return (
     <QueryProvider>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <OrganizationProvider>{children}</OrganizationProvider>
+      </AuthProvider>
     </QueryProvider>
   );
 }

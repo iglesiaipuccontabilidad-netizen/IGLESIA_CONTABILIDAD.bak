@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/lib/database.types'
 import { MiembroCombobox } from '@/components/miembros/MiembroCombobox'

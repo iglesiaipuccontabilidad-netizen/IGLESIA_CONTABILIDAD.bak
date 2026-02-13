@@ -1,7 +1,7 @@
 "use client"
 
 import { ScrollText, User, Calendar, DollarSign, AlertCircle } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 
 interface VotoActivo {
   id: string

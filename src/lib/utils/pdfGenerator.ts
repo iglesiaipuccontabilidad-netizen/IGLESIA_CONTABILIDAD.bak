@@ -15,6 +15,7 @@ interface PDFOptions {
   incluirLogo?: boolean
   colorTema?: string
   incluirResumen?: boolean
+  nombreOrganizacion?: string
 }
 
 interface PDFConfig {
@@ -23,6 +24,7 @@ interface PDFConfig {
   incluirResumen: boolean
   orientacion: 'portrait' | 'landscape'
   formato: 'a4' | 'letter'
+  nombreOrganizacion: string
 }
 
 // Función auxiliar para convertir color hex a RGB
@@ -43,7 +45,8 @@ export const generarPDF = ({
   orientacion = 'portrait',
   incluirLogo = true,
   colorTema = '#3B82F6',
-  incluirResumen = true
+  incluirResumen = true,
+  nombreOrganizacion = 'IPUC'
 }: PDFOptions) => {
   try {
     // Crear documento PDF
@@ -64,7 +67,7 @@ export const generarPDF = ({
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(12)
       doc.setTextColor(255, 255, 255)
-      doc.text('IPUC', 20, 17, { align: 'center' })
+      doc.text(nombreOrganizacion.substring(0, 6), 20, 17, { align: 'center' })
       
       yPos = 35
     }
@@ -99,7 +102,7 @@ export const generarPDF = ({
       minute: '2-digit'
     })
     doc.text(`Generado: ${fecha}`, incluirLogo ? 35 : 14, yPos)
-    doc.text('Sistema Contable IPUC', doc.internal.pageSize.getWidth() - 14, yPos, { align: 'right' })
+    doc.text(`Sistema Contable ${nombreOrganizacion}`, doc.internal.pageSize.getWidth() - 14, yPos, { align: 'right' })
 
     yPos += 6
 
@@ -193,7 +196,8 @@ export const generarPDFFinanciero = (datos: any, config: Partial<PDFConfig> = {}
     colorTema = '#3B82F6',
     incluirResumen = true,
     orientacion = 'portrait',
-    formato = 'a4'
+    formato = 'a4',
+    nombreOrganizacion = 'IPUC'
   } = config
 
   const doc = new jsPDF({
@@ -253,7 +257,7 @@ export const generarPDFFinanciero = (datos: any, config: Partial<PDFConfig> = {}
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(16)
     doc.setTextColor(255, 255, 255)
-    doc.text('IPUC', pageWidth / 2, yPos + 12, { align: 'center' })
+    doc.text(nombreOrganizacion.substring(0, 6), pageWidth / 2, yPos + 12, { align: 'center' })
     
     yPos += 25
   }
@@ -582,7 +586,7 @@ export const generarPDFFinanciero = (datos: any, config: Partial<PDFConfig> = {}
     const dateText = new Date().toLocaleDateString('es-CO')
     
     doc.text(pageText, marginLeft, pageHeight - 10)
-    doc.text('IPUC Contabilidad - Reporte Financiero', pageWidth / 2, pageHeight - 10, { align: 'center' })
+    doc.text(`${nombreOrganizacion} Contabilidad - Reporte Financiero`, pageWidth / 2, pageHeight - 10, { align: 'center' })
     doc.text(dateText, pageWidth - marginLeft, pageHeight - 10, { align: 'right' })
   }
 
@@ -610,6 +614,7 @@ export const generarPDFPagos = (datos: any[], config: Partial<PDFConfig> = {}) =
 
 // Función específica para reporte avanzado de miembros
 export const generarPDFMiembros = (datos: any[], config: Partial<PDFConfig> = {}) => {
+  const { nombreOrganizacion = 'IPUC' } = config
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -631,7 +636,7 @@ export const generarPDFMiembros = (datos: any[], config: Partial<PDFConfig> = {}
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(100)
-    doc.text('REPORTE DE MIEMBROS - IPUC CONTABILIDAD', pageWidth / 2, 12, { align: 'center' })
+    doc.text(`REPORTE DE MIEMBROS - ${nombreOrganizacion} CONTABILIDAD`, pageWidth / 2, 12, { align: 'center' })
   }
 
   // Función mejorada para verificar si necesita nueva página
@@ -919,7 +924,7 @@ export const generarPDFMiembros = (datos: any[], config: Partial<PDFConfig> = {}
     const dateText = new Date().toLocaleDateString('es-CO')
     
     doc.text(pageText, marginLeft, pageHeight - 10)
-    doc.text('IPUC Contabilidad - Reporte de Miembros', pageWidth / 2, pageHeight - 10, { align: 'center' })
+    doc.text(`${nombreOrganizacion} Contabilidad - Reporte de Miembros`, pageWidth / 2, pageHeight - 10, { align: 'center' })
     doc.text(dateText, pageWidth - marginLeft, pageHeight - 10, { align: 'right' })
   }
 
@@ -935,7 +940,8 @@ export const generarPDFVotos = (datos: any[], config: Partial<PDFConfig> = {}) =
     colorTema = '#3B82F6',
     incluirResumen = true,
     orientacion = 'portrait',
-    formato = 'a4'
+    formato = 'a4',
+    nombreOrganizacion = 'IPUC'
   } = config
   const doc = new jsPDF({
     orientation: orientacion,
@@ -958,7 +964,7 @@ export const generarPDFVotos = (datos: any[], config: Partial<PDFConfig> = {}) =
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(100)
-    doc.text('REPORTE DE VOTOS - IPUC CONTABILIDAD', pageWidth / 2, 12, { align: 'center' })
+    doc.text(`REPORTE DE VOTOS - ${nombreOrganizacion} CONTABILIDAD`, pageWidth / 2, 12, { align: 'center' })
   }
 
   // Función mejorada para verificar si necesita nueva página
@@ -1093,7 +1099,7 @@ export const generarPDFVotos = (datos: any[], config: Partial<PDFConfig> = {}) =
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(16)
     doc.setTextColor(255, 255, 255)
-    doc.text('IPUC', pageWidth / 2, 28, { align: 'center' })
+    doc.text(nombreOrganizacion.substring(0, 6), pageWidth / 2, 28, { align: 'center' })
     
     yPos = 50
   }
@@ -1551,7 +1557,7 @@ export const generarPDFVotos = (datos: any[], config: Partial<PDFConfig> = {}) =
     const dateText = new Date().toLocaleDateString('es-CO')
     
     doc.text(pageText, marginLeft, pageHeight - 10)
-    doc.text('IPUC Contabilidad - Reporte de Votos', pageWidth / 2, pageHeight - 10, { align: 'center' })
+    doc.text(`${nombreOrganizacion} Contabilidad - Reporte de Votos`, pageWidth / 2, pageHeight - 10, { align: 'center' })
     doc.text(dateText, pageWidth - marginLeft, pageHeight - 10, { align: 'right' })
   }
 
@@ -1574,7 +1580,8 @@ export const generarPDFVentas = (datos: any[], config: Partial<PDFConfig> = {}) 
       colorTema = '#3B82F6',
       incluirResumen = true,
       orientacion = 'landscape',
-      formato = 'a4'
+      formato = 'a4',
+      nombreOrganizacion = 'IPUC'
     } = config
 
     const doc = new jsPDF({
@@ -1601,7 +1608,7 @@ export const generarPDFVentas = (datos: any[], config: Partial<PDFConfig> = {}) 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(12)
       doc.setTextColor(255, 255, 255)
-      doc.text('IPUC', marginLeft + 8, yPos + 12, { align: 'center' })
+      doc.text(nombreOrganizacion.substring(0, 6), marginLeft + 8, yPos + 12, { align: 'center' })
       
       // Título
       doc.setFont('helvetica', 'bold')
@@ -1628,7 +1635,7 @@ export const generarPDFVentas = (datos: any[], config: Partial<PDFConfig> = {}) 
       minute: '2-digit'
     })
     doc.text(`Generado: ${fecha}`, marginLeft, yPos + 18)
-    doc.text('IPUC Contabilidad', pageWidth - marginRight, yPos + 18, { align: 'right' })
+    doc.text(`${nombreOrganizacion} Contabilidad`, pageWidth - marginRight, yPos + 18, { align: 'right' })
 
     // Línea separadora
     doc.setDrawColor(200)

@@ -91,19 +91,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { rol: null, estado: null }
         }
         
-        // FASE 1: Agregar timeout de 10s a la query usando Promise.race
-        const queryPromise = supabaseRef.current
-          .from('usuarios')
+        // MULTI-TENANT: Consultar organizacion_usuarios primero (nueva tabla)
+        const orgQueryPromise = supabaseRef.current
+          .from('organizacion_usuarios')
           .select('rol, estado')
-          .eq('id', userId)
+          .eq('usuario_id', userId)
+          .eq('estado', 'activo')
           .maybeSingle()
         
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error(`Timeout al cargar rol del usuario (intento ${attempt})`)), 10000)
         )
         
-        const result = await Promise.race([queryPromise, timeoutPromise])
-        const { data, error } = result as any
+        const orgResult = await Promise.race([orgQueryPromise, timeoutPromise])
+        let { data, error } = orgResult as any
+        
+        // Fallback a tabla usuarios (compatibilidad durante migración)
+        if (!data && !error) {
+          const fallbackResult = await Promise.race([
+            supabaseRef.current
+              .from('usuarios')
+              .select('rol, estado')
+              .eq('id', userId)
+              .maybeSingle(),
+            timeoutPromise
+          ])
+          data = (fallbackResult as any).data
+          error = (fallbackResult as any).error
+        }
 
         if (error) {
           console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message, error.code)

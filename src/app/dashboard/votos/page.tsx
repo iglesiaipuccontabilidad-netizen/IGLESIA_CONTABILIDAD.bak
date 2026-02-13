@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
+import Link from '@/components/OrgLink'
 import { getVotosWithDetails } from '@/app/actions/votos-actions'
 import { getCurrentUserRole } from '@/lib/auth'
 import type { VotoDetalle } from '@/types/votos'

@@ -104,10 +104,22 @@ export default function LoginForm() {
       // Esperar un poco más para que la sesión se propague completamente
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // PASO 5: Redirigir al dashboard
-      console.log('🚀 [Login] Redirigiendo a dashboard...');
-      // Usar router.push para aprovechar el caché de Next.js
-      router.push('/dashboard');
+      // PASO 5: Obtener slug de la organización para URL
+      console.log('🏢 [Login] Obteniendo organización...');
+      const { data: orgData } = await supabase
+        .from('organizacion_usuarios')
+        .select('organizaciones!inner(slug)')
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .limit(1)
+        .maybeSingle()
+      
+      const orgSlug = (orgData as any)?.organizaciones?.slug || null
+      const dashboardPath = orgSlug ? `/${orgSlug}/dashboard` : '/dashboard'
+      
+      // PASO 6: Redirigir al dashboard
+      console.log('🚀 [Login] Redirigiendo a', dashboardPath);
+      router.push(dashboardPath);
     } catch (err: any) {
       console.error('❌ [Login] Error al iniciar sesión:', err);
       setError(err.message || 'Error al iniciar sesión');

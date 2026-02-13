@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { Database } from '@/lib/database.types'
 import styles from '@/styles/votos.module.css'
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { Menu } from 'lucide-react'
+import { useOrganization } from '@/lib/context/OrganizationContext'
 import styles from './DashboardHeader.module.css'
 
 interface DashboardHeaderProps {
@@ -8,6 +9,8 @@ interface DashboardHeaderProps {
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuClick }) => {
+  const { organization, orgRole } = useOrganization()
+
   return (
     <header className={styles.header}>
       <button 
@@ -18,7 +21,22 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onMobileMenuClick }) 
         <Menu className={styles.menuIcon} />
       </button>
       <div className={styles.headerContent}>
-        {/* Aquí puedes agregar más elementos del header */}
+        <div className={styles.logoSection}>
+          {organization && (
+            <span className={styles.headerTitle}>
+              {organization.nombre}
+            </span>
+          )}
+        </div>
+        <div className={styles.rightContent}>
+          {orgRole && (
+            <span className={styles.userRole}>
+              {orgRole === 'admin' ? 'Administrador' : 
+               orgRole === 'tesorero' ? 'Tesorero' : 
+               orgRole === 'super_admin' ? 'Super Admin' : 'Usuario'}
+            </span>
+          )}
+        </div>
       </div>
     </header>
   )

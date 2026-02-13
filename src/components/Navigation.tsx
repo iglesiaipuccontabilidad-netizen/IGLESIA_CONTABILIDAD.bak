@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { usePathname } from 'next/navigation'
 import styles from '../styles/navigation.module.css'
 

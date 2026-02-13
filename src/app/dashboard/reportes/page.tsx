@@ -11,6 +11,7 @@ import { useReportesMiembros } from '@/hooks/useReportesMiembros'
 import { useReporteFinanciero } from '@/hooks/useReporteFinanciero'
 import { useGraficosReportes } from '@/hooks/useGraficosReportes'
 import { useReportesVentas } from '@/hooks/useReportesVentas'
+import { useOrganization } from '@/lib/context/OrganizationContext'
 import ResumenFinanciero from '@/components/reportes/ResumenFinanciero'
 import DashboardFinancieroAvanzado from '@/components/reportes/DashboardFinancieroAvanzado'
 import GraficoPropositos from '@/components/reportes/GraficoPropositos'
@@ -53,6 +54,8 @@ export default function ReportesPage() {
   const [exportingPDF, setExportingPDF] = useState(false)
   const [exportingExcel, setExportingExcel] = useState(false)
   const [showPDFOptions, setShowPDFOptions] = useState(false)
+  const { organization } = useOrganization()
+  const orgNombre = organization?.nombre || 'IPUC'
   const [pdfConfig, setPdfConfig] = useState({
     incluirLogo: true,
     colorTema: '#3B82F6',
@@ -511,6 +514,7 @@ export default function ReportesPage() {
             <DashboardFinancieroAvanzado
               data={financieroData.data}
               loading={financieroData.loading}
+              nombreOrganizacion={orgNombre}
             />
 
             {/* Gráficos */}
@@ -578,7 +582,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFVotos(votosData.data, pdfConfig)
+          resultado = pdfModule.generarPDFVotos(votosData.data, { ...pdfConfig, nombreOrganizacion: orgNombre })
           break
 
         case 'ventas':
@@ -586,7 +590,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFVentas(ventasData.datos, pdfConfig)
+          resultado = pdfModule.generarPDFVentas(ventasData.datos, { ...pdfConfig, nombreOrganizacion: orgNombre })
           break
 
         case 'pagos':
@@ -594,7 +598,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFPagos(pagosData.data, pdfConfig)
+          resultado = pdfModule.generarPDFPagos(pagosData.data, { ...pdfConfig, nombreOrganizacion: orgNombre })
           break
 
         case 'miembros':
@@ -602,7 +606,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFMiembros(miembrosData.data, pdfConfig)
+          resultado = pdfModule.generarPDFMiembros(miembrosData.data, { ...pdfConfig, nombreOrganizacion: orgNombre })
           break
 
         case 'financiero':
@@ -610,7 +614,7 @@ export default function ReportesPage() {
             showError('No hay datos para exportar', 4000)
             return
           }
-          resultado = pdfModule.generarPDFFinanciero(financieroData.data, pdfConfig)
+          resultado = pdfModule.generarPDFFinanciero(financieroData.data, { ...pdfConfig, nombreOrganizacion: orgNombre })
           break
 
         default:

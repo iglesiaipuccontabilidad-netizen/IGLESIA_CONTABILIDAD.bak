@@ -15,9 +15,10 @@ import {
 interface DashboardFinancieroAvanzadoProps {
   data: any
   loading: boolean
+  nombreOrganizacion?: string
 }
 
-export default function DashboardFinancieroAvanzado({ data, loading }: DashboardFinancieroAvanzadoProps) {
+export default function DashboardFinancieroAvanzado({ data, loading, nombreOrganizacion = 'IPUC' }: DashboardFinancieroAvanzadoProps) {
   if (loading) {
     return (
       <div className="space-y-8">
@@ -252,7 +253,7 @@ export default function DashboardFinancieroAvanzado({ data, loading }: Dashboard
             onClick={() => {
               // Importar dinámicamente para evitar problemas de SSR
               import('@/lib/utils/pdfGenerator').then(module => {
-                module.generarPDFFinanciero(data)
+                module.generarPDFFinanciero(data, { nombreOrganizacion })
               })
             }}
             className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"

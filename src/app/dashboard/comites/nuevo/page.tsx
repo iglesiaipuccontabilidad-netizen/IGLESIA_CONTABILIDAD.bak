@@ -1,5 +1,5 @@
 import { requireAdminOrTesorero } from '@/lib/auth/permissions'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { ArrowLeft } from 'lucide-react'
 import NuevoComiteForm from '@/components/comites/NuevoComiteForm'
 

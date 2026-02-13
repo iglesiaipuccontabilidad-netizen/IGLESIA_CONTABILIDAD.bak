@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import type { Database } from '@/lib/database.types'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'

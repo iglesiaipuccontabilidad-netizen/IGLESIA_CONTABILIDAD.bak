@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/lib/hooks/useOrgRouter"
 import { Edit, Trash2, Loader2 } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 
 interface DetalleGastoActionsProps {
   gastoId: string

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import RegistroPagoForm from '@/components/pagos/RegistroPagoForm'
 import { getVotoDetails } from '@/lib/services/voto-service'
 import styles from '@/styles/pagos.module.css'

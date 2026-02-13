@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { Calendar, DollarSign, Tag, FileText, TrendingUp, FolderOpen, Eye, Edit, Trash2 } from "lucide-react"
 import { FiltersBar, type FilterValues } from "./FiltersBar"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 import { ConfirmDeleteModal } from "@/components/ui/ConfirmDeleteModal"
 
 interface ExtendedFilterValues extends FilterValues {

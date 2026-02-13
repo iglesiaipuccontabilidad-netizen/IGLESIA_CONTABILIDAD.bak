@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/hooks/useOrgRouter';
 import { toast } from 'react-hot-toast';
 import { AnimatedTooltip } from '@/components/ui/animated-tooltip';
 import { ActionMenu } from './ActionMenu';

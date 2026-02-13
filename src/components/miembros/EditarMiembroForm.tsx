@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/hooks/useOrgRouter';
 import { toast } from 'react-hot-toast';
 import { updateMiembro } from '@/app/actions/miembros';
 import type { Miembro, MiembroFormData } from '@/types/miembros';

@@ -5,6 +5,7 @@ import { Vote, Package, ShoppingCart, BarChart3, Download, FileText, FileSpreads
 import { ProyectoProductosTable } from "./productos/ProyectoProductosTable"
 import { ProyectoVentasTable } from "./ventas/ProyectoVentasTable"
 import { generarPDFVentasProyecto, generarExcelVentasProyecto } from "@/lib/utils/reportesComite"
+import { useOrganization } from "@/lib/context/OrganizationContext"
 import { useToast } from "@/lib/hooks/useToast"
 import { ToastContainer } from "@/components/ui/Toast"
 
@@ -35,6 +36,8 @@ export function ProyectoTabs({
   const [exportingPDF, setExportingPDF] = useState(false)
   const [exportingExcel, setExportingExcel] = useState(false)
   const { toasts, removeToast, success, error: showError } = useToast()
+  const { organization } = useOrganization()
+  const orgNombre = organization?.nombre || 'IPUC'
 
   const handleExportPDF = async () => {
     setExportingPDF(true)
@@ -43,7 +46,8 @@ export function ProyectoTabs({
         productos,
         ventas,
         resumenVentas,
-        proyectoId
+        proyectoId,
+        nombreOrganizacion: orgNombre
       })
 
       if (resultado.success) {
@@ -67,7 +71,8 @@ export function ProyectoTabs({
         productos,
         ventas,
         resumenVentas,
-        proyectoId
+        proyectoId,
+        nombreOrganizacion: orgNombre
       })
 
       if (resultado.success) {

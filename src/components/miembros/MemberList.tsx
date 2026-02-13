@@ -1,5 +1,5 @@
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import styles from '@/styles/miembros-improved.module.css'
 import { MiembroConVotos } from '@/types/miembros'
 import SearchFilters from './SearchFilters'

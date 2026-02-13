@@ -40,6 +40,12 @@ export async function createMiembro(formData: MiembroFormData) {
         throw new Error('No tienes permisos para crear miembros')
       }
       
+      const allowedRoles = ['miembro', 'admin', 'tesorero']
+      if (formData.rol && !allowedRoles.includes(formData.rol)) {
+        console.error('Rol inválido en createMiembro:', formData.rol)
+        throw new Error(`Rol inválido: ${String(formData.rol)}`)
+      }
+
       const nuevoMiembro: MiembroInsert = {
         nombres: formData.nombres,
         apellidos: formData.apellidos, 
@@ -58,7 +64,7 @@ export async function createMiembro(formData: MiembroFormData) {
         .single()
 
       if (error) {
-        console.error('Error al crear miembro:', error)
+        console.error('Error al crear miembro:', error, 'payload:', nuevoMiembro)
         throw error
       }
 
@@ -98,6 +104,12 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
         throw new Error('No tienes permisos para editar miembros')
       }
 
+      const allowedRoles = ['miembro', 'admin', 'tesorero']
+      if (formData.rol && !allowedRoles.includes(formData.rol)) {
+        console.error('Rol inválido en updateMiembro:', formData.rol)
+        throw new Error(`Rol inválido: ${String(formData.rol)}`)
+      }
+
       const actualizacion: MiembroUpdate = {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
@@ -117,7 +129,7 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
         .single()
 
       if (error) {
-        console.error('Error al actualizar miembro:', error)
+        console.error('Error al actualizar miembro:', error, 'payload:', actualizacion, 'id:', id)
         throw error
       }
 

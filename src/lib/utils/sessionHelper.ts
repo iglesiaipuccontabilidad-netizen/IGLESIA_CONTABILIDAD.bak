@@ -95,8 +95,19 @@ export async function withRetry<T>(
       
       return result
     } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Error desconocido')
-      console.warn(`⚠️ Intento ${attempt + 1}/${maxRetries} falló:`, lastError.message)
+      if (error instanceof Error) {
+        lastError = error
+      } else {
+        let msg = 'Error desconocido'
+        try {
+          msg = typeof error === 'string' ? error : JSON.stringify(error)
+        } catch {
+          msg = 'Error desconocido (no serializable)'
+        }
+        lastError = new Error(msg)
+      }
+
+      console.warn(`⚠️ Intento ${attempt + 1}/${maxRetries} falló:`, lastError)
 
       // Si no es el último intento, esperar antes de reintentar
       if (attempt < maxRetries - 1) {

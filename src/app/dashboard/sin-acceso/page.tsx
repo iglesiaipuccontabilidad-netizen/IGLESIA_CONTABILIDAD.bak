@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { ShieldAlert, Home, Users, ArrowLeft } from 'lucide-react'
 import LogoutButton from '@/components/LogoutButton'
 

@@ -25,7 +25,6 @@ export type Database = {
           metodo_pago: string
           monto: number
           nota: string | null
-          organizacion_id: string
           proyecto_id: string | null
           registrado_por: string | null
         }
@@ -39,7 +38,6 @@ export type Database = {
           metodo_pago?: string
           monto: number
           nota?: string | null
-          organizacion_id?: string
           proyecto_id?: string | null
           registrado_por?: string | null
         }
@@ -53,7 +51,6 @@ export type Database = {
           metodo_pago?: string
           monto?: number
           nota?: string | null
-          organizacion_id?: string
           proyecto_id?: string | null
           registrado_por?: string | null
         }
@@ -66,17 +63,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comite_gastos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "comite_gastos_proyecto_id_fkey"
             columns: ["proyecto_id"]
             isOneToOne: false
             referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comite_gastos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -91,7 +88,6 @@ export type Database = {
           fecha_ingreso: string
           id: string
           nombres: string
-          organizacion_id: string
           telefono: string | null
           updated_at: string
         }
@@ -104,7 +100,6 @@ export type Database = {
           fecha_ingreso?: string
           id?: string
           nombres: string
-          organizacion_id?: string
           telefono?: string | null
           updated_at?: string
         }
@@ -117,7 +112,6 @@ export type Database = {
           fecha_ingreso?: string
           id?: string
           nombres?: string
-          organizacion_id?: string
           telefono?: string | null
           updated_at?: string
         }
@@ -127,13 +121,6 @@ export type Database = {
             columns: ["comite_id"]
             isOneToOne: false
             referencedRelation: "comites"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comite_miembros_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
             referencedColumns: ["id"]
           },
         ]
@@ -147,7 +134,6 @@ export type Database = {
           id: string
           monto: number
           nota: string | null
-          organizacion_id: string
           proyecto_id: string | null
           registrado_por: string | null
           tipo: string
@@ -160,7 +146,6 @@ export type Database = {
           id?: string
           monto: number
           nota?: string | null
-          organizacion_id?: string
           proyecto_id?: string | null
           registrado_por?: string | null
           tipo?: string
@@ -173,7 +158,6 @@ export type Database = {
           id?: string
           monto?: number
           nota?: string | null
-          organizacion_id?: string
           proyecto_id?: string | null
           registrado_por?: string | null
           tipo?: string
@@ -187,17 +171,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comite_ofrendas_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "comite_ofrendas_proyecto_id_fkey"
             columns: ["proyecto_id"]
             isOneToOne: false
             referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comite_ofrendas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -211,7 +195,6 @@ export type Database = {
           metodo_pago: string
           monto: number
           nota: string | null
-          organizacion_id: string
           registrado_por: string | null
         }
         Insert: {
@@ -222,7 +205,6 @@ export type Database = {
           metodo_pago?: string
           monto: number
           nota?: string | null
-          organizacion_id?: string
           registrado_por?: string | null
         }
         Update: {
@@ -233,7 +215,6 @@ export type Database = {
           metodo_pago?: string
           monto?: number
           nota?: string | null
-          organizacion_id?: string
           registrado_por?: string | null
         }
         Relationships: [
@@ -245,10 +226,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comite_pagos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "comite_pagos_registrado_por_fkey"
+            columns: ["registrado_por"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -266,7 +247,6 @@ export type Database = {
           monto_objetivo: number | null
           monto_recaudado: number
           nombre: string
-          organizacion_id: string
           ultima_actualizacion_por: string | null
           updated_at: string
         }
@@ -282,7 +262,6 @@ export type Database = {
           monto_objetivo?: number | null
           monto_recaudado?: number
           nombre: string
-          organizacion_id?: string
           ultima_actualizacion_por?: string | null
           updated_at?: string
         }
@@ -298,7 +277,6 @@ export type Database = {
           monto_objetivo?: number | null
           monto_recaudado?: number
           nombre?: string
-          organizacion_id?: string
           ultima_actualizacion_por?: string | null
           updated_at?: string
         }
@@ -311,10 +289,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comite_proyectos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "comite_proyectos_creado_por_fkey"
+            columns: ["creado_por"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comite_proyectos_ultima_actualizacion_por_fkey"
+            columns: ["ultima_actualizacion_por"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -326,7 +311,6 @@ export type Database = {
           estado: string
           fecha_ingreso: string
           id: string
-          organizacion_id: string
           rol: string
           usuario_id: string
         }
@@ -336,7 +320,6 @@ export type Database = {
           estado?: string
           fecha_ingreso?: string
           id?: string
-          organizacion_id?: string
           rol: string
           usuario_id: string
         }
@@ -346,7 +329,6 @@ export type Database = {
           estado?: string
           fecha_ingreso?: string
           id?: string
-          organizacion_id?: string
           rol?: string
           usuario_id?: string
         }
@@ -359,17 +341,173 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comite_usuarios_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "comite_usuarios_usuario_id_fkey"
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_productos: {
+        Row: {
+          id: string
+          proyecto_id: string
+          nombre: string
+          descripcion: string | null
+          precio_unitario: number
+          estado: string
+          created_at: string
+          updated_at: string
+          creado_por: string | null
+        }
+        Insert: {
+          id?: string
+          proyecto_id: string
+          nombre: string
+          descripcion?: string | null
+          precio_unitario: number
+          estado?: string
+          created_at?: string
+          updated_at?: string
+          creado_por?: string | null
+        }
+        Update: {
+          id?: string
+          proyecto_id?: string
+          nombre?: string
+          descripcion?: string | null
+          precio_unitario?: number
+          estado?: string
+          created_at?: string
+          updated_at?: string
+          creado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_productos_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_ventas: {
+        Row: {
+          id: string
+          proyecto_id: string
+          producto_id: string
+          comprador_nombre: string
+          comprador_telefono: string | null
+          comprador_email: string | null
+          comprador_notas: string | null
+          cantidad: number
+          precio_unitario: number
+          valor_total: number
+          monto_pagado: number
+          saldo_pendiente: number
+          estado: string
+          fecha_venta: string
+          created_at: string
+          updated_at: string
+          registrado_por: string | null
+        }
+        Insert: {
+          id?: string
+          proyecto_id: string
+          producto_id: string
+          comprador_nombre: string
+          comprador_telefono?: string | null
+          comprador_email?: string | null
+          comprador_notas?: string | null
+          cantidad: number
+          precio_unitario: number
+          valor_total: number
+          monto_pagado?: number
+          saldo_pendiente?: number
+          estado?: string
+          fecha_venta?: string
+          created_at?: string
+          updated_at?: string
+          registrado_por?: string | null
+        }
+        Update: {
+          id?: string
+          proyecto_id?: string
+          producto_id?: string
+          comprador_nombre?: string
+          comprador_telefono?: string | null
+          comprador_email?: string | null
+          comprador_notas?: string | null
+          cantidad?: number
+          precio_unitario?: number
+          valor_total?: number
+          monto_pagado?: number
+          saldo_pendiente?: number
+          estado?: string
+          fecha_venta?: string
+          created_at?: string
+          updated_at?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_ventas_proyecto_id_fkey"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proyecto_ventas_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_productos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proyecto_pagos_ventas: {
+        Row: {
+          id: string
+          venta_id: string
+          monto: number
+          fecha_pago: string
+          metodo_pago: string | null
+          referencia: string | null
+          notas: string | null
+          created_at: string
+          registrado_por: string | null
+        }
+        Insert: {
+          id?: string
+          venta_id: string
+          monto: number
+          fecha_pago?: string
+          metodo_pago?: string | null
+          referencia?: string | null
+          notas?: string | null
+          created_at?: string
+          registrado_por?: string | null
+        }
+        Update: {
+          id?: string
+          venta_id?: string
+          monto?: number
+          fecha_pago?: string
+          metodo_pago?: string | null
+          referencia?: string | null
+          notas?: string | null
+          created_at?: string
+          registrado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proyecto_pagos_ventas_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "proyecto_ventas"
             referencedColumns: ["id"]
           },
         ]
@@ -385,7 +523,6 @@ export type Database = {
           fecha_limite: string
           id: string
           monto_total: number
-          organizacion_id: string
           proyecto_id: string | null
           recaudado: number
           ultima_actualizacion_por: string | null
@@ -401,7 +538,6 @@ export type Database = {
           fecha_limite: string
           id?: string
           monto_total: number
-          organizacion_id?: string
           proyecto_id?: string | null
           recaudado?: number
           ultima_actualizacion_por?: string | null
@@ -417,7 +553,6 @@ export type Database = {
           fecha_limite?: string
           id?: string
           monto_total?: number
-          organizacion_id?: string
           proyecto_id?: string | null
           recaudado?: number
           ultima_actualizacion_por?: string | null
@@ -439,10 +574,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "comite_votos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "comite_votos_creado_por_fkey"
+            columns: ["creado_por"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -450,6 +585,13 @@ export type Database = {
             columns: ["proyecto_id"]
             isOneToOne: false
             referencedRelation: "comite_proyectos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comite_votos_ultima_actualizacion_por_fkey"
+            columns: ["ultima_actualizacion_por"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -462,7 +604,6 @@ export type Database = {
           estado: string
           id: string
           nombre: string
-          organizacion_id: string
           updated_at: string
         }
         Insert: {
@@ -472,7 +613,6 @@ export type Database = {
           estado?: string
           id?: string
           nombre: string
-          organizacion_id?: string
           updated_at?: string
         }
         Update: {
@@ -482,15 +622,14 @@ export type Database = {
           estado?: string
           id?: string
           nombre?: string
-          organizacion_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "comites_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "comites_creado_por_fkey"
+            columns: ["creado_por"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -505,7 +644,6 @@ export type Database = {
           fecha_ingreso: string | null
           id: string
           nombres: string
-          organizacion_id: string
           rol: string
           telefono: string | null
           updated_at: string
@@ -520,7 +658,6 @@ export type Database = {
           fecha_ingreso?: string | null
           id?: string
           nombres: string
-          organizacion_id?: string
           rol?: string
           telefono?: string | null
           updated_at?: string
@@ -535,7 +672,6 @@ export type Database = {
           fecha_ingreso?: string | null
           id?: string
           nombres?: string
-          organizacion_id?: string
           rol?: string
           telefono?: string | null
           updated_at?: string
@@ -543,114 +679,13 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "miembros_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "miembros_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
-      }
-      organizacion_usuarios: {
-        Row: {
-          created_at: string
-          estado: string
-          id: string
-          organizacion_id: string
-          rol: string
-          updated_at: string
-          usuario_id: string
-        }
-        Insert: {
-          created_at?: string
-          estado?: string
-          id?: string
-          organizacion_id: string
-          rol?: string
-          updated_at?: string
-          usuario_id: string
-        }
-        Update: {
-          created_at?: string
-          estado?: string
-          id?: string
-          organizacion_id?: string
-          rol?: string
-          updated_at?: string
-          usuario_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organizacion_usuarios_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      organizaciones: {
-        Row: {
-          ciudad: string | null
-          configuracion: Json | null
-          contacto_email: string | null
-          contacto_nombre: string | null
-          contacto_telefono: string | null
-          created_at: string
-          estado: string
-          fecha_vencimiento_plan: string | null
-          id: string
-          logo_url: string | null
-          max_comites: number
-          max_miembros: number
-          max_usuarios: number
-          nombre: string
-          pais: string | null
-          plan: string
-          slug: string
-          updated_at: string
-        }
-        Insert: {
-          ciudad?: string | null
-          configuracion?: Json | null
-          contacto_email?: string | null
-          contacto_nombre?: string | null
-          contacto_telefono?: string | null
-          created_at?: string
-          estado?: string
-          fecha_vencimiento_plan?: string | null
-          id?: string
-          logo_url?: string | null
-          max_comites?: number
-          max_miembros?: number
-          max_usuarios?: number
-          nombre: string
-          pais?: string | null
-          plan?: string
-          slug: string
-          updated_at?: string
-        }
-        Update: {
-          ciudad?: string | null
-          configuracion?: Json | null
-          contacto_email?: string | null
-          contacto_nombre?: string | null
-          contacto_telefono?: string | null
-          created_at?: string
-          estado?: string
-          fecha_vencimiento_plan?: string | null
-          id?: string
-          logo_url?: string | null
-          max_comites?: number
-          max_miembros?: number
-          max_usuarios?: number
-          nombre?: string
-          pais?: string | null
-          plan?: string
-          slug?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       pagos: {
         Row: {
@@ -660,7 +695,6 @@ export type Database = {
           metodo_pago: string
           monto: number
           nota: string | null
-          organizacion_id: string
           registrado_por: string
           voto_id: string
         }
@@ -671,7 +705,6 @@ export type Database = {
           metodo_pago?: string
           monto: number
           nota?: string | null
-          organizacion_id?: string
           registrado_por: string
           voto_id: string
         }
@@ -682,16 +715,15 @@ export type Database = {
           metodo_pago?: string
           monto?: number
           nota?: string | null
-          organizacion_id?: string
           registrado_por?: string
           voto_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "pagos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "pagos_registrado_por_fkey"
+            columns: ["registrado_por"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -748,7 +780,6 @@ export type Database = {
           monto_objetivo: number | null
           monto_recaudado: number
           nombre: string
-          organizacion_id: string
           ultima_actualizacion_por: string | null
           updated_at: string | null
         }
@@ -763,7 +794,6 @@ export type Database = {
           monto_objetivo?: number | null
           monto_recaudado?: number
           nombre: string
-          organizacion_id?: string
           ultima_actualizacion_por?: string | null
           updated_at?: string | null
         }
@@ -778,209 +808,22 @@ export type Database = {
           monto_objetivo?: number | null
           monto_recaudado?: number
           nombre?: string
-          organizacion_id?: string
           ultima_actualizacion_por?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "propositos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
+            foreignKeyName: "propositos_creado_por_fkey"
+            columns: ["creado_por"]
             isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      proyecto_pagos_ventas: {
-        Row: {
-          created_at: string
-          fecha_pago: string
-          id: string
-          metodo_pago: string | null
-          monto: number
-          notas: string | null
-          organizacion_id: string
-          referencia: string | null
-          registrado_por: string | null
-          venta_id: string
-        }
-        Insert: {
-          created_at?: string
-          fecha_pago?: string
-          id?: string
-          metodo_pago?: string | null
-          monto: number
-          notas?: string | null
-          organizacion_id?: string
-          referencia?: string | null
-          registrado_por?: string | null
-          venta_id: string
-        }
-        Update: {
-          created_at?: string
-          fecha_pago?: string
-          id?: string
-          metodo_pago?: string | null
-          monto?: number
-          notas?: string | null
-          organizacion_id?: string
-          referencia?: string | null
-          registrado_por?: string | null
-          venta_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "proyecto_pagos_ventas_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "proyecto_pagos_ventas_venta_id_fkey"
-            columns: ["venta_id"]
+            foreignKeyName: "propositos_ultima_actualizacion_por_fkey"
+            columns: ["ultima_actualizacion_por"]
             isOneToOne: false
-            referencedRelation: "proyecto_ventas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      proyecto_productos: {
-        Row: {
-          creado_por: string | null
-          created_at: string
-          descripcion: string | null
-          estado: string
-          id: string
-          nombre: string
-          organizacion_id: string
-          precio_unitario: number
-          proyecto_id: string
-          updated_at: string
-        }
-        Insert: {
-          creado_por?: string | null
-          created_at?: string
-          descripcion?: string | null
-          estado?: string
-          id?: string
-          nombre: string
-          organizacion_id?: string
-          precio_unitario: number
-          proyecto_id: string
-          updated_at?: string
-        }
-        Update: {
-          creado_por?: string | null
-          created_at?: string
-          descripcion?: string | null
-          estado?: string
-          id?: string
-          nombre?: string
-          organizacion_id?: string
-          precio_unitario?: number
-          proyecto_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "proyecto_productos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "proyecto_productos_proyecto_id_fkey"
-            columns: ["proyecto_id"]
-            isOneToOne: false
-            referencedRelation: "comite_proyectos"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      proyecto_ventas: {
-        Row: {
-          cantidad: number
-          comprador_email: string | null
-          comprador_nombre: string
-          comprador_notas: string | null
-          comprador_telefono: string | null
-          created_at: string
-          estado: string
-          fecha_venta: string
-          id: string
-          monto_pagado: number
-          organizacion_id: string
-          precio_unitario: number
-          producto_id: string
-          proyecto_id: string
-          registrado_por: string | null
-          saldo_pendiente: number | null
-          updated_at: string
-          valor_total: number
-        }
-        Insert: {
-          cantidad: number
-          comprador_email?: string | null
-          comprador_nombre: string
-          comprador_notas?: string | null
-          comprador_telefono?: string | null
-          created_at?: string
-          estado?: string
-          fecha_venta?: string
-          id?: string
-          monto_pagado?: number
-          organizacion_id?: string
-          precio_unitario: number
-          producto_id: string
-          proyecto_id: string
-          registrado_por?: string | null
-          saldo_pendiente?: number | null
-          updated_at?: string
-          valor_total: number
-        }
-        Update: {
-          cantidad?: number
-          comprador_email?: string | null
-          comprador_nombre?: string
-          comprador_notas?: string | null
-          comprador_telefono?: string | null
-          created_at?: string
-          estado?: string
-          fecha_venta?: string
-          id?: string
-          monto_pagado?: number
-          organizacion_id?: string
-          precio_unitario?: number
-          producto_id?: string
-          proyecto_id?: string
-          registrado_por?: string | null
-          saldo_pendiente?: number | null
-          updated_at?: string
-          valor_total?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "proyecto_ventas_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "proyecto_ventas_producto_id_fkey"
-            columns: ["producto_id"]
-            isOneToOne: false
-            referencedRelation: "proyecto_productos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "proyecto_ventas_proyecto_id_fkey"
-            columns: ["proyecto_id"]
-            isOneToOne: false
-            referencedRelation: "comite_proyectos"
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1021,7 +864,6 @@ export type Database = {
           id: string
           miembro_id: string
           monto_total: number
-          organizacion_id: string
           proposito: string | null
           proposito_id: string
           recaudado: number
@@ -1036,7 +878,6 @@ export type Database = {
           id?: string
           miembro_id: string
           monto_total: number
-          organizacion_id?: string
           proposito?: string | null
           proposito_id: string
           recaudado?: number
@@ -1051,7 +892,6 @@ export type Database = {
           id?: string
           miembro_id?: string
           monto_total?: number
-          organizacion_id?: string
           proposito?: string | null
           proposito_id?: string
           recaudado?: number
@@ -1060,6 +900,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "votos_creado_por_fkey"
+            columns: ["creado_por"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "votos_miembro_id_fkey"
             columns: ["miembro_id"]
             isOneToOne: false
@@ -1067,17 +914,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "votos_organizacion_id_fkey"
-            columns: ["organizacion_id"]
-            isOneToOne: false
-            referencedRelation: "organizaciones"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "votos_proposito_id_fkey"
             columns: ["proposito_id"]
             isOneToOne: false
             referencedRelation: "propositos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votos_ultima_actualizacion_por_fkey"
+            columns: ["ultima_actualizacion_por"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1126,7 +973,159 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users: {
+        Row: {
+          aud: string | null
+          banned_until: string | null
+          confirmation_sent_at: string | null
+          confirmation_token: string | null
+          confirmed_at: string | null
+          created_at: string | null
+          deleted_at: string | null
+          email: string | null
+          email_change: string | null
+          email_change_confirm_status: number | null
+          email_change_sent_at: string | null
+          email_change_token_current: string | null
+          email_change_token_new: string | null
+          email_confirmed_at: string | null
+          encrypted_password: string | null
+          id: string | null
+          instance_id: string | null
+          invited_at: string | null
+          is_anonymous: boolean | null
+          is_sso_user: boolean | null
+          is_super_admin: boolean | null
+          last_sign_in_at: string | null
+          phone: string | null
+          phone_change: string | null
+          phone_change_sent_at: string | null
+          phone_change_token: string | null
+          phone_confirmed_at: string | null
+          raw_app_meta_data: Json | null
+          raw_user_meta_data: Json | null
+          reauthentication_sent_at: string | null
+          reauthentication_token: string | null
+          recovery_sent_at: string | null
+          recovery_token: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          aud?: string | null
+          banned_until?: string | null
+          confirmation_sent_at?: string | null
+          confirmation_token?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          email_change?: string | null
+          email_change_confirm_status?: number | null
+          email_change_sent_at?: string | null
+          email_change_token_current?: string | null
+          email_change_token_new?: string | null
+          email_confirmed_at?: string | null
+          encrypted_password?: string | null
+          id?: string | null
+          instance_id?: string | null
+          invited_at?: string | null
+          is_anonymous?: boolean | null
+          is_sso_user?: boolean | null
+          is_super_admin?: boolean | null
+          last_sign_in_at?: string | null
+          phone?: string | null
+          phone_change?: string | null
+          phone_change_sent_at?: string | null
+          phone_change_token?: string | null
+          phone_confirmed_at?: string | null
+          raw_app_meta_data?: Json | null
+          raw_user_meta_data?: Json | null
+          reauthentication_sent_at?: string | null
+          reauthentication_token?: string | null
+          recovery_sent_at?: string | null
+          recovery_token?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          aud?: string | null
+          banned_until?: string | null
+          confirmation_sent_at?: string | null
+          confirmation_token?: string | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          deleted_at?: string | null
+          email?: string | null
+          email_change?: string | null
+          email_change_confirm_status?: number | null
+          email_change_sent_at?: string | null
+          email_change_token_current?: string | null
+          email_change_token_new?: string | null
+          email_confirmed_at?: string | null
+          encrypted_password?: string | null
+          id?: string | null
+          instance_id?: string | null
+          invited_at?: string | null
+          is_anonymous?: boolean | null
+          is_sso_user?: boolean | null
+          is_super_admin?: boolean | null
+          last_sign_in_at?: string | null
+          phone?: string | null
+          phone_change?: string | null
+          phone_change_sent_at?: string | null
+          phone_change_token?: string | null
+          phone_confirmed_at?: string | null
+          raw_app_meta_data?: Json | null
+          raw_user_meta_data?: Json | null
+          reauthentication_sent_at?: string | null
+          reauthentication_token?: string | null
+          recovery_sent_at?: string | null
+          recovery_token?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vista_resumen_ventas_proyecto: {
+        Row: {
+          proyecto_id: string | null
+          proyecto_nombre: string | null
+          total_ventas: number | null
+          productos_distintos: number | null
+          unidades_vendidas: number | null
+          valor_total_ventas: number | null
+          total_recaudado: number | null
+          total_pendiente: number | null
+          ventas_pagadas: number | null
+          ventas_pendientes: number | null
+        }
+        Insert: {
+          proyecto_id?: string | null
+          proyecto_nombre?: string | null
+          total_ventas?: number | null
+          productos_distintos?: number | null
+          unidades_vendidas?: number | null
+          valor_total_ventas?: number | null
+          total_recaudado?: number | null
+          total_pendiente?: number | null
+          ventas_pagadas?: number | null
+          ventas_pendientes?: number | null
+        }
+        Update: {
+          proyecto_id?: string | null
+          proyecto_nombre?: string | null
+          total_ventas?: number | null
+          productos_distintos?: number | null
+          unidades_vendidas?: number | null
+          valor_total_ventas?: number | null
+          total_recaudado?: number | null
+          total_pendiente?: number | null
+          ventas_pagadas?: number | null
+          ventas_pendientes?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       actualizar_recaudado_voto: {
@@ -1260,7 +1259,6 @@ export type Database = {
               fecha_ingreso: string | null
               id: string
               nombres: string
-              organizacion_id: string
               rol: string
               telefono: string | null
               updated_at: string
@@ -1292,7 +1290,6 @@ export type Database = {
               fecha_ingreso: string | null
               id: string
               nombres: string
-              organizacion_id: string
               rol: string
               telefono: string | null
               updated_at: string

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { createMember } from '@/app/api/miembros/actions'
 
 export default function NuevoMiembroForm() {

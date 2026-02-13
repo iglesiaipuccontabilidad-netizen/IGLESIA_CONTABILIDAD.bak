@@ -1,16 +1,10 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/lib/database.types'
-import { PostgrestSingleResponse } from '@supabase/supabase-js'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   adminOnly?: boolean
-}
-
-type MiembroRolEstado = {
-  rol: 'admin' | 'usuario' | 'pendiente'
-  estado: 'activo' | 'inactivo'
 }
 
 export default async function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
@@ -22,31 +16,38 @@ export default async function ProtectedRoute({ children, adminOnly = false }: Pr
     redirect('/login')
   }
 
-  if (adminOnly) {
-    const response: PostgrestSingleResponse<MiembroRolEstado> = await supabase
-      .from('miembros')
-      .select('rol, estado')
-      .eq('id', user.id)
-      .single()
+  // 1. Intentar obtener rol desde organizacion_usuarios (multi-tenant)
+  const { data: orgUser } = await supabase
+    .from('organizacion_usuarios')
+    .select('rol, estado')
+    .eq('usuario_id', user.id)
+    .eq('estado', 'activo')
+    .maybeSingle()
 
-    const { data: member, error: memberError } = response
-
-    if (memberError || !member || member.rol !== 'admin' || member.estado !== 'activo') {
-      redirect('/dashboard')
-    }
-  } else {
-    // Verificar que el usuario esté activo para cualquier ruta protegida
-    const response: PostgrestSingleResponse<MiembroRolEstado> = await supabase
-      .from('miembros')
-      .select('estado, rol')
-      .eq('id', user.id)
-      .single()
-
-    const { data: member, error: memberError } = response
-
-    if (memberError || !member || member.estado !== 'activo' || member.rol === 'pendiente') {
+  if (orgUser) {
+    // Usuario encontrado en organizacion_usuarios
+    if (orgUser.rol === 'pendiente') {
       redirect('/login')
     }
+    if (adminOnly && orgUser.rol !== 'admin' && orgUser.rol !== 'super_admin') {
+      redirect('/dashboard')
+    }
+    return <>{children}</>
+  }
+
+  // 2. Fallback: verificar en miembros (compatibilidad)
+  const { data: member, error: memberError } = await supabase
+    .from('miembros')
+    .select('rol, estado')
+    .eq('usuario_id', user.id)
+    .maybeSingle()
+
+  if (memberError || !member || member.estado !== 'activo' || member.rol === 'pendiente') {
+    redirect('/login')
+  }
+
+  if (adminOnly && member.rol !== 'admin') {
+    redirect('/dashboard')
   }
 
   return <>{children}</>

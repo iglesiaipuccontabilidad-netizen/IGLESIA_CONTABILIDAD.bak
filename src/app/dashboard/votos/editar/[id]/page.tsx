@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
+import { useParams } from 'next/navigation'
+import Link from '@/components/OrgLink'
 import { getVotoById, updateVoto } from '@/app/actions/votos-actions'
 import { getAllPropositos } from '@/app/actions/propositos-actions'
 import type { VotoDetalle } from '@/types/votos'

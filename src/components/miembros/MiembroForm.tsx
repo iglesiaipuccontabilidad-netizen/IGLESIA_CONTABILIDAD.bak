@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import styles from '@/styles/miembros.module.css'
 import { MiembroFormData, MiembroError } from '@/types/miembros'
 

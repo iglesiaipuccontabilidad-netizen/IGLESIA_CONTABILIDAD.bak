@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { ComiteCard } from '@/components/comites/ComiteCard'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { Users, Plus } from 'lucide-react'
 import LogoutButton from '@/components/LogoutButton'
 import { requireAdminOrTesorero } from '@/lib/auth/permissions'

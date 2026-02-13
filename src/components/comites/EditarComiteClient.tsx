@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/lib/hooks/useOrgRouter"
 import { updateComite } from "@/app/actions/comites-actions"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Loader2, Save, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 import type { ComiteRow } from "@/types/comites"
 
 const comiteSchema = z.object({

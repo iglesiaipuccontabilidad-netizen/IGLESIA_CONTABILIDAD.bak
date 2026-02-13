@@ -5,7 +5,7 @@ import { ComiteMiembrosTable } from "@/components/comites/ComiteMiembrosTable"
 import { ComiteMiembroForm } from "@/components/comites/ComiteMiembroForm"
 import type { ComiteMiembroRow, ComiteRow } from "@/types/comites"
 import { Plus, X, Users, ArrowLeft, UserCheck, UserX } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 
 interface MiembrosComiteClientProps {
   comite: ComiteRow

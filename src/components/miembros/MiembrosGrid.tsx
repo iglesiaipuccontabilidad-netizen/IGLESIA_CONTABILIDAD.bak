@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/hooks/useOrgRouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BentoGrid, BentoGridItem } from '@/components/ui/bento-grid';
 import { SearchBar } from './SearchBar';

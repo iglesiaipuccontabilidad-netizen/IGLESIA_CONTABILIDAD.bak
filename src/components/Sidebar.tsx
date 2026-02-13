@@ -3,7 +3,6 @@
 import * as React from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   ScrollText,
@@ -18,6 +17,9 @@ import {
   X
 } from "lucide-react"
 import { useAuth } from "@/lib/context/AuthContext"
+import { useOrganization } from "@/lib/context/OrganizationContext"
+import { useOrgNavigation } from "@/lib/hooks/useOrgNavigation"
+import { OrgSwitcher } from "@/components/OrgSwitcher"
 
 type MenuItem = {
   href: string
@@ -38,8 +40,9 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose }: SidebarProps) {
-  const pathname = usePathname()
   const { member, isLoading, comitesUsuario } = useAuth()
+  const { organization } = useOrganization()
+  const { orgPath, cleanPathname } = useOrgNavigation()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
@@ -305,9 +308,9 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
 
   const isRouteActive = (href: string) => {
     if (href === '/dashboard') {
-      return pathname === href
+      return cleanPathname === href
     }
-    return pathname?.startsWith(href)
+    return cleanPathname?.startsWith(href)
   }
 
   // Handle mobile menu close via click on links if on mobile
@@ -387,17 +390,19 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
           {(!isCollapsed || showMobileVersion) && (
             <div className="flex flex-col min-w-0 flex-1">
               <span
-                className="font-bold text-cyan-200 leading-tight"
+                className="font-bold text-cyan-200 leading-tight truncate"
                 style={{ fontSize: showMobileVersion ? '15px' : '18px' }}
+                title={organization?.nombre || 'CONTABILIDAD'}
               >
-                CONTABILIDAD
+                {organization?.nombre || 'CONTABILIDAD'}
               </span>
               <span
                 className="text-slate-300 font-medium tracking-wide opacity-80"
                 style={{ fontSize: showMobileVersion ? '10px' : '12px' }}
               >
-                Gestión Integral
+                {organization ? (organization.plan !== 'gratuito' ? `Plan ${organization.plan}` : 'Gestión Integral') : 'Gestión Integral'}
               </span>
+              <OrgSwitcher />
             </div>
           )}
 
@@ -471,7 +476,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                   return (
                     <li key={item.href}>
                       <Link
-                        href={item.href}
+                        href={orgPath(item.href)}
                         onClick={handleLinkClick}
                         className={`
                           group relative flex items-center rounded-lg transition-all duration-200 outline-none
@@ -519,7 +524,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                       </Link>
 
                       {/* Sub Items */}
-                      {item.subItems && (!isCollapsed || showMobileVersion) && (active || item.subItems.some(si => isRouteActive(si.href))) && (
+                      {item.subItems && (!isCollapsed || showMobileVersion) && (active || item.subItems.some((si: { href: string; label: string }) => isRouteActive(si.href))) && (
                         <ul
                           className="space-y-1"
                           style={{
@@ -528,11 +533,11 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                           }}
                         >
                           {item.subItems.map((subItem) => {
-                            const subActive = pathname === subItem.href
+                            const subActive = cleanPathname === subItem.href
                             return (
                               <li key={subItem.href}>
                                 <Link
-                                  href={subItem.href}
+                                  href={orgPath(subItem.href)}
                                   onClick={handleLinkClick}
                                   className={`
                                     block rounded-md transition-all duration-200 border-l-2

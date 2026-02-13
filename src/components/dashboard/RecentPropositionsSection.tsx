@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { Target, ArrowUpRight } from 'lucide-react'
 
 interface PropositoData {
@@ -41,30 +41,30 @@ const PropositoCard = React.memo(({ proposito }: { proposito: PropositoData }) =
   return (
     <Link
       href={`/dashboard/propositos/${proposito.id}`}
-      className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300"
+      className="group bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all duration-300 overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+          <h3 className="text-md sm:text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors break-words">
             {proposito.nombre}
           </h3>
           {proposito.descripcion && (
-            <p className="text-sm text-slate-600 mt-1 line-clamp-2">{proposito.descripcion}</p>
+            <p className="text-sm text-slate-600 mt-1 line-clamp-3 break-words">{proposito.descripcion}</p>
           )}
         </div>
-        <span className={`px-3 py-1 text-xs font-semibold rounded-full border whitespace-nowrap flex-shrink-0 ${estadoBadge}`}>
+        <span className={`mt-2 sm:mt-0 px-2.5 py-0.5 text-xs font-semibold rounded-full border whitespace-nowrap flex-shrink-0 ${estadoBadge}`}>
           {proposito.estado}
         </span>
       </div>
 
       {/* Progreso */}
-      <div className="space-y-3 border-t border-slate-100 pt-4">
+      <div className="space-y-3 border-t border-slate-100 pt-3">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium text-slate-700">Progreso</span>
-          <span className="font-bold text-slate-900">{progreso}%</span>
+          <span className="font-bold text-slate-900 text-sm">{progreso}%</span>
         </div>
-        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden ring-1 ring-slate-200">
+        <div className="h-2 bg-slate-100 rounded-full overflow-hidden ring-1 ring-slate-200">
           <div
             className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 rounded-full transition-all duration-500"
             style={{ width: `${progreso}%` }}
@@ -72,13 +72,13 @@ const PropositoCard = React.memo(({ proposito }: { proposito: PropositoData }) =
         </div>
 
         {/* Financiero */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <div className="p-2.5 bg-slate-50 rounded-lg min-w-0">
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <div className="p-2 bg-slate-50 rounded-lg min-w-0">
             <span className="block text-xs text-slate-600 font-semibold mb-1">Recaudado</span>
             <span className="block text-sm font-bold text-slate-900 truncate">{formatCurrency(recaudado)}</span>
           </div>
           {objetivo > 0 && (
-            <div className="p-2.5 bg-slate-50 rounded-lg min-w-0">
+            <div className="p-2 bg-slate-50 rounded-lg min-w-0">
               <span className="block text-xs text-slate-600 font-semibold mb-1">Meta</span>
               <span className="block text-sm font-bold text-slate-900 truncate">{formatCurrency(objetivo)}</span>
             </div>
@@ -121,17 +121,17 @@ export const RecentPropositionsSection = React.memo(({ propositos }: RecentPropo
       </div>
 
       {propositosRecientes.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-16 text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
-            <Target className="w-10 h-10 text-slate-400" />
+        <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
+            <Target className="w-8 h-8 text-slate-400" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 mb-2">Aún no hay propósitos registrados</h3>
-          <p className="text-slate-600 mb-8 max-w-sm mx-auto">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Aún no hay propósitos registrados</h3>
+          <p className="text-slate-600 mb-6 max-w-sm mx-auto">
             Comienza creando una campaña financiera para la iglesia y haz seguimiento a tu progreso.
           </p>
           <Link
             href="/dashboard/propositos/nuevo"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-cyan-700 transition-all hover:shadow-lg"
+            className="w-full sm:inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-cyan-700 transition-all hover:shadow-lg"
           >
             <span>Crear nueva campaña</span>
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -140,7 +140,7 @@ export const RecentPropositionsSection = React.memo(({ propositos }: RecentPropo
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
           {propositosRecientes.map((proposito) => (
             <PropositoCard key={proposito.id} proposito={proposito} />
           ))}

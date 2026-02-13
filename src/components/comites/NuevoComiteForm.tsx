@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/lib/hooks/useOrgRouter"
 import { createComite } from "@/app/actions/comites-actions"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Loader2, Save } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 
 const comiteSchema = z.object({
   nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres").max(100),

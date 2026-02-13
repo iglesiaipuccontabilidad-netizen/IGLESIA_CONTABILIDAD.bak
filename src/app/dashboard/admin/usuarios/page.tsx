@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/context/AuthContext'
 import { aprobarUsuario, rechazarUsuario, eliminarUsuario } from '@/app/actions/usuarios'
 import { Database } from '@/lib/database.types'
 import { ErrorBoundary } from 'react-error-boundary'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { IconUserCircle, IconRefresh, IconUserCheck, IconUserX, IconEdit, IconTrash, IconKey } from "@tabler/icons-react"
 import EditarUsuarioModal from '@/components/admin/EditarUsuarioModal'
 import ResetPasswordModal from '@/components/admin/ResetPasswordModal'

@@ -8,6 +8,7 @@ interface DatosVentasProyecto {
   ventas: any[]
   resumenVentas: any
   proyectoId: string
+  nombreOrganizacion?: string
 }
 
 /**
@@ -248,7 +249,7 @@ export async function generarExcelVentasProyecto(datos: DatosVentasProyecto) {
     // --- HOJA 1: DASHBOARD DE RESUMEN ---
     const dashboardData = [
       ['INFORME EJECUTIVO DE PROYECTO'],
-      ['SISTEMA DE GESTIÓN CONTABLE IPUC'],
+      ['SISTEMA DE GESTIÓN CONTABLE ' + (datos.nombreOrganizacion || 'IPUC')],
       [''],
       ['INFORMACIÓN DEL REPORTE'],
       ['Fecha de Emisión:', new Date().toLocaleDateString('es-CO')],

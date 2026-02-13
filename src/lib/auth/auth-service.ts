@@ -52,18 +52,27 @@ export async function verifyAuth(
       redirect(destination)
     }
 
-    // Obtener información adicional del usuario de la tabla usuarios
+    // MULTI-TENANT: Obtener rol desde organizacion_usuarios (prioridad)
     let { data: userData, error: dbError } = await supabase
-      .from('usuarios')
-      .select(`
-        rol,
-        estado
-      `)
-      .eq('id', authUser.id)
-      .single() as {
+      .from('organizacion_usuarios')
+      .select('rol, estado')
+      .eq('usuario_id', authUser.id)
+      .eq('estado', 'activo')
+      .maybeSingle() as {
         data: Pick<AuthUser, 'rol' | 'estado'> | null,
         error: any
       }
+    
+    // Fallback a tabla usuarios (compatibilidad durante migración)
+    if (!userData && !dbError) {
+      const fallback = await supabase
+        .from('usuarios')
+        .select('rol, estado')
+        .eq('id', authUser.id)
+        .single()
+      userData = fallback.data as Pick<AuthUser, 'rol' | 'estado'> | null
+      dbError = fallback.error
+    }
 
     if (dbError) {
       // Si el error es específicamente por columna faltante (código 42703)

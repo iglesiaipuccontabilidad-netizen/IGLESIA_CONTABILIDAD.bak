@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import Link from '@/components/OrgLink'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { Database } from '@/lib/database.types'
 import { formatCurrency, formatDate } from '@/utils/format'
 import styles from '@/styles/components/VotoDetalle.module.css'

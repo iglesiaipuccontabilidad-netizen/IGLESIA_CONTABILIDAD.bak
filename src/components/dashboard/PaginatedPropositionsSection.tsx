@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { Target, ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePropositos } from '@/hooks/useDashboardData'
 

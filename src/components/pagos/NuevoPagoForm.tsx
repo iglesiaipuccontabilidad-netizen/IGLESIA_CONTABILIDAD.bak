@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { toast } from 'react-hot-toast'
 import styles from '@/styles/pagos.module.css'
 import type { PagoFormData, MetodoPago } from '@/lib/pagos/types'

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { ArrowLeft, TrendingUp, Plus, DollarSign } from 'lucide-react'
 import { OfrendasList } from '@/components/comites/OfrendasList'
 import { OfrendasStats } from '@/components/comites/OfrendasStats'

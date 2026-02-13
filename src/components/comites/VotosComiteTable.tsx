@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Search, Filter, Calendar, DollarSign, User, Activity, ChevronRight, AlertCircle } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 
 interface Voto {
   id: string

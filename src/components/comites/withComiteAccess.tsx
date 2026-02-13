@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, ComponentType } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from "@/lib/hooks/useOrgRouter"
 import { useAuth } from "@/lib/context/AuthContext"
 
 interface WithComiteAccessOptions {

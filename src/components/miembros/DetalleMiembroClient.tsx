@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useRouter } from '@/lib/hooks/useOrgRouter'
+import Link from '@/components/OrgLink'
 import { ArrowLeft } from 'lucide-react'
 import { DeleteConfirmation } from './DeleteConfirmation'
 import { eliminarMiembro } from '@/app/actions/miembros'

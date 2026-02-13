@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { ArrowLeft, Calendar, DollarSign, Tag, FileText, FolderOpen, User, Clock, Edit, Trash2 } from 'lucide-react'
 import { requireComiteAccess } from '@/lib/auth/comite-permissions'
 

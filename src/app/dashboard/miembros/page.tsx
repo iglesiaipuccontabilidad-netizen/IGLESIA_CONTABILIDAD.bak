@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Database } from '@/lib/database.types'
 import { MiembrosGrid } from '@/components/miembros/MiembrosGrid'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { VotoBase } from '@/types/miembros'
 import { requireAdminOrTesorero } from '@/lib/auth/permissions'
 

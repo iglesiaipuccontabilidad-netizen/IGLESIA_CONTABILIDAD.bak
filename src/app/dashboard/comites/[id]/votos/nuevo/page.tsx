@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
+import Link from '@/components/OrgLink'
 import { ArrowLeft, Vote } from 'lucide-react'
 import { ComiteVotoForm } from '@/components/comites/ComiteVotoForm'
 import { requireComiteAccess } from '@/lib/auth/comite-permissions'

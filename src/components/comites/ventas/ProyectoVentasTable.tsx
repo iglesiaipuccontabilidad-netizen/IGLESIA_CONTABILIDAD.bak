@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { ShoppingCart, Plus, Eye, DollarSign, User, Phone, Mail, Package } from "lucide-react"
-import Link from "next/link"
+import Link from "@/components/OrgLink"
 import { ProyectoVentaForm } from "./ProyectoVentaForm"
 import { RegistrarPagoVentaForm } from "./RegistrarPagoVentaForm"
 
