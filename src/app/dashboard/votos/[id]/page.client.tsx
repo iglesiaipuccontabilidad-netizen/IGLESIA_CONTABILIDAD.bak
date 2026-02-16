@@ -280,44 +280,27 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
           </div>
         </div>
 
-        {/* CTA Card mejorado */}
-        <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl shadow-lg p-6 text-white">
+        {/* CTA Card simplificada en azul */}
+        <div className="bg-gradient-to-br from-[#2980b9] to-[#2E68B3] rounded-2xl shadow-lg p-6 text-white">
           <div className="mb-4">
-            <h3 className="text-xl font-bold mb-2">Realizar un pago</h3>
-            <p className="text-purple-100 text-sm">
-              Registra un nuevo aporte y mantén actualizado el avance de este voto.
-            </p>
+            <h3 className="text-xl font-bold mb-1">Realizar un pago</h3>
+            <p className="text-white/90 text-sm">Registra un aporte rápido para actualizar el avance.</p>
           </div>
-          
-          <ul className="space-y-2 mb-6">
-            <li className="flex items-center gap-2 text-sm text-purple-100">
-              <CheckCircle className="h-4 w-4 flex-shrink-0" />
-              <span>Actualización en tiempo real</span>
-            </li>
-            <li className="flex items-center gap-2 text-sm text-purple-100">
-              <CheckCircle className="h-4 w-4 flex-shrink-0" />
-              <span>Notificación automática</span>
-            </li>
-            <li className="flex items-center gap-2 text-sm text-purple-100">
-              <CheckCircle className="h-4 w-4 flex-shrink-0" />
-              <span>Trazabilidad completa</span>
-            </li>
-          </ul>
-          
+
           <Link
             href={`/dashboard/pagos/nuevo?voto=${voto.id}`}
             className={`block w-full text-center px-6 py-3 rounded-lg font-semibold transition-all ${
-              montoPendiente === 0 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-yellow-400 hover:bg-yellow-300 text-gray-900 hover:shadow-lg transform hover:-translate-y-0.5'
+              montoPendiente === 0
+                ? 'bg-gray-400 cursor-not-allowed text-white'
+                : 'bg-white text-[#1e3a8a] hover:bg-white/90 hover:shadow-lg transform hover:-translate-y-0.5'
             }`}
             {...(montoPendiente === 0 ? { 'aria-disabled': true, onClick: (e: React.MouseEvent) => e.preventDefault() } : {})}
           >
             {montoPendiente === 0 ? 'Compromiso completado' : 'Registrar pago ahora'}
           </Link>
-          
-          <div className="mt-4 pt-4 border-t border-purple-400/30 flex items-center justify-center gap-2 text-sm text-purple-100">
-            <Calendar className="h-4 w-4" />
+
+          <div className="mt-3 text-xs text-white/80 text-center">
+            <Calendar className="inline-block h-4 w-4 mr-2" />
             <span>Fecha límite: {formatDate(voto.fecha_limite)}</span>
           </div>
         </div>

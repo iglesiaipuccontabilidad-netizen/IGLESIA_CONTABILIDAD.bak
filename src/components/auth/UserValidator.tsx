@@ -14,40 +14,32 @@ export function UserValidator() {
   useEffect(() => {
     if (!user || !member) return
 
-    const validateUser = async () => {
-      try {
-        // Evitar validaciones duplicadas para el mismo usuario
-        const currentUserKey = `${user.id}-${member.rol}-${member.estado}`
-        if (lastValidationRef.current === currentUserKey) {
-          return
-        }
-        lastValidationRef.current = currentUserKey
-
-        // Validar usando JWT app_metadata (sin query a BD)
-        const appMetadata = (user as any).app_metadata
-        const orgMemberships = appMetadata?.org_memberships as Array<{ org_id: string; role: string }> | undefined
-
-        if (orgMemberships && orgMemberships.length > 0) {
-          const jwtRole = orgMemberships[0].role
-          if (member.rol !== jwtRole) {
-            console.warn('⚠️ [UserValidator] Rol en contexto difiere del JWT:')
-            console.warn('  - En contexto:', member.rol)
-            console.warn('  - En JWT:', jwtRole)
-          } else {
-            console.log('✅ [UserValidator] Usuario validado correctamente')
-            console.log('  - ID:', user.id)
-            console.log('  - Email:', user.email)
-            console.log('  - Rol:', member.rol)
-          }
-        } else {
-          console.log('ℹ️ [UserValidator] Sin org_memberships en JWT, validación omitida')
-        }
-      } catch (err) {
-        console.error('❌ [UserValidator] Error en validación:', err)
-      }
+    // Evitar validaciones duplicadas para el mismo usuario
+    const currentUserKey = `${user.id}-${member.rol}-${member.estado}`
+    if (lastValidationRef.current === currentUserKey) {
+      return
     }
+    lastValidationRef.current = currentUserKey
 
-    validateUser()
+    try {
+      // Validar usando JWT app_metadata (sin query a BD)
+      const appMetadata = (user as Record<string, unknown>)?.app_metadata as Record<string, unknown> | undefined
+      const orgMemberships = appMetadata?.org_memberships as Array<{ org_id: string; role: string }> | undefined
+
+      if (orgMemberships && orgMemberships.length > 0) {
+        const jwtRole = orgMemberships[0].role
+        if (member.rol !== jwtRole) {
+          console.warn('⚠️ [UserValidator] Rol en contexto difiere del JWT:', member.rol, '!=', jwtRole)
+        } else {
+          console.log('✅ [UserValidator] Usuario validado -', user.email, '| Rol:', member.rol)
+        }
+      } else {
+        console.log('ℹ️ [UserValidator] Sin org_memberships en JWT, validación omitida')
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : JSON.stringify(err)
+      console.error('❌ [UserValidator] Error en validación:', errorMsg)
+    }
   }, [user, member])
 
   return null

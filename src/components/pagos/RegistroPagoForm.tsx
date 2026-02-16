@@ -155,29 +155,17 @@ export default function RegistroPagoForm({ votoId, montoPendiente, montoTotal }:
             <label htmlFor="monto" className="block text-slate-700 text-sm font-medium mb-2">
               Monto del Pago <span className="text-rose-500">*</span>
             </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-slate-500">$</span>
-              </div>
-              <input
-                type="number"
-                id="monto"
-                name="monto"
-                value={formData.monto}
-                onChange={handleChange}
-                placeholder="0.00"
-                className="w-full rounded-lg border border-slate-200 pl-8 pr-4 py-2.5
-                         focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                         placeholder:text-slate-400 transition-colors"
-                required
-                min="1"
-                max={montoPendiente}
-                step="0.01"
-              />
-            </div>
-            <p className="mt-1.5 text-sm text-slate-500">
-              Monto máximo permitido: ${montoPendiente.toLocaleString('es-CO')}
-            </p>
+            <FormattedNumberInput
+              name="monto"
+              value={formData.monto}
+              onChange={handleChange}
+              placeholder="0"
+              required
+              showCurrency={true}
+              showFormatted={false}
+              helpText={`Monto máximo permitido: $${montoPendiente.toLocaleString('es-CO')}`}
+              className="rounded-lg border border-slate-200 py-2.5 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+            />
           </div>
 
           {/* Grid de 2 columnas para fecha y método */}

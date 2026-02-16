@@ -49,18 +49,58 @@ export const FormattedNumberInput = forwardRef<HTMLInputElement, FormattedNumber
       return numValue.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
     }
 
+    // Limpiar y formatear número eliminando caracteres no numéricos excepto punto
+    const cleanNumber = (str: string): string => {
+      return str.replace(/[^0-9]/g, '')
+    }
+
+    // Formatear con separadores de miles en tiempo real
+    const formatWithThousands = (str: string): string => {
+      const cleaned = cleanNumber(str)
+      if (!cleaned) return ''
+      const num = parseInt(cleaned, 10)
+      if (isNaN(num)) return ''
+      return num.toLocaleString('es-CO')
+    }
+
     // Actualizar valor mostrado cuando cambia el valor externo
     useEffect(() => {
       if (value !== '') {
-        setDisplayValue(value.toString())
+        const formatted = formatWithThousands(value.toString())
+        setDisplayValue(formatted)
+      } else {
+        setDisplayValue('')
       }
     }, [value])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const rawValue = e.target.value
-      setDisplayValue(rawValue)
-      // Pasar el evento completo para compatibilidad con react-hook-form
-      onChange?.(e)
+      const inputValue = e.target.value
+      // Permitir campo vacío
+      if (inputValue === '') {
+        setDisplayValue('')
+        const syntheticEvent = {
+          target: {
+            name: props.name || '',
+            value: ''
+          }
+        } as React.ChangeEvent<HTMLInputElement>
+        onChange?.(syntheticEvent)
+        return
+      }
+      
+      // Aplicar formato con separadores de miles
+      const formatted = formatWithThousands(inputValue)
+      setDisplayValue(formatted)
+      
+      // Enviar valor sin formato al onChange para compatibilidad
+      const cleanValue = cleanNumber(inputValue)
+      const syntheticEvent = {
+        target: {
+          name: props.name || '',
+          value: cleanValue
+        }
+      } as React.ChangeEvent<HTMLInputElement>
+      onChange?.(syntheticEvent)
     }
 
     const handleQuickAmount = (amount: number) => {
@@ -105,14 +145,12 @@ export const FormattedNumberInput = forwardRef<HTMLInputElement, FormattedNumber
             )}
             <input
               ref={ref}
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="numeric"
               value={displayValue}
               onChange={handleChange}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              min={min}
-              max={max}
               disabled={disabled}
               placeholder={placeholder}
               className={`
