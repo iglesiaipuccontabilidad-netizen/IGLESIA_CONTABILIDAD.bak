@@ -49,7 +49,7 @@ export default async function VotoDetailPage({
       )
     `)
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
   if (votoError) {
     console.error('Error al cargar el voto:', votoError.message)
@@ -57,7 +57,6 @@ export default async function VotoDetailPage({
   }
 
   if (!votoData) {
-    console.error('No se encontró el voto')
     return notFound()
   }
 

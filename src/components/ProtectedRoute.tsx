@@ -16,7 +16,22 @@ export default async function ProtectedRoute({ children, adminOnly = false }: Pr
     redirect('/login')
   }
 
-  // 1. Intentar obtener rol desde organizacion_usuarios (multi-tenant)
+  // ═══ JWT-first: leer rol desde app_metadata (Custom Access Token Hook) ═══
+  const appMeta = user.app_metadata
+  const orgMemberships = appMeta?.org_memberships as Array<{ org_id: string; role: string }> | undefined
+
+  if (orgMemberships && orgMemberships.length > 0) {
+    const membership = orgMemberships[0]
+    if (membership.role === 'pendiente') {
+      redirect('/login')
+    }
+    if (adminOnly && membership.role !== 'admin' && membership.role !== 'super_admin') {
+      redirect('/dashboard')
+    }
+    return <>{children}</>
+  }
+
+  // ═══ Fallback: query organizacion_usuarios ═══
   const { data: orgUser } = await supabase
     .from('organizacion_usuarios')
     .select('rol, estado')
@@ -24,29 +39,11 @@ export default async function ProtectedRoute({ children, adminOnly = false }: Pr
     .eq('estado', 'activo')
     .maybeSingle()
 
-  if (orgUser) {
-    // Usuario encontrado en organizacion_usuarios
-    if (orgUser.rol === 'pendiente') {
-      redirect('/login')
-    }
-    if (adminOnly && orgUser.rol !== 'admin' && orgUser.rol !== 'super_admin') {
-      redirect('/dashboard')
-    }
-    return <>{children}</>
-  }
-
-  // 2. Fallback: verificar en miembros (compatibilidad)
-  const { data: member, error: memberError } = await supabase
-    .from('miembros')
-    .select('rol, estado')
-    .eq('usuario_id', user.id)
-    .maybeSingle()
-
-  if (memberError || !member || member.estado !== 'activo' || member.rol === 'pendiente') {
+  if (!orgUser || orgUser.rol === 'pendiente') {
     redirect('/login')
   }
 
-  if (adminOnly && member.rol !== 'admin') {
+  if (adminOnly && orgUser.rol !== 'admin' && orgUser.rol !== 'super_admin') {
     redirect('/dashboard')
   }
 

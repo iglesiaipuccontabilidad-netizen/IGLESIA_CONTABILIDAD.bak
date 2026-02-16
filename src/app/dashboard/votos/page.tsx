@@ -135,12 +135,14 @@ export default function VotosPage() {
     const nombreCompleto = voto.miembro ?
       `${voto.miembro.nombres} ${voto.miembro.apellidos}`.toLowerCase() : ''
 
+    const nombreProposito = voto.proposito_nombre || voto.proposito || ''
+
     const cumpleBusqueda = !busqueda ||
       nombreCompleto.includes(busqueda.toLowerCase()) ||
-      (voto.proposito?.toLowerCase().includes(busqueda.toLowerCase()) ?? false)
+      (nombreProposito.toLowerCase().includes(busqueda.toLowerCase()))
 
     const cumpleProposito = !proposito ||
-      (voto.proposito?.toLowerCase() === proposito.toLowerCase())
+      (nombreProposito.toLowerCase() === proposito.toLowerCase())
 
     const cumpleEstado = !estado || voto.estado === estado
 
@@ -405,7 +407,7 @@ export default function VotosPage() {
 
                           <div className="flex items-center gap-2 mb-2">
                             <div className="h-1.5 w-1.5 rounded-full bg-primary-500 flex-shrink-0"></div>
-                            <span className="font-semibold text-slate-900 text-sm truncate">{voto.proposito}</span>
+                            <span className="font-semibold text-slate-900 text-sm truncate">{voto.proposito_nombre || voto.proposito}</span>
                           </div>
 
                           <div className="grid grid-cols-2 gap-4 mb-3">
@@ -560,7 +562,7 @@ export default function VotosPage() {
                           <td className="px-6 py-5">
                             <div className="flex items-center gap-2">
                               <div className="h-2 w-2 rounded-full bg-primary-500"></div>
-                              <span className="font-bold text-slate-900">{voto.proposito}</span>
+                              <span className="font-bold text-slate-900">{voto.proposito_nombre || voto.proposito}</span>
                             </div>
                           </td>
                           <td className="px-6 py-5 text-right">

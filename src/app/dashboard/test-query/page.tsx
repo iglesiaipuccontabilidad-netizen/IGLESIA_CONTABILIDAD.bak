@@ -25,12 +25,13 @@ export default function TestQueryPage() {
       }
       
       // Ahora intentar la consulta
-      console.log('Intentando consultar usuarios con ID:', user.id)
+      console.log('Intentando consultar organizacion_usuarios con ID:', user.id)
       
       const { data, error } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('*')
-        .eq('id', user.id)
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
         .maybeSingle()
       
       console.log('Query Data:', data)

@@ -26,12 +26,13 @@ export async function createMiembro(formData: MiembroFormData) {
       }
 
       const { data: userData } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', user.id)
-        .single()
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .maybeSingle()
 
-      if (!userData || (userData as any).estado !== 'activo') {
+      if (!userData) {
         throw new Error('Usuario no autorizado')
       }
 
@@ -90,12 +91,13 @@ export async function updateMiembro(id: string, formData: MiembroFormData) {
       }
 
       const { data: userData } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', user.id)
-        .single()
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .maybeSingle()
 
-      if (!userData || (userData as any).estado !== 'activo') {
+      if (!userData) {
         throw new Error('Usuario no autorizado')
       }
 
@@ -154,12 +156,13 @@ export async function eliminarMiembro(id: string) {
     }
 
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
-    if (!userData || (userData as any).estado !== 'activo') {
+    if (!userData) {
       return { error: 'Usuario no autorizado' }
     }
 

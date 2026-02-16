@@ -29,12 +29,13 @@ export async function verifyAdmin(): Promise<VerifyAdminResult> {
       }
     }
 
-    // Obtener rol y estado del usuario desde la tabla usuarios
-    const { data: userData, error: dbError } = await supabase
-      .from('usuarios')
+    // Obtener rol y estado del usuario desde organizacion_usuarios
+    const { data: orgUser, error: dbError } = await supabase
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', currentUser.id)
-      .single<UserVerificationData>()
+      .eq('usuario_id', currentUser.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     if (dbError) {
       console.error('Error al obtener datos de usuario:', dbError)
@@ -44,6 +45,10 @@ export async function verifyAdmin(): Promise<VerifyAdminResult> {
         error: 'Error al verificar permisos: ' + dbError.message 
       }
     }
+
+    const userData: UserVerificationData | null = orgUser
+      ? { rol: orgUser.rol, estado: orgUser.estado }
+      : null
 
     if (!userData) {
       return { 
@@ -87,11 +92,16 @@ export async function verifyRole(allowedRoles: string[]): Promise<VerifyAdminRes
       }
     }
 
-    const { data: userData, error: dbError } = await supabase
-      .from('usuarios')
+    const { data: orgUser, error: dbError } = await supabase
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', currentUser.id)
-      .single<UserVerificationData>()
+      .eq('usuario_id', currentUser.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
+
+    const userData: UserVerificationData | null = orgUser
+      ? { rol: orgUser.rol, estado: orgUser.estado }
+      : null
 
     if (dbError || !userData) {
       return { 

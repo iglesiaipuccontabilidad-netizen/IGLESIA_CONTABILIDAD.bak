@@ -16,10 +16,10 @@ export async function GET() {
 
     // Obtener usuarios activos
     const { data: usuarios, error } = await supabase
-      .from('usuarios')
-      .select('id, email, rol, estado')
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
       .eq('estado', 'activo')
-      .order('email', { ascending: true })
+      .order('rol', { ascending: true })
 
     if (error) {
       console.error('Error al obtener usuarios:', error)

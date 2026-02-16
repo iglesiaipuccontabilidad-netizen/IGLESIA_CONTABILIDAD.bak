@@ -39,13 +39,13 @@ export async function aprobarUsuario(userId: string): Promise<ActionResult> {
     const { supabase } = context
 
     const { error } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .update({
         rol: 'usuario' satisfies UserRole,
         estado: 'activo' satisfies UserStatus,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('usuario_id', userId)
 
     if (error) {
       console.error('Error al aprobar usuario:', error)
@@ -74,13 +74,13 @@ export async function rechazarUsuario(userId: string): Promise<ActionResult> {
     const { supabase } = context
 
     const { error } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .update({ 
         rol: 'pendiente' satisfies UserRole,
         estado: 'inactivo' satisfies UserStatus,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('usuario_id', userId)
 
     if (error) {
       console.error('Error al rechazar usuario:', error)
@@ -128,30 +128,22 @@ export async function editarUsuario(
       return { success: false, error: `Estado no válido. Estados permitidos: ${ESTADOS_VALIDOS.join(', ')}` }
     }
 
-    // Verificar que el usuario existe
+    // Verificar que el usuario existe en organizacion_usuarios
     const { data: existingUser, error: fetchError } = await supabase
-      .from('usuarios')
-      .select('id, email')
-      .eq('id', userId)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
+      .eq('usuario_id', userId)
+      .maybeSingle()
 
     if (fetchError || !existingUser) {
       return { success: false, error: 'Usuario no encontrado' }
     }
 
-    // Verificar si el email ya está en uso por otro usuario
-    if (data.email !== existingUser.email) {
-      const { data: emailCheck } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('email', data.email)
-        .neq('id', userId)
-        .maybeSingle()
+    // Verificar email via auth.users
+    const { data: { user: currentAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+    const currentEmail = currentAuthUser?.email
 
-      if (emailCheck) {
-        return { success: false, error: 'El correo electrónico ya está en uso' }
-      }
-
+    if (data.email !== currentEmail) {
       // Actualizar email en auth.users usando cliente admin (requiere service_role)
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
         userId,
@@ -164,16 +156,15 @@ export async function editarUsuario(
       }
     }
 
-    // Actualizar en la tabla usuarios
+    // Actualizar en organizacion_usuarios
     const { error: updateError } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .update({
-        email: data.email,
         rol: data.rol,
         estado: data.estado,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('usuario_id', userId)
 
     if (updateError) {
       console.error('Error al actualizar usuario:', updateError)
@@ -211,20 +202,20 @@ export async function eliminarUsuario(
       return { success: false, error: 'No puedes eliminar tu propia cuenta' }
     }
 
-    // Verificar que el usuario existe
+    // Verificar que el usuario existe en organizacion_usuarios
     const { data: userToDelete, error: fetchError } = await supabase
-      .from('usuarios')
-      .select('id, rol, estado')
-      .eq('id', userId)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
+      .eq('usuario_id', userId)
+      .maybeSingle()
 
     if (fetchError || !userToDelete) {
       return { success: false, error: 'Usuario no encontrado' }
     }
 
-    // Contar cuántos admins activos hay
+    // Contar cuántos admins activos hay en la org
     const { count: adminCount } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('*', { count: 'exact', head: true })
       .eq('rol', 'admin')
       .eq('estado', 'activo')
@@ -237,22 +228,22 @@ export async function eliminarUsuario(
     if (soft) {
       // Soft delete: solo cambiar estado a inactivo
       const { error: updateError } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .update({
           estado: 'inactivo' satisfies UserStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId)
+        .eq('usuario_id', userId)
 
       if (updateError) {
         return { success: false, error: 'Error al desactivar el usuario: ' + updateError.message }
       }
     } else {
-      // Hard delete: eliminar de BD primero
+      // Hard delete: eliminar de organizacion_usuarios primero
       const { error: deleteError } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .delete()
-        .eq('id', userId)
+        .eq('usuario_id', userId)
 
       if (deleteError) {
         return { success: false, error: 'Error al eliminar el usuario de la base de datos: ' + deleteError.message }
@@ -289,12 +280,12 @@ export async function reactivarUsuario(userId: string): Promise<ActionResult> {
     const { supabase } = context
 
     const { error } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .update({
         estado: 'activo' satisfies UserStatus,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('usuario_id', userId)
 
     if (error) {
       console.error('Error al reactivar usuario:', error)
@@ -337,14 +328,14 @@ export async function cambiarRolUsuario(
     // Si se está quitando rol admin, verificar que no sea el último
     if (nuevoRol !== 'admin') {
       const { data: userToChange } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', userId)
-        .single()
+        .eq('usuario_id', userId)
+        .maybeSingle()
 
       if (userToChange?.rol === 'admin' && userToChange?.estado === 'activo') {
         const { count: adminCount } = await supabase
-          .from('usuarios')
+          .from('organizacion_usuarios')
           .select('*', { count: 'exact', head: true })
           .eq('rol', 'admin')
           .eq('estado', 'activo')
@@ -356,12 +347,12 @@ export async function cambiarRolUsuario(
     }
 
     const { error } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .update({
         rol: nuevoRol,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('usuario_id', userId)
 
     if (error) {
       console.error('Error al cambiar rol:', error)

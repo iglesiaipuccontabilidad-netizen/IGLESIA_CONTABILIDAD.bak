@@ -34,12 +34,13 @@ export async function createVoto(data: VotoInput): Promise<{
       }
 
       const { data: userData } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', user.id)
-        .single()
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .maybeSingle()
 
-      if (!userData || (userData as any).estado !== 'activo') {
+      if (!userData) {
         throw new Error('Usuario no autorizado')
       }
 
@@ -92,12 +93,13 @@ export async function updateVoto(
       }
 
       const { data: userData } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', user.id)
-        .single()
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .maybeSingle()
 
-      if (!userData || (userData as any).estado !== 'activo') {
+      if (!userData) {
         throw new Error('Usuario no autorizado')
       }
 
@@ -270,6 +272,10 @@ export async function getVotosWithDetails(): Promise<{
           nombres,
           apellidos
         ),
+        proposito_obj:propositos!proposito_id(
+          id,
+          nombre
+        ),
         pagos(
           monto,
           fecha_pago
@@ -284,6 +290,7 @@ export async function getVotosWithDetails(): Promise<{
       const total_pagado = voto.pagos?.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0) || 0;
       return {
         ...voto,
+        proposito_nombre: voto.proposito_obj?.nombre || voto.proposito || 'Sin propósito',
         total_pagado,
         progreso: Math.round((total_pagado / voto.monto_total) * 100)
       };
@@ -310,12 +317,13 @@ export async function deleteVoto(id: string): Promise<{
     }
 
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
-    if (!userData || (userData as any).estado !== 'activo') {
+    if (!userData) {
       throw new Error('Usuario no autorizado')
     }
 
@@ -347,6 +355,196 @@ export async function deleteVoto(id: string): Promise<{
     return { success: true, error: null }
   } catch (error) {
     console.error('Error al eliminar voto:', error)
+    return { success: false, error }
+  }
+}
+
+export async function updatePago(
+  pagoId: string,
+  votoId: string,
+  data: {
+    monto: number
+    fecha_pago: string
+    metodo_pago: 'efectivo' | 'transferencia' | 'cheque' | 'otro'
+    nota?: string | null
+  }
+): Promise<{
+  success: boolean;
+  error: any | null;
+}> {
+  const supabase = await createClient()
+
+  try {
+    // Verificar autenticación y permisos
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('No autenticado')
+    }
+
+    const { data: userData } = await supabase
+      .from('organizacion_usuarios')
+      .select('rol, estado')
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
+
+    if (!userData) {
+      throw new Error('Usuario no autorizado')
+    }
+
+    if (!['admin', 'tesorero'].includes((userData as any).rol)) {
+      throw new Error('No tienes permisos para editar pagos')
+    }
+
+    // Obtener el voto para validar montos
+    const { data: voto, error: votoError } = await (supabase as any)
+      .from('votos')
+      .select('monto_total, recaudado')
+      .eq('id', votoId)
+      .single()
+
+    if (votoError) throw votoError
+
+    // Obtener el pago actual para calcular la diferencia
+    const { data: pagoActual, error: pagoActualError } = await (supabase as any)
+      .from('pagos')
+      .select('monto')
+      .eq('id', pagoId)
+      .single()
+
+    if (pagoActualError) throw pagoActualError
+
+    // Calcular nuevo recaudado
+    const diferencia = data.monto - pagoActual.monto
+    const nuevoRecaudado = (voto.recaudado || 0) + diferencia
+
+    if (nuevoRecaudado > voto.monto_total) {
+      throw new Error('El monto editado excede el monto total del voto')
+    }
+
+    if (nuevoRecaudado < 0) {
+      throw new Error('El monto recaudado no puede ser negativo')
+    }
+
+    // Actualizar el pago
+    const { error: updatePagoError } = await (supabase as any)
+      .from('pagos')
+      .update({
+        monto: data.monto,
+        fecha_pago: data.fecha_pago,
+        metodo_pago: data.metodo_pago,
+        nota: data.nota || null,
+      })
+      .eq('id', pagoId)
+
+    if (updatePagoError) throw updatePagoError
+
+    // Actualizar recaudado y estado del voto
+    const nuevoEstado = nuevoRecaudado >= voto.monto_total ? 'completado' : 'activo'
+
+    const { error: updateVotoError } = await (supabase as any)
+      .from('votos')
+      .update({
+        recaudado: nuevoRecaudado,
+        estado: nuevoEstado,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', votoId)
+
+    if (updateVotoError) throw updateVotoError
+
+    // Revalidar datos
+    revalidatePath('/dashboard/votos')
+    revalidatePath('/dashboard')
+    revalidatePath(`/dashboard/votos/${votoId}`)
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('Error al actualizar pago:', error)
+    return { success: false, error }
+  }
+}
+
+export async function deletePago(
+  pagoId: string,
+  votoId: string
+): Promise<{
+  success: boolean;
+  error: any | null;
+}> {
+  const supabase = await createClient()
+
+  try {
+    // Verificar autenticación y permisos
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      throw new Error('No autenticado')
+    }
+
+    const { data: userData } = await supabase
+      .from('organizacion_usuarios')
+      .select('rol, estado')
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
+
+    if (!userData) {
+      throw new Error('Usuario no autorizado')
+    }
+
+    if (!['admin', 'tesorero'].includes((userData as any).rol)) {
+      throw new Error('No tienes permisos para eliminar pagos')
+    }
+
+    // Obtener el pago para saber su monto
+    const { data: pago, error: pagoError } = await (supabase as any)
+      .from('pagos')
+      .select('monto')
+      .eq('id', pagoId)
+      .single()
+
+    if (pagoError) throw pagoError
+
+    // Obtener el voto actual
+    const { data: voto, error: votoError } = await (supabase as any)
+      .from('votos')
+      .select('monto_total, recaudado')
+      .eq('id', votoId)
+      .single()
+
+    if (votoError) throw votoError
+
+    // Eliminar el pago
+    const { error: deleteError } = await (supabase as any)
+      .from('pagos')
+      .delete()
+      .eq('id', pagoId)
+
+    if (deleteError) throw deleteError
+
+    // Recalcular recaudado
+    const nuevoRecaudado = Math.max(0, (voto.recaudado || 0) - pago.monto)
+    const nuevoEstado = nuevoRecaudado >= voto.monto_total ? 'completado' : 'activo'
+
+    const { error: updateVotoError } = await (supabase as any)
+      .from('votos')
+      .update({
+        recaudado: nuevoRecaudado,
+        estado: nuevoEstado,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', votoId)
+
+    if (updateVotoError) throw updateVotoError
+
+    // Revalidar datos
+    revalidatePath('/dashboard/votos')
+    revalidatePath('/dashboard')
+    revalidatePath(`/dashboard/votos/${votoId}`)
+
+    return { success: true, error: null }
+  } catch (error) {
+    console.error('Error al eliminar pago:', error)
     return { success: false, error }
   }
 }

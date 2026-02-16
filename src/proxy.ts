@@ -92,10 +92,11 @@ export default async function proxy(request: NextRequest) {
     // 5. Obtener datos del usuario si está autenticado
     if (user?.id) {
       const { data: userData, error: userError } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('estado, rol')
-        .eq('id', user.id)
-        .single()
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .maybeSingle()
 
       // Si hay error al obtener datos del usuario o no está activo, cerrar sesión
       if (userError || !userData || userData.estado !== 'activo') {

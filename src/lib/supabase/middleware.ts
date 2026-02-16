@@ -68,9 +68,10 @@ export async function updateSession(request: NextRequest) {
     if (request.nextUrl.pathname.startsWith('/admin')) {
       type UserRole = { rol: 'admin' | 'usuario' | 'pendiente' }
       const { data: userData } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol')
-        .eq('id', userId)
+        .eq('usuario_id', userId)
+        .eq('estado', 'activo')
         .maybeSingle<UserRole>()
 
       if (!userData || userData.rol !== 'admin') {

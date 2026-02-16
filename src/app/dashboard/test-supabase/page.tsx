@@ -30,12 +30,13 @@ export default function TestSupabasePage() {
           return
         }
 
-        // 2. Consultar tabla usuarios
-        console.log('🧪 Test: Consultando tabla usuarios para ID:', user.id)
+        // 2. Consultar tabla organizacion_usuarios
+        console.log('🧪 Test: Consultando tabla organizacion_usuarios para ID:', user.id)
         const { data, error } = await supabase
-          .from('usuarios')
+          .from('organizacion_usuarios')
           .select('*')
-          .eq('id', user.id)
+          .eq('usuario_id', user.id)
+          .eq('estado', 'activo')
           .maybeSingle()
 
         console.log('🧪 Test: Resultado de la consulta:')

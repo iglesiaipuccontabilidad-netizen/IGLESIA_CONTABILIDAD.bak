@@ -250,7 +250,13 @@ function LoginForm({ mensaje }: LoginFormProps) {
             </form>
 
             {/* Footer */}
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-4 border-t border-slate-200 space-y-2">
+              <p className="text-center text-sm text-slate-600">
+                ¿Quieres registrar tu iglesia?{' '}
+                <a href="/registro-org" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+                  Crear cuenta
+                </a>
+              </p>
               <p className="text-center text-xs text-slate-500">
                 Sistema de Gestión Contable IPUC
               </p>

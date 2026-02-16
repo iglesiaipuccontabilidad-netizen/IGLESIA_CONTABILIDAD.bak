@@ -1,14 +1,22 @@
 /**
  * Tipos para gestión de usuarios
  * Basado en mejores prácticas de Supabase
+ * Nota: La tabla `usuarios` fue eliminada. Los datos de usuarios ahora viven en:
+ * - auth.users (autenticación)
+ * - organizacion_usuarios (rol/estado por organización)
  */
 
 import { Database } from '@/lib/database.types'
 
-// Tipos base de la BD
-export type UsuarioRow = Database['public']['Tables']['usuarios']['Row']
-export type UsuarioInsert = Database['public']['Tables']['usuarios']['Insert']
-export type UsuarioUpdate = Database['public']['Tables']['usuarios']['Update']
+// Tipos base de la BD (ahora desde organizacion_usuarios)
+export type OrgUsuarioRow = Database['public']['Tables']['organizacion_usuarios']['Row']
+export type OrgUsuarioInsert = Database['public']['Tables']['organizacion_usuarios']['Insert']
+export type OrgUsuarioUpdate = Database['public']['Tables']['organizacion_usuarios']['Update']
+
+// Legacy aliases (mantener por compatibilidad con imports existentes)
+export type UsuarioRow = OrgUsuarioRow
+export type UsuarioInsert = OrgUsuarioInsert
+export type UsuarioUpdate = OrgUsuarioUpdate
 
 // Enums tipados para roles y estados
 export type UserRole = 'admin' | 'tesorero' | 'usuario' | 'pendiente'

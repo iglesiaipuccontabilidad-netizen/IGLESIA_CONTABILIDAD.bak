@@ -73,12 +73,12 @@ export async function PUT(
       )
     }
 
-    // Verificar que el usuario existe
+    // Verificar que el usuario existe en organizacion_usuarios
     const { data: existingUser, error: fetchError } = await supabase
-      .from('usuarios')
-      .select('id, email, rol, estado')
-      .eq('id', userId)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
+      .eq('usuario_id', userId)
+      .maybeSingle()
 
     if (fetchError || !existingUser) {
       return NextResponse.json(
@@ -87,22 +87,11 @@ export async function PUT(
       )
     }
 
-    // Verificar si el email ya está en uso por otro usuario
-    if (email !== existingUser.email) {
-      const { data: emailCheck } = await supabase
-        .from('usuarios')
-        .select('id')
-        .eq('email', email)
-        .neq('id', userId)
-        .maybeSingle()
+    // Verificar email via auth.users
+    const { data: { user: currentAuthUser } } = await supabaseAdmin.auth.admin.getUserById(userId)
+    const currentEmail = currentAuthUser?.email
 
-      if (emailCheck) {
-        return NextResponse.json(
-          { error: 'El correo electrónico ya está en uso por otro usuario' },
-          { status: 400 }
-        )
-      }
-
+    if (email !== currentEmail) {
       // Actualizar email en auth.users usando cliente admin (requiere service_role)
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
         userId,
@@ -118,16 +107,15 @@ export async function PUT(
       }
     }
 
-    // Actualizar en la tabla usuarios
+    // Actualizar en organizacion_usuarios
     const { data: updatedUser, error: updateError } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .update({
-        email,
         rol: rol as UserRole,
         estado: estado as UserStatus,
         updated_at: new Date().toISOString()
       })
-      .eq('id', userId)
+      .eq('usuario_id', userId)
       .select()
       .single()
 
@@ -189,10 +177,10 @@ export async function DELETE(
 
     // Verificar que el usuario a eliminar existe
     const { data: userToDelete, error: fetchError } = await supabase
-      .from('usuarios')
-      .select('id, rol, estado, email')
-      .eq('id', userId)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
+      .eq('usuario_id', userId)
+      .maybeSingle()
 
     if (fetchError || !userToDelete) {
       return NextResponse.json(
@@ -203,7 +191,7 @@ export async function DELETE(
 
     // Contar cuántos admins activos hay
     const { count: adminCount } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('*', { count: 'exact', head: true })
       .eq('rol', 'admin')
       .eq('estado', 'activo')
@@ -219,12 +207,12 @@ export async function DELETE(
     if (soft) {
       // Soft delete: solo cambiar estado a inactivo
       const { error: updateError } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .update({
           estado: 'inactivo' as UserStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', userId)
+        .eq('usuario_id', userId)
 
       if (updateError) {
         console.error('Error al desactivar usuario:', updateError)
@@ -239,11 +227,11 @@ export async function DELETE(
         message: 'Usuario desactivado exitosamente'
       })
     } else {
-      // Hard delete: eliminar de BD primero, luego de auth
+      // Hard delete: eliminar de organizacion_usuarios primero, luego de auth
       const { error: deleteError } = await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .delete()
-        .eq('id', userId)
+        .eq('usuario_id', userId)
 
       if (deleteError) {
         console.error('Error al eliminar usuario de BD:', deleteError)
@@ -300,10 +288,10 @@ export async function GET(
     const { supabase } = adminContext
 
     const { data: user, error } = await supabase
-      .from('usuarios')
-      .select('id, email, rol, estado, created_at, updated_at')
-      .eq('id', userId)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado, created_at, updated_at')
+      .eq('usuario_id', userId)
+      .maybeSingle()
 
     if (error || !user) {
       return NextResponse.json(

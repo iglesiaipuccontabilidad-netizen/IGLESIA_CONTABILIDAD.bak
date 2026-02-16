@@ -59,13 +59,14 @@ export default async function OfrendaDetallePage({ params }: PageProps) {
   let registradoPorNombre = 'Sistema'
   if (ofrenda.registrado_por) {
     const { data: usuario } = await supabase
-      .from('usuarios')
-      .select('email')
-      .eq('id', ofrenda.registrado_por)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id')
+      .eq('usuario_id', ofrenda.registrado_por)
+      .eq('estado', 'activo')
+      .maybeSingle()
     
-    if (usuario && usuario.email) {
-      registradoPorNombre = usuario.email
+    if (usuario && usuario.usuario_id) {
+      registradoPorNombre = usuario.usuario_id
     }
   }
 

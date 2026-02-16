@@ -11,10 +11,11 @@ const getUserData = cache(async (userId: string) => {
   const supabase = await createClient()
   
   const { data: userData, error } = await supabase
-    .from('usuarios')
-    .select('id, email, rol, estado')
-    .eq('id', userId)
-    .single()
+    .from('organizacion_usuarios')
+    .select('usuario_id, rol, estado')
+    .eq('usuario_id', userId)
+    .eq('estado', 'activo')
+    .maybeSingle()
   
   if (error) {
     console.error('Error al obtener datos de usuario:', error)

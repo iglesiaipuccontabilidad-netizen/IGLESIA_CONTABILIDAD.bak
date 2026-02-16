@@ -67,8 +67,8 @@ export default function Page() {
       
       // FASE 1: Agregar timeout de 10s a la query usando Promise.race
       const queryPromise = supabase
-        .from('usuarios')
-        .select('*')
+        .from('organizacion_usuarios')
+        .select('usuario_id, organizacion_id, rol, estado, created_at, updated_at')
         .neq('estado', 'inactivo') // Excluir usuarios eliminados (soft delete)
         .order('created_at', { ascending: false })
       

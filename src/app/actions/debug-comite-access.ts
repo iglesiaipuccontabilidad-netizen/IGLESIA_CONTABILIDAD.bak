@@ -12,10 +12,11 @@ export async function debugComiteAccess(userEmail: string, comiteName: string) {
     
     // 1. Buscar usuario
     const { data: usuario, error: userError } = await supabase
-      .from('usuarios')
-      .select('id, email, rol, estado')
-      .eq('email', userEmail)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
+      .eq('usuario_id', userEmail)
+      .eq('estado', 'activo')
+      .maybeSingle()
     
     console.log('👤 Usuario encontrado:', usuario)
     
@@ -48,7 +49,7 @@ export async function debugComiteAccess(userEmail: string, comiteName: string) {
     const { data: asignacion, error: asignacionError } = await supabase
       .from('comite_usuarios')
       .select('*')
-      .eq('usuario_id', usuario.id)
+      .eq('usuario_id', usuario.usuario_id)
       .eq('comite_id', comite.id)
       .maybeSingle()
     
@@ -72,7 +73,7 @@ export async function debugComiteAccess(userEmail: string, comiteName: string) {
     const { data: nuevaAsignacion, error: createError } = await supabase
       .from('comite_usuarios')
       .insert({
-        usuario_id: usuario.id,
+        usuario_id: usuario.usuario_id,
         comite_id: comite.id,
         rol: 'lider',
         estado: 'activo',

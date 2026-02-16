@@ -9,13 +9,14 @@ export async function getCurrentUserRole(): Promise<string | null> {
 
     if (!user) return null
 
-    const { data: userData } = await supabase
-      .from('usuarios')
+    const { data: orgUser } = await supabase
+      .from('organizacion_usuarios')
       .select('rol')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
-    return userData?.rol || null
+    return orgUser?.rol || null
   } catch (error) {
     console.error('Error obteniendo rol del usuario:', error)
     return null

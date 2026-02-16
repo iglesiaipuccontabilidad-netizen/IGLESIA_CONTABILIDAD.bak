@@ -74,10 +74,11 @@ export default async function PropositoDetailPage({
 
   if (user) {
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     userRole = userData?.rol || 'usuario'
   }

@@ -39,51 +39,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const userRef = useRef<User | null>(null)
   const isLoadingRef = useRef(true)
 
-  // Cargar el rol y estado del usuario con reintentos
+  // Cargar el rol y estado del usuario con JWT-first strategy
   const loadUserRole = useCallback(async (userId: string, retries = 3): Promise<{ rol: string | null; estado: string | null }> => {
     console.log('🔎 [AuthContext] loadUserRole llamado para userId:', userId)
     
-    // FASE 1: Intentar leer de cookies primero (RÁPIDO - sin query a BD)
+    // ════════════════════════════════════════════════════════════
+    // FASE 1: Leer desde JWT app_metadata (Custom Access Token Hook)
+    // Esto es instantáneo, sin queries a BD
+    // ════════════════════════════════════════════════════════════
+    try {
+      const { data: { session } } = await supabaseRef.current.auth.getSession()
+      if (session?.user?.app_metadata) {
+        const appMeta = session.user.app_metadata
+        const orgMemberships = appMeta.org_memberships as Array<{ org_id: string; role: string }> | undefined
+        
+        if (orgMemberships && orgMemberships.length > 0) {
+          // Si hay cookie org_id, buscar la membresía de esa org específica
+          const preferredOrgId = getCookie('org_id')
+          const membership = preferredOrgId
+            ? orgMemberships.find(m => m.org_id === preferredOrgId) || orgMemberships[0]
+            : orgMemberships[0]
+          
+          console.log('✅ [AuthContext] Rol desde JWT app_metadata:', membership.role, '| org:', membership.org_id)
+          return { rol: membership.role, estado: 'activo' }
+        }
+      }
+    } catch (jwtErr) {
+      console.warn('⚠️ [AuthContext] No se pudo leer JWT app_metadata, usando fallback:', jwtErr)
+    }
+    
+    // ════════════════════════════════════════════════════════════
+    // FASE 2: Fallback a cookies (rápido, sin query a BD)
+    // ════════════════════════════════════════════════════════════
     const rolCookie = getCookie('user_rol')
     const estadoCookie = getCookie('user_estado')
     const userIdCookie = getCookie('user_id')
     
-    console.log('🍪 [AuthContext] Cookies encontradas:', { rol: rolCookie, estado: estadoCookie, cookieUserId: userIdCookie })
-    
-    // CRÍTICO: Solo usar cookies si:
-    // 1. Existen rol y estado
-    // 2. Existe user_id en cookie
-    // 3. user_id cookie === userId de la sesión actual
     if (rolCookie && estadoCookie && userIdCookie) {
-      console.log('🔐 [AuthContext] Comparando user_id... Cookie:', userIdCookie, 'vs Session:', userId)
-      
       if (userIdCookie === userId) {
-        console.log('✅ [AuthContext] Cookies VÁLIDAS - mismo usuario. Rol:', rolCookie)
+        console.log('✅ [AuthContext] Rol desde cookies:', rolCookie)
         return { rol: rolCookie, estado: estadoCookie }
       } else {
-        console.error('❌ [AuthContext] COOKIE CONTAMINATION DETECTADA!')
-        console.error('   Cookie pertenece a:', userIdCookie.substring(0, 8) + '...')
-        console.error('   Sesión actual es:', userId.substring(0, 8) + '...')
-        // Limpiar cookies contaminadas INMEDIATAMENTE
         clearAuthCookies()
         console.log('🧹 [AuthContext] Cookies contaminadas eliminadas')
       }
     } else if (rolCookie || estadoCookie) {
-      // Hay cookies parciales sin user_id - también limpiar
-      console.warn('⚠️ [AuthContext] Cookies parciales sin user_id, limpiando...')
       clearAuthCookies()
     }
     
+    // ════════════════════════════════════════════════════════════
+    // FASE 3: Query a BD (fallback lento, con reintentos)
+    // Filtra por org_id si está disponible en cookie
+    // ════════════════════════════════════════════════════════════
     console.log('📡 [AuthContext] Consultando rol desde BD para:', userId)
+    const preferredOrgId = getCookie('org_id')
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        console.log(`📊 [AuthContext] Consultando rol usuario (intento ${attempt}/${retries}):`, userId)
-        
-        // Verificar que hay sesión válida antes de consultar
         const { data: { session } } = await supabaseRef.current.auth.getSession()
         if (!session) {
-          console.warn(`⚠️ [AuthContext] No hay sesión en intento ${attempt}, esperando...`)
           if (attempt < retries) {
             await new Promise(r => setTimeout(r, 800 * attempt))
             continue
@@ -91,62 +105,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return { rol: null, estado: null }
         }
         
-        // MULTI-TENANT: Consultar organizacion_usuarios primero (nueva tabla)
-        const orgQueryPromise = supabaseRef.current
+        // Consultar organizacion_usuarios con filtro por org si disponible
+        let query = supabaseRef.current
           .from('organizacion_usuarios')
           .select('rol, estado')
           .eq('usuario_id', userId)
           .eq('estado', 'activo')
-          .maybeSingle()
+        
+        if (preferredOrgId) {
+          query = query.eq('organizacion_id', preferredOrgId)
+        }
         
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Timeout al cargar rol del usuario (intento ${attempt})`)), 10000)
+          setTimeout(() => reject(new Error(`Timeout (intento ${attempt})`)), 10000)
         )
         
-        const orgResult = await Promise.race([orgQueryPromise, timeoutPromise])
-        let { data, error } = orgResult as any
-        
-        // Fallback a tabla usuarios (compatibilidad durante migración)
-        if (!data && !error) {
-          const fallbackResult = await Promise.race([
-            supabaseRef.current
-              .from('usuarios')
-              .select('rol, estado')
-              .eq('id', userId)
-              .maybeSingle(),
-            timeoutPromise
-          ])
-          data = (fallbackResult as any).data
-          error = (fallbackResult as any).error
-        }
+        const { data, error } = await Promise.race([query.maybeSingle(), timeoutPromise]) as any
 
         if (error) {
-          console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message, error.code)
+          console.error(`❌ [AuthContext] Error cargando rol (intento ${attempt}):`, error.message)
           if (attempt < retries) {
-            await new Promise(r => setTimeout(r, 800 * attempt)) // Espera más larga
+            await new Promise(r => setTimeout(r, 800 * attempt))
             continue
           }
           return { rol: null, estado: null }
         }
 
         if (!data) {
-          console.warn('⚠️ [AuthContext] Usuario no encontrado en tabla usuarios. ID:', userId)
+          console.warn('⚠️ [AuthContext] Sin membresía activa para userId:', userId)
           return { rol: null, estado: null }
         }
 
         console.log('✅ [AuthContext] Rol cargado de BD:', data.rol)
         
-        // FASE 1: Guardar datos completos en cookies para próxima vez
+        // Guardar en cookies para próxima vez
         if (data.rol && data.estado) {
-          // Necesitamos el email del usuario - intentar obtenerlo de la sesión
-          const { data: { session } } = await supabaseRef.current.auth.getSession()
-          
           saveUserToCookies({
             id: userId,
             email: session?.user?.email || null,
             rol: data.rol,
             estado: data.estado
-          }, 604800) // 7 días
+          }, 604800)
         }
         
         return { rol: data.rol || null, estado: data.estado || null }

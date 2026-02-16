@@ -3,9 +3,9 @@ import { redirect } from 'next/navigation'
 import { Database } from '@/lib/database.types'
 import { cookies } from 'next/headers'
 
-export type UserRole = 'admin' | 'usuario' | 'pendiente' | 'tesorero'
+export type UserRole = 'admin' | 'usuario' | 'pendiente' | 'tesorero' | 'super_admin'
 export type UserStatus = 'activo' | 'inactivo' | 'pendiente'
-export type AuthorizedRole = Extract<UserRole, 'admin' | 'tesorero'>
+export type AuthorizedRole = Extract<UserRole, 'admin' | 'tesorero' | 'super_admin'>
 
 export type AuthUser = {
   id: string
@@ -52,26 +52,40 @@ export async function verifyAuth(
       redirect(destination)
     }
 
-    // MULTI-TENANT: Obtener rol desde organizacion_usuarios (prioridad)
-    let { data: userData, error: dbError } = await supabase
-      .from('organizacion_usuarios')
-      .select('rol, estado')
-      .eq('usuario_id', authUser.id)
-      .eq('estado', 'activo')
-      .maybeSingle() as {
-        data: Pick<AuthUser, 'rol' | 'estado'> | null,
-        error: any
-      }
+    // ═══ JWT-first: leer rol desde app_metadata (Custom Access Token Hook) ═══
+    const appMeta = authUser.app_metadata
+    const orgMemberships = appMeta?.org_memberships as Array<{ org_id: string; role: string }> | undefined
     
-    // Fallback a tabla usuarios (compatibilidad durante migración)
-    if (!userData && !dbError) {
-      const fallback = await supabase
-        .from('usuarios')
+    let userData: Pick<AuthUser, 'rol' | 'estado'> | null = null
+    let dbError: any = null
+    
+    if (orgMemberships && orgMemberships.length > 0) {
+      // Leer org_id preferido desde cookie (seteada por middleware)
+      const cookieStore = await cookies()
+      const preferredOrgId = cookieStore.get('org_id')?.value
+      const membership = preferredOrgId
+        ? orgMemberships.find(m => m.org_id === preferredOrgId) || orgMemberships[0]
+        : orgMemberships[0]
+      
+      userData = { 
+        rol: membership.role as UserRole, 
+        estado: 'activo' as UserStatus 
+      }
+    }
+
+    // Fallback a BD si JWT no tiene memberships
+    if (!userData) {
+      const result = await supabase
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', authUser.id)
-        .single()
-      userData = fallback.data as Pick<AuthUser, 'rol' | 'estado'> | null
-      dbError = fallback.error
+        .eq('usuario_id', authUser.id)
+        .eq('estado', 'activo')
+        .maybeSingle() as {
+          data: Pick<AuthUser, 'rol' | 'estado'> | null,
+          error: any
+        }
+      userData = result.data
+      dbError = result.error
     }
 
     if (dbError) {

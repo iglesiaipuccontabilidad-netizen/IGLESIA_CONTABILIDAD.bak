@@ -13,24 +13,13 @@ export async function requireAdminOrTesorero() {
     redirect('/login')
   }
 
-  // MULTI-TENANT: Consultar organizacion_usuarios primero
-  let { data: usuario, error } = await supabase
+  // MULTI-TENANT: Consultar organizacion_usuarios
+  const { data: usuario, error } = await supabase
     .from('organizacion_usuarios')
     .select('rol, usuario_id')
     .eq('usuario_id', user.id)
     .eq('estado', 'activo')
     .maybeSingle() as { data: { rol: string; usuario_id: string } | null; error: any }
-  
-  // Fallback a tabla usuarios
-  if (!usuario && !error) {
-    const fallback = await supabase
-      .from('usuarios')
-      .select('rol, id')
-      .eq('id', user.id)
-      .single()
-    usuario = fallback.data ? { rol: fallback.data.rol, usuario_id: fallback.data.id } : null
-    error = fallback.error
-  }
 
   if (error || !usuario) {
     redirect('/login')
@@ -74,14 +63,5 @@ export async function getUserRole() {
     .eq('estado', 'activo')
     .maybeSingle()
   
-  if (orgUser?.rol) return orgUser.rol
-  
-  // Fallback a tabla usuarios
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  return usuario?.rol || null
+  return orgUser?.rol || null
 }

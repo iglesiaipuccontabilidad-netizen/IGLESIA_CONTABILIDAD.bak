@@ -78,17 +78,27 @@ export async function getUserDetails(userId: string) {
   const supabase = await createServerSupabaseClient()
 
   try {
-    const { data: usuario, error } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    const { data: orgUser, error } = await supabase
+      .from('organizacion_usuarios')
+      .select('usuario_id, organizacion_id, rol, estado, created_at, updated_at')
+      .eq('usuario_id', userId)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     if (error) {
       throw error
     }
 
-    return usuario
+    if (!orgUser) return null
+
+    // Return a compatible shape
+    return {
+      id: orgUser.usuario_id,
+      rol: orgUser.rol,
+      estado: orgUser.estado,
+      created_at: orgUser.created_at,
+      updated_at: orgUser.updated_at
+    }
   } catch (error) {
     console.error('Error getting user details:', error)
     return null

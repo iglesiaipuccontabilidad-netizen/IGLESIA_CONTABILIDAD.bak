@@ -51,9 +51,9 @@ export default async function NuevoVotoPage() {
       </div>
 
       <div className="container max-w-4xl mx-auto relative z-10">
-        <div className="bg-white rounded-2xl shadow-xl border border-violet-200 overflow-hidden">
-          {/* Header con gradiente colorido */}
-          <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-8 py-6 relative overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl border border-blue-200 overflow-hidden">
+          {/* Header con gradiente azul */}
+          <div className="bg-gradient-to-r from-blue-600 via-primary-600 to-cyan-600 px-8 py-6 relative overflow-hidden">
             {/* Patrón decorativo */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 right-0 w-40 h-40 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
@@ -70,7 +70,7 @@ export default async function NuevoVotoPage() {
                   </span>
                   <span>Nuevo Voto</span>
                 </h1>
-                <p className="text-violet-100 text-sm mt-1">Registra un nuevo compromiso financiero</p>
+                <p className="text-blue-100 text-sm mt-1">Registra un nuevo compromiso financiero</p>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 ring-2 ring-white/30">

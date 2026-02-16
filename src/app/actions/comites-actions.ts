@@ -74,10 +74,11 @@ async function verificarAutenticacion() {
 
   // Obtener datos del usuario
   const { data: userData, error } = await supabase
-    .from('usuarios')
-    .select('id, rol, estado')
-    .eq('id', user.id)
-    .single();
+    .from('organizacion_usuarios')
+    .select('usuario_id, rol, estado')
+    .eq('usuario_id', user.id)
+    .eq('estado', 'activo')
+    .maybeSingle();
 
   if (error || !userData) {
     throw new Error('Usuario no encontrado');
@@ -219,7 +220,7 @@ export async function createComite(dto: CreateComiteDTO): Promise<OperationResul
         nombre: dto.nombre.trim(),
         descripcion: dto.descripcion?.trim() || null,
         estado: dto.estado || 'activo',
-        creado_por: userData.id,
+        creado_por: userData.usuario_id,
       })
       .select()
       .single();
@@ -388,10 +389,11 @@ export async function asignarUsuarioComite(dto: AsignarUsuarioComiteDTO): Promis
 
     // Verificar que el usuario existe
     const { data: usuario } = await supabase
-      .from('usuarios')
-      .select('id')
-      .eq('id', dto.usuario_id)
-      .single();
+      .from('organizacion_usuarios')
+      .select('usuario_id')
+      .eq('usuario_id', dto.usuario_id)
+      .eq('estado', 'activo')
+      .maybeSingle();
 
     if (!usuario) {
       throw new Error('Usuario no encontrado');

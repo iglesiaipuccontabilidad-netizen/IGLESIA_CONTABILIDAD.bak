@@ -68,27 +68,7 @@ export async function signup(formData: FormData) {
       return { error: 'Error al crear la cuenta' }
     }
 
-    // 2. Crear el registro en la tabla usuarios
-    const nuevoUsuario: Database['public']['Tables']['usuarios']['Insert'] = {
-      id: authData.user.id,
-      email,
-      rol: 'pendiente',
-      estado: 'pendiente',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-
-    const { error: userError } = await supabase
-      .from('usuarios')
-      .insert(nuevoUsuario as any)
-
-    if (userError) {
-      console.error('Error al crear registro de usuario:', userError)
-      await supabase.auth.signOut()
-      return { error: 'Error al crear el registro de usuario' }
-    }
-
-    // 3. Crear el registro en la tabla miembros
+    // 2. Crear el registro en la tabla miembros
     const nuevoMiembro: Database['public']['Tables']['miembros']['Insert'] = {
       id: authData.user.id,
       nombres,
@@ -151,20 +131,16 @@ export async function login(formData: FormData) {
       return { error: 'Usuario no encontrado' }
     }
 
-    // Verificar si el usuario existe en la tabla usuarios y está activo
-    type UsuarioRow = Database['public']['Tables']['usuarios']['Row']
-    
+    // Verificar si el usuario existe en organizacion_usuarios y está activo
     // Esperar un momento para que la sesión se establezca completamente
     await new Promise(resolve => setTimeout(resolve, 300))
     
     const { data: userData, error: userError } = await supabase
-      .from('usuarios')
-      .select('id, email, rol, estado')
-      .eq('id', data.user.id)
-      .maybeSingle() as { 
-        data: UsuarioRow | null, 
-        error: any 
-      }
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol, estado')
+      .eq('usuario_id', data.user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     console.log('Resultado de verificación de usuario:', { 
       userId: data.user.id,
@@ -192,20 +168,14 @@ export async function login(formData: FormData) {
     }
 
     if (!userData) {
-      console.error('Usuario no encontrado en la tabla usuarios para ID:', data.user.id)
+      console.error('Usuario no encontrado en organizacion_usuarios para ID:', data.user.id)
       await supabase.auth.signOut()
       return { 
-        error: 'Usuario no encontrado en el sistema. Por favor contacta al administrador.' 
+        error: 'Usuario no encontrado en el sistema o no está activo. Por favor contacta al administrador.' 
       }
     }
 
-    if (userData.estado !== 'activo') {
-      console.error('Usuario inactivo:', userData.estado)
-      await supabase.auth.signOut()
-      return { 
-        error: 'Usuario no autorizado o inactivo. Por favor contacta al administrador.' 
-      }
-    }
+    // El estado ya se filtra en la query (eq 'activo'), así que si llegamos aquí, está activo
 
     // Revalidar todo el layout para forzar la recarga del estado de autenticación
     revalidatePath('/', 'layout')

@@ -14,6 +14,7 @@ import {
   Users,
   DollarSign,
   Receipt,
+  Settings,
   X
 } from "lucide-react"
 import { useAuth } from "@/lib/context/AuthContext"
@@ -41,7 +42,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose }: SidebarProps) {
   const { member, isLoading, comitesUsuario } = useAuth()
-  const { organization } = useOrganization()
+  const { organization, orgRole, isAdminOrTesorero, isAdmin, isLoading: orgLoading } = useOrganization()
   const { orgPath, cleanPathname } = useOrgNavigation()
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMobile, setIsMobile] = React.useState(false)
@@ -92,6 +93,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
 
   // Mapeo de roles para mostrar nombres legibles
   const rolLabels: Record<string, string> = {
+    super_admin: 'Super Admin',
     admin: 'Administrador',
     tesorero: 'Tesorero General',
     usuario: 'Usuario',
@@ -116,8 +118,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
   const menuSections: MenuSection[] = React.useMemo(() => {
     const sections: MenuSection[] = []
 
-    // Si está cargando o no hay member, mostrar al menos el dashboard
-    if (isLoading || !member) {
+    // Si está cargando o no hay member/orgRole, mostrar al menos el dashboard
+    if (isLoading || orgLoading || !member) {
       sections.push({
         title: "Principal",
         items: [
@@ -132,9 +134,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
       return sections
     }
 
-    // Solo mostrar contabilidad general si es admin o tesorero global
-    const isAdminOrTesorero = member?.rol === 'admin' || member?.rol === 'tesorero'
-
+    // Usar orgRole del OrganizationContext (fuente de verdad para la org activa)
     if (isAdminOrTesorero) {
       // Secciones de contabilidad general (solo para admin/tesorero)
       sections.push(
@@ -204,6 +204,12 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
               label: "Usuarios",
               icon: UserCog,
               description: "Roles y permisos del equipo"
+            },
+            {
+              href: "/dashboard/admin/settings",
+              label: "Configuración",
+              icon: Settings,
+              description: "Configuración de la organización"
             }
           ]
         }
@@ -297,7 +303,7 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
     }
 
     return sections
-  }, [member?.rol, comitesUsuario, isLoading, member])
+  }, [orgRole, isAdminOrTesorero, comitesUsuario, isLoading, orgLoading, member])
 
   const initials = React.useMemo(() => {
     if (!member?.email) return "IP"
@@ -610,10 +616,10 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                   className="text-slate-400 truncate block"
                   style={{ fontSize: showMobileVersion ? '12px' : '12px' }}
                 >
-                  {isLoading
+                  {isLoading || orgLoading
                     ? "Cargando..."
-                    : member?.rol
-                      ? rolLabels[member.rol] || member.rol
+                    : orgRole
+                      ? rolLabels[orgRole] || orgRole
                       : "Sin rol"}
                 </span>
               </div>

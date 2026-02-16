@@ -16,6 +16,11 @@ export type VotoBase = VotoRow & {
 export type VotoDetalle = VotoBase & {
   progreso: number
   total_pagado: number
+  proposito_nombre?: string
+  proposito_obj?: {
+    id: string
+    nombre: string
+  } | null
 }
 
 export type VotoInput = {

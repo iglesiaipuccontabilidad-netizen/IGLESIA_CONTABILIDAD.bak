@@ -56,18 +56,25 @@ export async function POST(request: Request) {
       )
     }
 
-    // Verificar si el email ya existe
-    const { data: existingUser } = await supabase
-      .from('usuarios')
-      .select('id, estado')
-      .eq('email', email)
+    // Verificar si el email ya existe en la organización
+    const { data: existingMember } = await supabase
+      .from('organizacion_usuarios')
+      .select('usuario_id, estado')
+      .eq('usuario_id', (
+        // Check via auth admin
+        await (async () => {
+          const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+          const found = users.find((u: any) => u.email === email)
+          return found?.id || ''
+        })()
+      ))
       .maybeSingle()
 
     // Si existe pero está inactivo, reactivar
-    if (existingUser && existingUser.estado === 'inactivo') {
+    if (existingMember && existingMember.estado === 'inactivo') {
       // Actualizar contraseña en auth usando cliente admin
       const { error: passwordError } = await supabaseAdmin.auth.admin.updateUserById(
-        existingUser.id,
+        existingMember.usuario_id,
         { password }
       )
 
@@ -79,15 +86,15 @@ export async function POST(request: Request) {
         )
       }
 
-      // Reactivar en tabla usuarios
+      // Reactivar en organizacion_usuarios
       const { error: updateError } = await supabaseAdmin
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .update({ 
           rol: rol as UserRole,
           estado: 'activo' as UserStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingUser.id)
+        .eq('usuario_id', existingMember.usuario_id)
 
       if (updateError) {
         console.error('Error al reactivar usuario:', updateError)
@@ -99,13 +106,13 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ 
         success: true,
-        user: { id: existingUser.id, email, rol },
+        user: { id: existingMember.usuario_id, email, rol },
         message: 'Usuario reactivado exitosamente'
       })
     }
 
     // Si existe y está activo, error
-    if (existingUser) {
+    if (existingMember) {
       return NextResponse.json(
         { error: 'El email ya está registrado' }, 
         { status: 400 }
@@ -133,24 +140,27 @@ export async function POST(request: Request) {
       )
     }
 
-    // El trigger handle_new_user debería crear el registro en la tabla usuarios
-    // Pero actualizamos el rol si no es 'pendiente'
-    if (rol !== 'pendiente') {
-      // Pequeño delay para asegurar que el trigger se ejecutó
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      const { error: updateError } = await supabaseAdmin
-        .from('usuarios')
-        .update({ 
+    // El usuario fue creado. Crear membresía en organizacion_usuarios
+    // Obtener el org_id del admin actual
+    const { data: adminOrg } = await supabase
+      .from('organizacion_usuarios')
+      .select('organizacion_id')
+      .eq('usuario_id', adminContext.currentUserId)
+      .eq('estado', 'activo')
+      .maybeSingle()
+
+    if (adminOrg) {
+      const { error: memberError } = await supabaseAdmin
+        .from('organizacion_usuarios')
+        .insert({
+          organizacion_id: adminOrg.organizacion_id,
+          usuario_id: authUser.user.id,
           rol: rol as UserRole,
           estado: 'activo' as UserStatus,
-          updated_at: new Date().toISOString()
         })
-        .eq('id', authUser.user.id)
 
-      if (updateError) {
-        console.error('Error al actualizar rol de usuario:', updateError)
-        // No fallamos aquí porque el usuario ya fue creado
+      if (memberError) {
+        console.error('Error al crear membresía de usuario:', memberError)
       }
     }
 

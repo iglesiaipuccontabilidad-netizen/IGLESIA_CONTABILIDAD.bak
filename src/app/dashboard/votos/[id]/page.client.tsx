@@ -6,8 +6,8 @@ import { useRouter } from '@/lib/hooks/useOrgRouter'
 import { Database } from '@/lib/database.types'
 import { formatCurrency, formatDate } from '@/utils/format'
 import styles from '@/styles/components/VotoDetalle.module.css'
-import { ArrowLeft, DollarSign, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle, CreditCard, Trash2, AlertTriangle, Edit } from 'lucide-react'
-import { deleteVoto } from '@/app/actions/votos-actions'
+import { ArrowLeft, DollarSign, Calendar, TrendingUp, Clock, CheckCircle, AlertCircle, CreditCard, Trash2, AlertTriangle, Edit, X, Save } from 'lucide-react'
+import { deleteVoto, updatePago, deletePago } from '@/app/actions/votos-actions'
 import { getCurrentUserRole } from '@/lib/auth'
 import { toast } from 'sonner'
 
@@ -38,6 +38,20 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
+
+  // Estado para editar pago
+  const [editingPago, setEditingPago] = useState<{
+    id: string
+    monto: number
+    fecha_pago: string
+    metodo_pago: string
+    nota: string
+  } | null>(null)
+  const [isUpdatingPago, setIsUpdatingPago] = useState(false)
+
+  // Estado para eliminar pago
+  const [deletingPagoId, setDeletingPagoId] = useState<string | null>(null)
+  const [isDeletingPago, setIsDeletingPago] = useState(false)
 
   useEffect(() => {
     const loadUserRole = async () => {
@@ -93,6 +107,71 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
       setIsDeleteDialogOpen(false)
     }
   }
+
+  const handleEditPago = (pago: typeof pagosOrdenados[0]) => {
+    setEditingPago({
+      id: pago.id,
+      monto: pago.monto,
+      fecha_pago: pago.fecha_pago.split('T')[0],
+      metodo_pago: pago.metodo_pago || 'efectivo',
+      nota: pago.nota || '',
+    })
+  }
+
+  const handleUpdatePago = async () => {
+    if (!editingPago) return
+
+    setIsUpdatingPago(true)
+    try {
+      const result = await updatePago(editingPago.id, voto.id, {
+        monto: editingPago.monto,
+        fecha_pago: editingPago.fecha_pago,
+        metodo_pago: editingPago.metodo_pago as 'efectivo' | 'transferencia' | 'cheque' | 'otro',
+        nota: editingPago.nota || null,
+      })
+
+      if (result.success) {
+        toast.success('Pago actualizado exitosamente')
+        setEditingPago(null)
+        router.refresh()
+      } else {
+        toast.error('Error al actualizar el pago', {
+          description: result.error?.message || 'Ocurrió un error inesperado'
+        })
+      }
+    } catch (error) {
+      console.error('Error al actualizar pago:', error)
+      toast.error('Error al actualizar el pago')
+    } finally {
+      setIsUpdatingPago(false)
+    }
+  }
+
+  const handleDeletePago = async () => {
+    if (!deletingPagoId) return
+
+    setIsDeletingPago(true)
+    try {
+      const result = await deletePago(deletingPagoId, voto.id)
+
+      if (result.success) {
+        toast.success('Pago eliminado exitosamente')
+        setDeletingPagoId(null)
+        router.refresh()
+      } else {
+        toast.error('Error al eliminar el pago', {
+          description: result.error?.message || 'Ocurrió un error inesperado'
+        })
+      }
+    } catch (error) {
+      console.error('Error al eliminar pago:', error)
+      toast.error('Error al eliminar el pago')
+    } finally {
+      setIsDeletingPago(false)
+    }
+  }
+
+  const canEditPagos = userRole && ['admin', 'tesorero'].includes(userRole)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-4 md:p-6 lg:p-8">
@@ -358,6 +437,9 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Monto</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Método</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nota</th>
+                    {canEditPagos && (
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -380,17 +462,39 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-600">{pago.nota || '—'}</span>
                       </td>
+                      {canEditPagos && (
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleEditPago(pago)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-lg hover:bg-cyan-100 transition-colors"
+                              title="Editar pago"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => setDeletingPagoId(pago.id)}
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                              title="Eliminar pago"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-gray-50 border-t-2 border-gray-200">
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-sm font-semibold text-gray-900">Total recaudado</td>
-                    <td colSpan={2} className="px-6 py-4 text-sm font-bold text-green-600">{formatCurrency(voto.recaudado || 0)}</td>
+                    <td colSpan={canEditPagos ? 3 : 2} className="px-6 py-4 text-sm font-semibold text-gray-900">Total recaudado</td>
+                    <td colSpan={canEditPagos ? 2 : 2} className="px-6 py-4 text-sm font-bold text-green-600">{formatCurrency(voto.recaudado || 0)}</td>
                   </tr>
                   <tr>
-                    <td colSpan={2} className="px-6 py-4 text-sm font-semibold text-gray-900">Pendiente por recaudar</td>
-                    <td colSpan={2} className="px-6 py-4 text-sm font-bold text-orange-600">{formatCurrency(montoPendiente)}</td>
+                    <td colSpan={canEditPagos ? 3 : 2} className="px-6 py-4 text-sm font-semibold text-gray-900">Pendiente por recaudar</td>
+                    <td colSpan={canEditPagos ? 2 : 2} className="px-6 py-4 text-sm font-bold text-orange-600">{formatCurrency(montoPendiente)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -413,6 +517,24 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
                     </span>
                     {pago.nota && <span className="text-xs text-gray-500">{pago.nota}</span>}
                   </div>
+                  {canEditPagos && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => handleEditPago(pago)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-cyan-700 bg-cyan-50 border border-cyan-200 rounded-lg hover:bg-cyan-100 transition-colors"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => setDeletingPagoId(pago.id)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Eliminar
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               <div className="p-4 bg-gray-50 space-y-2">
@@ -496,6 +618,184 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
                   <>
                     <Trash2 className="h-4 w-4" />
                     Eliminar
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edición de pago */}
+      {editingPago && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
+                  <Edit className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Editar pago</h3>
+                  <p className="text-sm text-gray-500">Modifica los datos del abono</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingPago(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Monto
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="any"
+                    value={editingPago.monto}
+                    onChange={(e) => setEditingPago({ ...editingPago, monto: parseFloat(e.target.value) || 0 })}
+                    className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Fecha de pago
+                </label>
+                <input
+                  type="date"
+                  value={editingPago.fecha_pago}
+                  onChange={(e) => setEditingPago({ ...editingPago, fecha_pago: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Método de pago
+                </label>
+                <select
+                  value={editingPago.metodo_pago}
+                  onChange={(e) => setEditingPago({ ...editingPago, metodo_pago: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all bg-white"
+                >
+                  <option value="efectivo">Efectivo</option>
+                  <option value="transferencia">Transferencia</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Nota (opcional)
+                </label>
+                <textarea
+                  value={editingPago.nota}
+                  onChange={(e) => setEditingPago({ ...editingPago, nota: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition-all resize-none"
+                  placeholder="Agregar una nota..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditingPago(null)}
+                disabled={isUpdatingPago}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdatePago}
+                disabled={isUpdatingPago || editingPago.monto <= 0}
+                className="flex-1 px-4 py-2.5 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isUpdatingPago ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Guardar cambios
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación de eliminación de pago */}
+      {deletingPagoId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Eliminar pago</h3>
+                <p className="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                ¿Estás seguro de que quieres eliminar este pago?
+              </p>
+              {(() => {
+                const pagoAEliminar = pagosOrdenados.find(p => p.id === deletingPagoId)
+                return pagoAEliminar ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="text-sm text-red-800 space-y-1">
+                      <p><strong>Monto:</strong> {formatCurrency(pagoAEliminar.monto)}</p>
+                      <p><strong>Fecha:</strong> {formatDate(pagoAEliminar.fecha_pago)}</p>
+                      <p><strong>Método:</strong> {pagoAEliminar.metodo_pago || 'No especificado'}</p>
+                      <p className="mt-2 text-xs text-red-600">
+                        El monto recaudado del voto será disminuido en {formatCurrency(pagoAEliminar.monto)}.
+                      </p>
+                    </div>
+                  </div>
+                ) : null
+              })()}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingPagoId(null)}
+                disabled={isDeletingPago}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeletePago}
+                disabled={isDeletingPago}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeletingPago ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar pago
                   </>
                 )}
               </button>

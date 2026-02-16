@@ -50,25 +50,26 @@ export async function verificarAccesoComite(
 
     console.log('🔍 Verificando acceso para usuario:', user.id, 'al comité:', comiteId)
 
-    // Obtener rol del usuario
-    const { data: userData, error: userError } = await supabase
-      .from('usuarios')
+    // Obtener rol del usuario desde organizacion_usuarios
+    const { data: orgUser, error: userError } = await supabase
+      .from('organizacion_usuarios')
       .select('rol')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     if (userError) {
       console.error('❌ Error al obtener datos del usuario:', userError)
       redirect('/login')
     }
 
-    if (!userData) {
-      console.error('❌ Usuario no encontrado en tabla usuarios:', user.id)
+    if (!orgUser) {
+      console.error('❌ Usuario no encontrado en organizacion_usuarios:', user.id)
       redirect('/login')
     }
 
-    const isAdmin = userData.rol === 'admin' || userData.rol === 'tesorero'
-    console.log('✅ Rol del usuario:', userData.rol, 'isAdmin:', isAdmin)
+    const isAdmin = orgUser.rol === 'admin' || orgUser.rol === 'tesorero'
+    console.log('✅ Rol del usuario:', orgUser.rol, 'isAdmin:', isAdmin)
 
     // Si es admin/tesorero, tiene acceso total
     if (isAdmin) {
@@ -151,14 +152,15 @@ export async function obtenerComitesUsuario() {
     return []
   }
 
-  // Obtener rol del usuario
-  const { data: userData } = await supabase
-    .from('usuarios')
+  // Obtener rol del usuario desde organizacion_usuarios
+  const { data: orgUser } = await supabase
+    .from('organizacion_usuarios')
     .select('rol')
-    .eq('id', user.id)
-    .single()
+    .eq('usuario_id', user.id)
+    .eq('estado', 'activo')
+    .maybeSingle()
 
-  const isAdmin = userData?.rol === 'admin' || userData?.rol === 'tesorero'
+  const isAdmin = orgUser?.rol === 'admin' || orgUser?.rol === 'tesorero'
 
   // Si es admin, retornar todos los comités
   if (isAdmin) {

@@ -70,11 +70,12 @@ export default function LoginForm() {
       console.log('✅ [Login] Sesión validada correctamente');
       console.log('🔑 [Login] Session user:', session.user.email);
       
-      // PASO 4: Verificar que el usuario existe en la tabla usuarios
+      // PASO 4: Verificar que el usuario existe en organizacion_usuarios
       const { data: userData, error: userError } = await supabase
-        .from('usuarios')
-        .select('id, email, rol, estado')
-        .eq('id', user.id)
+        .from('organizacion_usuarios')
+        .select('usuario_id, rol, estado')
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
         .maybeSingle();
       
       if (userError) {
@@ -83,11 +84,11 @@ export default function LoginForm() {
       }
       
       if (!userData) {
-        throw new Error('Usuario no encontrado en la base de datos');
+        throw new Error('Usuario no encontrado en la base de datos o no está activo');
       }
       
       console.log('✅ [Login] Usuario verificado en BD');
-      console.log('👤 [Login] Datos usuario:', { email: userData.email, rol: userData.rol, estado: userData.estado });
+      console.log('👤 [Login] Datos usuario:', { rol: userData.rol, estado: userData.estado });
       
       // FASE 1: Guardar datos completos del usuario en cookies
       const cookiesSaved = saveUserToCookies({

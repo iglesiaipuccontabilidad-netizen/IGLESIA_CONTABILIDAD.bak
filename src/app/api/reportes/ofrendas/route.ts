@@ -35,10 +35,11 @@ export async function POST(request: NextRequest) {
 
     // Verificar permisos del usuario en el comité
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     const isAdmin = userData?.rol === 'admin' || userData?.rol === 'tesorero'
 

@@ -79,6 +79,9 @@ QueryProvider → AuthProvider → OrganizationProvider → children
 
 ### Funciones helper (esquema `private`)
 - `private.get_user_org_id()`: devuelve la `organizacion_id` del usuario autenticado (SQL pura, `SECURITY DEFINER`, `search_path=''`).
+- `private.get_user_org_id_or_default()`: igual que `get_user_org_id()` con fallback al org default (para DEFAULT de columnas).
+- `private.get_user_org_ids()`: devuelve TODOS los `organizacion_id` del usuario (multi-org, SECURITY DEFINER).
+- `private.get_user_org_ids_as_admin()`: devuelve orgs donde el usuario es admin/super_admin (SECURITY DEFINER).
 - `private.get_user_org_role()`: devuelve el rol del usuario en su organización activa.
 
 ### Políticas RLS
@@ -289,26 +292,32 @@ Acciones urgentes:
 |---|---|---|
 | Fase 0 | Estabilización y Seguridad | ✅ ~95% (falta config manual HaveIBeenPwned + MFA) |
 | Fase 1 | Multi-Tenancy DB | ✅ 100% completa |
-| Fase 2 | Adaptación del Frontend | 🔄 ~75% (contextos, middleware, sidebar, header, reportes, ProtectedRoute) |
-| Fase 3 | Onboarding y Gestión de Organizaciones | ⬜ No iniciada |
-| Fase 4 | Planes y Billing | ⬜ No iniciada |
-| Fase 5 | Panel Super Admin | ⬜ No iniciada |
+| Fase 2 | Adaptación del Frontend | ✅ ~95% (contextos, middleware, org-slug routing, OrgLink/useOrgRouter, OrgSwitcher, reportes) |
+| Fase 3 | Onboarding y Gestión de Organizaciones | ✅ ~90% (registro, invitaciones, settings, super-admin, aprobación manual) |
+| Fase 4 | Planes y Billing | ⬜ No iniciada (pago manual vía WhatsApp implementado) |
+| Fase 5 | Panel Super Admin | ✅ ~90% (dashboard + gestión orgs, aprobar/rechazar/suspender) |
 | Fase 6 | Landing Page y Lanzamiento | ⬜ No iniciada |
 
 **Detalle Fase 2 completado:**
-- ✅ `OrganizationContext` con provider y hook `useOrganization()`
-- ✅ `middleware.ts` resuelve org desde `organizacion_usuarios`
+- ✅ `OrganizationContext` con provider, hook `useOrganization()`, cookie multi-org
+- ✅ `middleware.ts` con org-slug URL rewrite: `/<slug>/dashboard/...` → `/dashboard/...`
+- ✅ `OrgLink` (47 archivos) — wrapper de `next/link` con auto-prefix org-slug
+- ✅ `useOrgRouter` (27 archivos) — wrapper de `useRouter` con auto-prefix org-slug
+- ✅ `useOrgNavigation` hook — `orgPath()`, `cleanPathname`, `orgSlug`
+- ✅ `OrgSwitcher` — selector multi-org (visible si usuario tiene 2+ orgs)
 - ✅ `AuthContext` y `auth-service` con fallback org_usuarios → usuarios
 - ✅ `ProtectedRoute` valida membresía por `organizacion_usuarios`
-- ✅ Sidebar y DashboardHeader muestran nombre de organización dinámico
-- ✅ Generadores PDF/Excel reciben `nombreOrganizacion` dinámicamente
-- ✅ `database.types.ts` regenerado con todas las tablas nuevas
-- ✅ Build exitoso (0 errores)
+- ✅ Sidebar con `orgPath()` para links, `cleanPathname` para active detection, `OrgSwitcher`
+- ✅ DashboardHeader muestra nombre de organización y etiqueta de rol
+- ✅ LoginForm redirige a `/<slug>/dashboard` post-login
+- ✅ Generadores PDF/Excel con `nombreOrganizacion` dinámico
+- ✅ `database.types.ts` regenerado
+- ✅ RLS corregida: recursión infinita en `organizacion_usuarios` resuelta con funciones SECURITY DEFINER
+- ✅ Defaults dinámicos `private.get_user_org_id_or_default()` en 15 tablas
+- ✅ Build exitoso (0 errores, 21 static pages)
 
 **Pendiente Fase 2:**
-- Sistema de rutas `/[org-slug]/...` (o mantener `/dashboard/...`)
-- Selector de organización para usuarios multi-org
-- Pruebas E2E
+- Pruebas E2E multi-tenant
 
 ### 9. Resumen de lo que Falta (checklist actualizado)
 
@@ -317,9 +326,12 @@ Acciones urgentes:
 - ✅ ~~Políticas RLS RESTRICTIVE.~~
 - ✅ ~~Índices y funciones helper.~~
 - ✅ ~~Frontend: Context, middleware, componentes principales.~~
-- 🔄 Frontend: rutas con slug, selector multi-org, E2E tests.
-- ⬜ Módulos: Onboarding, Billing, Super Admin, Landing.
+- ✅ ~~Frontend: rutas con org-slug, OrgLink/useOrgRouter (74 archivos), OrgSwitcher multi-org.~~
+- ✅ ~~Módulos: Onboarding (registro-org, invitaciones, settings, aprobación manual).~~
+- ✅ ~~Panel Super Admin con gestión de orgs (aprobar/rechazar/suspender/reactivar).~~
+- 🔄 Frontend: E2E tests.
 - ⬜ Infra: entornos separados, CI/CD mejorado, monitoring, backups.
+- ⬜ Módulos: Landing page pública.
 - ⏳ Seguridad: config manual HaveIBeenPwned + MFA en Dashboard.
 
 ### 10. Estimación de Costos y Modelo de Negocio (resumen)
@@ -332,3 +344,70 @@ Acciones urgentes:
 Archivo del plan incorporado en este documento como referencia operativa.
 
 Fecha de inclusión: 2026-02-12
+
+---
+
+## Flujo de Registro y Aprobación Manual de Iglesias (Fase 3 + 5)
+
+> Implementado: Febrero 2026
+
+### Flujo completo
+
+```
+1. Iglesia visita /registro-org
+   → Completa wizard 2 pasos (datos iglesia + WhatsApp + cuenta admin)
+   → Org se crea con estado: 'pendiente'
+   → Redirect a /pendiente-aprobacion
+
+2. Super Admin ve en /super-admin las orgs pendientes
+   → Contacta vía WhatsApp (botón directo) para coordinar pago
+   → Tras confirmar pago manual → click "Aprobar"
+   → Org pasa a estado: 'activo'
+
+3. Admin de la iglesia inicia sesión normalmente
+   → Middleware detecta org.estado='activo' → acceso al dashboard
+```
+
+### Rutas nuevas
+
+| Ruta | Tipo | Descripción |
+|------|------|-------------|
+| `/registro-org` | Pública | Wizard registro iglesia con WhatsApp |
+| `/pendiente-aprobacion` | Pública | Página de espera post-registro |
+| `/invitacion/[token]` | Pública | Aceptar invitación a org |
+| `/super-admin` | Protegida (super_admin) | Dashboard global con stats |
+| `/super-admin/organizaciones` | Protegida (super_admin) | Gestión: aprobar/rechazar/suspender/reactivar |
+| `/dashboard/admin/settings` | Admin org | Config general + invitaciones + apariencia |
+
+### Modelo de datos (cambios Fase 3+5)
+
+**Tabla `super_admins`**: `usuario_id` (PK, FK auth.users).
+
+**Columnas nuevas en `organizaciones`**: `motivo_rechazo` (text), `aprobado_por` (uuid FK auth.users), `fecha_aprobacion` (timestamptz), `whatsapp` (text).
+
+**Tabla `invitaciones`**: id, organizacion_id, email, rol, token (unique), estado, invitado_por, expires_at.
+
+**Función `private.is_super_admin()`**: SECURITY DEFINER, retorna boolean.
+
+**Función `generate_unique_slug(base_name)`**: Genera slugs únicos con manejo de colisiones.
+
+### Estados de organización
+
+| Estado | Descripción | Acceso al dashboard |
+|--------|------------|-------------------|
+| `pendiente` | Recién registrada, esperando pago/aprobación | ❌ Redirige a /pendiente-aprobacion |
+| `activo` | Aprobada y operativa | ✅ Acceso completo |
+| `suspendido` | Suspendida por el super admin | ❌ Redirige a /pendiente-aprobacion |
+| `rechazado` | Rechazada con motivo | ❌ Redirige a /pendiente-aprobacion |
+
+### Edge Function
+
+- `send-invitation-email`: Envía emails de invitación usando Resend API. Requiere `RESEND_API_KEY` como secret. Falla silenciosamente si no está configurada.
+
+### Proceso de pago
+
+El pago es **100% manual**:
+- El super admin contacta al cliente por WhatsApp o email
+- Tras confirmar el pago, aprueba la org desde `/super-admin/organizaciones`
+- No se utiliza pasarela de pagos (Stripe, PayU, etc.)
+- El campo `whatsapp` se captura en el registro para facilitar contacto

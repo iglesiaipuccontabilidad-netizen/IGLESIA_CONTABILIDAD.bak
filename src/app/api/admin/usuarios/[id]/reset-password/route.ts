@@ -51,12 +51,12 @@ export async function POST(
 
     const { supabase, supabaseAdmin } = adminContext
 
-    // Verificar que el usuario existe
+    // Verificar que el usuario existe en organizacion_usuarios
     const { data: existingUser, error: fetchError } = await supabase
-      .from('usuarios')
-      .select('id, email')
-      .eq('id', userId)
-      .single()
+      .from('organizacion_usuarios')
+      .select('usuario_id, rol')
+      .eq('usuario_id', userId)
+      .maybeSingle()
 
     if (fetchError || !existingUser) {
       return NextResponse.json(

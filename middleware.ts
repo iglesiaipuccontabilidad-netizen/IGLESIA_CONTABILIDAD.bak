@@ -4,8 +4,9 @@ import { encodeValue } from '@/lib/utils/supabaseWithTimeout'
 
 // First-level paths that are NEVER org slugs
 const SYSTEM_PATHS = new Set([
-  'dashboard', 'login', 'registro', 'auth', 'error',
-  'api', '_next', 'forgot-password', 'reset-password',
+  'dashboard', 'login', 'registro', 'registro-org', 'invitacion',
+  'auth', 'error', 'api', '_next', 'forgot-password', 'reset-password',
+  'pendiente-aprobacion', 'super-admin',
 ])
 
 /** Copy all cookies from one response to another */
@@ -24,7 +25,7 @@ export async function middleware(request: NextRequest) {
   const rewritePath = urlSlug ? slugMatch![2] : null
 
   // ── 2. Public route detection ──
-  const publicRoutes = ['/login', '/auth', '/forgot-password', '/reset-password', '/registro']
+  const publicRoutes = ['/login', '/auth', '/forgot-password', '/reset-password', '/registro', '/registro-org', '/invitacion', '/pendiente-aprobacion']
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
 
   // ── 3. Supabase client + auth ──
@@ -53,6 +54,7 @@ export async function middleware(request: NextRequest) {
 
   // ── 4. Pre-load org data for authenticated users ──
   let userOrgSlug: string | null = null
+  let orgEstado: string | null = null
 
   const cookieOptions = {
     path: '/',
@@ -64,10 +66,10 @@ export async function middleware(request: NextRequest) {
 
   if (user && !isPublicRoute) {
     try {
-      // Fetch ALL org memberships with slugs (multi-org support)
+      // Fetch ALL org memberships with slugs + org estado (multi-org support)
       const { data: orgMemberships } = await supabase
         .from('organizacion_usuarios')
-        .select('rol, estado, organizacion_id, organizaciones!inner(slug)')
+        .select('rol, estado, organizacion_id, organizaciones!inner(slug, estado)')
         .eq('usuario_id', user.id)
         .eq('estado', 'activo')
 
@@ -80,11 +82,12 @@ export async function middleware(request: NextRequest) {
         if (matched) activeOrg = matched
       }
 
-      // Fallback to usuarios table (legacy / no org membership)
+      // Fallback to organizacion_usuarios table
       const userData = activeOrg || (await supabase
-        .from('usuarios')
+        .from('organizacion_usuarios')
         .select('rol, estado')
-        .eq('id', user.id)
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
         .maybeSingle()).data
 
       if (userData) {
@@ -100,6 +103,7 @@ export async function middleware(request: NextRequest) {
 
       if (activeOrg) {
         userOrgSlug = (activeOrg as any).organizaciones?.slug || null
+        orgEstado = (activeOrg as any).organizaciones?.estado || null
         const activeOrgId = activeOrg.organizacion_id
         if (activeOrgId) {
           supabaseResponse.cookies.set('__auth_org_id', encodeValue(activeOrgId), cookieOptions)
@@ -114,6 +118,25 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── 5. Routing decisions ──
+
+  // 5-pre. Org pendiente/rechazada/suspendida → redirigir a /pendiente-aprobacion
+  // (excepto si va a /super-admin, /pendiente-aprobacion, o rutas públicas)
+  if (
+    user &&
+    orgEstado &&
+    orgEstado !== 'activo' &&
+    !pathname.startsWith('/super-admin') &&
+    !pathname.startsWith('/pendiente-aprobacion') &&
+    !isPublicRoute &&
+    (pathname.startsWith('/dashboard') || urlSlug)
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/pendiente-aprobacion'
+    url.search = userOrgSlug ? `?org=${userOrgSlug}` : ''
+    const response = NextResponse.redirect(url)
+    copyCookies(supabaseResponse, response)
+    return response
+  }
 
   // 5a. No user + protected route → login
   if (!user && !isPublicRoute && pathname !== '/') {
@@ -131,15 +154,19 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // 5c. Root → redirect
+  // 5c. Root → allow public landing at '/' — redirect only for authenticated users
   if (pathname === '/') {
-    const url = request.nextUrl.clone()
-    url.pathname = user
-      ? (userOrgSlug ? `/${userOrgSlug}/dashboard` : '/dashboard')
-      : '/login'
-    const response = NextResponse.redirect(url)
-    copyCookies(supabaseResponse, response)
-    return response
+    // Authenticated users continue to their dashboard
+    if (user) {
+      const url = request.nextUrl.clone()
+      url.pathname = userOrgSlug ? `/${userOrgSlug}/dashboard` : '/dashboard'
+      const response = NextResponse.redirect(url)
+      copyCookies(supabaseResponse, response)
+      return response
+    }
+
+    // Unauthenticated users: let the request proceed so `/` can serve the public landing
+    return supabaseResponse
   }
 
   // 5d. /<slug>/dashboard/... → validate slug and rewrite

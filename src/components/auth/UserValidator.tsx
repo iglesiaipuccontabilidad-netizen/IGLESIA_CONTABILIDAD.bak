@@ -44,11 +44,12 @@ export function UserValidator() {
           return
         }
 
-        // Validar que los datos en BD coinciden
+        // Validar que los datos en BD coinciden (organizacion_usuarios)
         const { data: dbUser, error } = await supabase
-          .from('usuarios')
-          .select('id, email, rol, estado')
-          .eq('id', user.id)
+          .from('organizacion_usuarios')
+          .select('usuario_id, rol, estado')
+          .eq('usuario_id', user.id)
+          .eq('estado', 'activo')
           .maybeSingle()
 
         if (error) {
@@ -57,7 +58,7 @@ export function UserValidator() {
         }
 
         if (!dbUser) {
-          console.error('❌ [UserValidator] Usuario no encontrado en BD')
+          console.error('❌ [UserValidator] Usuario no encontrado en organizacion_usuarios')
           return
         }
 

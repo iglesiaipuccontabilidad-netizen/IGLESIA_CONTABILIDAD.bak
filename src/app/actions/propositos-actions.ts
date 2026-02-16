@@ -21,12 +21,13 @@ export async function getAllPropositos(): Promise<{
     }
 
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
-    if (!userData || (userData as any).estado !== 'activo') {
+    if (!userData) {
       throw new Error('Usuario no autorizado')
     }
 
@@ -73,12 +74,13 @@ export async function updateProposito(
     }
 
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
-    if (!userData || (userData as any).estado !== 'activo') {
+    if (!userData) {
       throw new Error('Usuario no autorizado')
     }
 
@@ -159,12 +161,13 @@ export async function deleteProposito(id: string): Promise<{
     }
 
     const { data: userData } = await supabase
-      .from('usuarios')
+      .from('organizacion_usuarios')
       .select('rol, estado')
-      .eq('id', user.id)
-      .single()
+      .eq('usuario_id', user.id)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
-    if (!userData || (userData as any).estado !== 'activo') {
+    if (!userData) {
       throw new Error('Usuario no autorizado')
     }
 
