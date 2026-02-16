@@ -30,6 +30,22 @@ const nextConfig = {
     },
   ],
 
+  // Rewrites for multi-tenant org-slug URLs
+  // These are applied to client-side navigation (Link/router.push)
+  // unlike middleware rewrites which only work server-side
+  rewrites: async () => ({
+    beforeFiles: [
+      {
+        source: '/:slug/dashboard/:path*',
+        destination: '/dashboard/:path*',
+      },
+      {
+        source: '/:slug/dashboard',
+        destination: '/dashboard',
+      },
+    ],
+  }),
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
