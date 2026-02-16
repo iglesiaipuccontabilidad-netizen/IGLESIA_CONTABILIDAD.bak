@@ -19,15 +19,17 @@ export function useRouter() {
   const { orgPath } = useOrgNavigation()
 
   return useMemo(() => {
+    const prefixIfDashboard = (href: string) =>
+      href.startsWith('/dashboard') ? orgPath(href) : href
+
     return {
       ...nextRouter,
       push(href: string, options?: Parameters<typeof nextRouter.push>[1]) {
-        // Navigate to actual filesystem route; middleware handles slug URLs on refresh
-        return nextRouter.push(href, options)
+        return nextRouter.push(prefixIfDashboard(href), options)
       },
       replace(href: string, options?: Parameters<typeof nextRouter.replace>[1]) {
-        return nextRouter.replace(href, options)
+        return nextRouter.replace(prefixIfDashboard(href), options)
       },
     }
-  }, [nextRouter])
+  }, [nextRouter, orgPath])
 }

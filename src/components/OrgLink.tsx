@@ -22,22 +22,16 @@ const OrgLink = forwardRef<HTMLAnchorElement, OrgLinkProps>(function OrgLink(
 ) {
   const { orgPath } = useOrgNavigation()
 
-  // Use `as` for display URL (with slug) and `href` for actual filesystem route
-  // This follows the Next.js docs pattern for proxy/rewrite scenarios
-  const isDashboardRoute =
-    typeof href === 'string'
-      ? href.startsWith('/dashboard')
-      : typeof href === 'object' && href.pathname?.startsWith('/dashboard')
+  // Only prefix string hrefs that start with /dashboard
+  const resolvedHref =
+    typeof href === 'string' && href.startsWith('/dashboard')
+      ? orgPath(href)
+      : typeof href === 'object' &&
+          href.pathname?.startsWith('/dashboard')
+        ? { ...href, pathname: orgPath(href.pathname) }
+        : href
 
-  if (isDashboardRoute) {
-    const displayUrl =
-      typeof href === 'string'
-        ? orgPath(href)
-        : { ...href, pathname: orgPath(href.pathname!) }
-    return <NextLink ref={ref} href={href} as={displayUrl} {...rest} />
-  }
-
-  return <NextLink ref={ref} href={href} {...rest} />
+  return <NextLink ref={ref} href={resolvedHref} {...rest} />
 })
 
 export default OrgLink
