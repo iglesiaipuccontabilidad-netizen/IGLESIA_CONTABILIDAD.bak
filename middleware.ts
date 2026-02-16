@@ -169,14 +169,17 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
-  // 5d. /<slug>/dashboard/... → validate slug ownership
-  // URL rewriting is handled by next.config.mjs rewrites (works for client-side nav)
-  // Middleware only validates the slug and redirects if invalid
+  // 5d. /<slug>/dashboard/... → validate slug ownership & rewrite
+  // Middleware rewrite works for BOTH server-side and client-side navigation
+  // (RSC prefetch requests also go through middleware)
   if (urlSlug && user) {
     if (userOrgSlug === urlSlug) {
-      // Valid slug — let next.config.mjs rewrite handle URL mapping
-      // Just pass through with auth cookies already set
-      return supabaseResponse
+      // Valid slug — rewrite to actual filesystem route (/dashboard/...)
+      const rewriteUrl = request.nextUrl.clone()
+      rewriteUrl.pathname = rewritePath!
+      const response = NextResponse.rewrite(rewriteUrl, { request })
+      copyCookies(supabaseResponse, response)
+      return response
     } else {
       // Invalid slug → redirect to user's default org
       const url = request.nextUrl.clone()
