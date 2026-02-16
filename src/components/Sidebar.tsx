@@ -482,7 +482,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                   return (
                     <li key={item.href}>
                       <Link
-                        href={orgPath(item.href)}
+                        href={item.href}
+                        as={orgPath(item.href)}
                         onClick={handleLinkClick}
                         className={`
                           group relative flex items-center rounded-lg transition-all duration-200 outline-none
@@ -543,7 +544,8 @@ export default function Sidebar({ isMobileMenuVisible = false, onMobileMenuClose
                             return (
                               <li key={subItem.href}>
                                 <Link
-                                  href={orgPath(subItem.href)}
+                                  href={subItem.href}
+                                  as={orgPath(subItem.href)}
                                   onClick={handleLinkClick}
                                   className={`
                                     block rounded-md transition-all duration-200 border-l-2

@@ -170,14 +170,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // 5d. /<slug>/dashboard/... → validate slug ownership & rewrite
-  // Middleware rewrite works for BOTH server-side and client-side navigation
-  // (RSC prefetch requests also go through middleware)
+  // Handles: server-side renders, hard refreshes, back/forward navigation
   if (urlSlug && user) {
     if (userOrgSlug === urlSlug) {
       // Valid slug — rewrite to actual filesystem route (/dashboard/...)
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = rewritePath!
-      const response = NextResponse.rewrite(rewriteUrl, { request })
+      const response = NextResponse.rewrite(rewriteUrl)
       copyCookies(supabaseResponse, response)
       return response
     } else {
