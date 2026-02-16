@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabaseRef = useRef(getSupabaseBrowserClient())
   const userRef = useRef<User | null>(null)
   const isLoadingRef = useRef(true)
+  const loadingLockRef = useRef(false)  // Prevent concurrent loadUserData calls
+  const initDoneRef = useRef(false)  // Track if initializeAuth completed
 
   // Cargar el rol y estado del usuario con JWT-first strategy
   const loadUserRole = useCallback(async (userId: string, retries = 3): Promise<{ rol: string | null; estado: string | null }> => {
@@ -196,13 +198,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Función para cargar todos los datos del usuario
   const loadUserData = useCallback(async (authUser: User) => {
+    // Prevent concurrent loadUserData calls
+    if (loadingLockRef.current) {
+      console.log('🔒 [AuthContext] loadUserData ya en ejecución, saltando...')
+      return
+    }
+    loadingLockRef.current = true
+    
     console.log('📥 [AuthContext] Cargando datos para:', authUser.email, authUser.id)
     
+    try {
     setUser(authUser)
     userRef.current = authUser
-    
-    // Esperar un momento para asegurar que la sesión esté completamente sincronizada
-    await new Promise(r => setTimeout(r, 300))
     
     // Cargar rol y comités en paralelo
     const [userData, comites] = await Promise.all([
@@ -242,6 +249,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }, 1000)
       }
     }
+    } catch (err) {
+      console.error('❌ [AuthContext] Error en loadUserData:', err)
+    } finally {
+      loadingLockRef.current = false
+    }
   }, [loadUserRole, loadUserComites])
 
   // Función pública para refrescar datos del usuario
@@ -253,30 +265,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     mountedRef.current = true
-    let timeoutId: NodeJS.Timeout
+    initDoneRef.current = false
+    loadingLockRef.current = false
     
     console.log('🚀 [AuthContext] Iniciando...')
     
+    // Global safety timeout — NEVER cleared until unmount
+    const globalTimeoutId = setTimeout(() => {
+      if (mountedRef.current && isLoadingRef.current) {
+        console.warn('⚠️ [AuthContext] Safety timeout (12s) — forzando isLoading=false')
+        setIsLoading(false)
+        isLoadingRef.current = false
+      }
+    }, 12000)
+    
     async function initializeAuth() {
       try {
-        // FASE 1: Timeout de seguridad aumentado a 15 segundos
-        timeoutId = setTimeout(() => {
-          if (mountedRef.current && isLoadingRef.current) {
-            console.warn('⚠️ [AuthContext] Timeout alcanzado después de 15 segundos')
-            console.warn('⚠️ [AuthContext] Esto puede indicar problemas de conexión')
-            setIsLoading(false)
-            isLoadingRef.current = false
-          }
-        }, 15000)
-        
         // Usar getUser() para validar el JWT contra el servidor
         const { data: { user: authUser }, error } = await supabaseRef.current.auth.getUser()
         
         if (error || !authUser) {
           console.log('ℹ️ [AuthContext] Sin sesión activa')
-          if (mountedRef.current) {
-            setIsLoading(false)
-          }
           return
         }
         
@@ -286,9 +295,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await loadUserData(authUser)
         
       } catch (error) {
-        console.error('❌ [AuthContext] Error:', error)
+        console.error('❌ [AuthContext] Error en initializeAuth:', error)
       } finally {
-        clearTimeout(timeoutId)
+        initDoneRef.current = true
         if (mountedRef.current) {
           setIsLoading(false)
           isLoadingRef.current = false
@@ -305,76 +314,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log('🔔 [AuthContext] Evento:', event, session?.user?.email || 'sin usuario')
 
-        switch (event) {
-          case 'INITIAL_SESSION':
-            // Si hay sesión inicial y aún no tenemos usuario cargado, cargar datos
-            if (session?.user && !userRef.current) {
-              console.log('🎯 [AuthContext] Sesión inicial detectada:', session.user.email)
-              await loadUserData(session.user)
-              if (mountedRef.current) {
-                setIsLoading(false)
-                isLoadingRef.current = false
+        try {
+          switch (event) {
+            case 'INITIAL_SESSION':
+              // Si initializeAuth ya manejó esto, skip
+              if (initDoneRef.current || userRef.current) {
+                console.log('ℹ️ [AuthContext] INITIAL_SESSION ignorado — ya inicializado')
+                break
               }
-            }
-            break
-            
-          case 'SIGNED_IN':
-            if (session?.user) {
-              // SIGNED_IN se dispara al refocus de pestaña - usar ref para evitar stale closure
-              const currentUser = userRef.current
-              if (currentUser && currentUser.id === session.user.id) {
-                console.log('🔄 [AuthContext] Refocus detectado - usuario ya cargado:', session.user.email)
-                // No recargar datos si ya tenemos el mismo usuario
-                return
+              if (session?.user) {
+                console.log('🎯 [AuthContext] Sesión inicial detectada:', session.user.email)
+                await loadUserData(session.user)
+                if (mountedRef.current) {
+                  setIsLoading(false)
+                  isLoadingRef.current = false
+                }
               }
+              break
               
-              console.log('✨ [AuthContext] Login detectado:', session.user.email)
-              setIsLoading(true)
-              isLoadingRef.current = true
-              
-              // Esperar 500ms para asegurar que cookies y sesión están completamente sincronizadas
-              await new Promise(r => setTimeout(r, 500))
-              
-              // Verificar que la sesión está activa antes de cargar datos
-              const { data: { session: verifiedSession } } = await supabaseRef.current.auth.getSession()
-              if (!verifiedSession) {
-                console.warn('⚠️ [AuthContext] Sesión no verificada después de SIGNED_IN, esperando más...')
-                await new Promise(r => setTimeout(r, 1000))
+            case 'SIGNED_IN':
+              if (session?.user) {
+                const currentUser = userRef.current
+                if (currentUser && currentUser.id === session.user.id) {
+                  console.log('🔄 [AuthContext] Refocus detectado — usuario ya cargado')
+                  return
+                }
+                
+                console.log('✨ [AuthContext] Nuevo login detectado:', session.user.email)
+                setIsLoading(true)
+                isLoadingRef.current = true
+                
+                await loadUserData(session.user)
+                
+                if (mountedRef.current) {
+                  setIsLoading(false)
+                  isLoadingRef.current = false
+                }
               }
+              break
               
-              await loadUserData(session.user)
-              
-              if (mountedRef.current) {
-                setIsLoading(false)
-                isLoadingRef.current = false
+            case 'TOKEN_REFRESHED':
+            case 'USER_UPDATED':
+              if (session?.user) {
+                console.log('🔄 [AuthContext] Actualizando datos...')
+                await loadUserData(session.user)
               }
-            }
-            break
-            
-          case 'TOKEN_REFRESHED':
-          case 'USER_UPDATED':
-            if (session?.user) {
-              console.log('🔄 [AuthContext] Actualizando datos...')
-              await loadUserData(session.user)
-            }
-            break
-            
-          case 'SIGNED_OUT':
-            console.log('🚪 [AuthContext] Sesión cerrada - limpiando estado y cookies del cliente')
-            clearAuthCookies() // Limpiar cookies en cliente también
-            setUser(null)
-            userRef.current = null
-            setMember(null)
-            setComitesUsuario([])
+              break
+              
+            case 'SIGNED_OUT':
+              console.log('🚪 [AuthContext] Sesión cerrada')
+              clearAuthCookies()
+              setUser(null)
+              userRef.current = null
+              setMember(null)
+              setComitesUsuario([])
+              setIsLoading(false)
+              isLoadingRef.current = false
+              break
+          }
+        } catch (err) {
+          console.error('❌ [AuthContext] Error en handler de', event, ':', err)
+          // Asegurar que isLoading se resuelva incluso si hay error
+          if (mountedRef.current && isLoadingRef.current) {
             setIsLoading(false)
-            break
+            isLoadingRef.current = false
+          }
         }
       }
     )
 
     return () => {
       console.log('🧹 [AuthContext] Limpiando...')
-      clearTimeout(timeoutId)
+      clearTimeout(globalTimeoutId)
       mountedRef.current = false
       subscription?.unsubscribe()
     }
