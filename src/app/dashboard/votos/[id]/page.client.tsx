@@ -280,8 +280,8 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
           </div>
         </div>
 
-        {/* CTA Card simplificada en azul */}
-        <div className="bg-gradient-to-br from-[#2980b9] to-[#2E68B3] rounded-2xl shadow-lg p-6 text-white">
+        {/* CTA Card simplificada (paleta primaria) */}
+        <div className="bg-gradient-to-br from-primary-700 to-primary-500 rounded-2xl shadow-lg p-6 text-white">
           <div className="mb-4">
             <h3 className="text-xl font-bold mb-1">Realizar un pago</h3>
             <p className="text-white/90 text-sm">Registra un aporte rápido para actualizar el avance.</p>
@@ -292,14 +292,14 @@ export default function VotoDetailClient({ voto }: VotoDetailClientProps) {
             className={`block w-full text-center px-6 py-3 rounded-lg font-semibold transition-all ${
               montoPendiente === 0
                 ? 'bg-gray-400 cursor-not-allowed text-white'
-                : 'bg-white text-[#1e3a8a] hover:bg-white/90 hover:shadow-lg transform hover:-translate-y-0.5'
+                : 'bg-white text-primary-800 hover:bg-white/95 hover:shadow-lg transform hover:-translate-y-0.5'
             }`}
             {...(montoPendiente === 0 ? { 'aria-disabled': true, onClick: (e: React.MouseEvent) => e.preventDefault() } : {})}
           >
             {montoPendiente === 0 ? 'Compromiso completado' : 'Registrar pago ahora'}
           </Link>
 
-          <div className="mt-3 text-xs text-white/80 text-center">
+          <div className="mt-3 text-xs text-white/80 text-center border-t border-white/10 pt-3">
             <Calendar className="inline-block h-4 w-4 mr-2" />
             <span>Fecha límite: {formatDate(voto.fecha_limite)}</span>
           </div>
