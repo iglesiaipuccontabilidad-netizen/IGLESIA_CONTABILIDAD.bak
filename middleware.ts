@@ -190,7 +190,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // 5e. Bare /dashboard/... → redirect to /<slug>/dashboard/...
-  if (pathname.startsWith('/dashboard') && user && userOrgSlug) {
+  // SKIP for RSC/prefetch requests (client-side navigation via <Link>)
+  // RSC requests should hit the real filesystem route directly
+  const isRSCRequest = request.headers.get('rsc') === '1' ||
+    request.headers.has('next-router-state-tree') ||
+    request.headers.has('next-router-prefetch')
+
+  if (pathname.startsWith('/dashboard') && user && userOrgSlug && !isRSCRequest) {
     const url = request.nextUrl.clone()
     url.pathname = `/${userOrgSlug}${pathname}`
     url.search = request.nextUrl.search
