@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import { ChevronDown, Check, Building2 } from 'lucide-react'
 import { getSupabaseBrowserClient } from '@/lib/supabase-client'
 import { useAuth } from '@/lib/context/AuthContext'
@@ -30,7 +29,6 @@ const rolLabels: Record<string, string> = {
 export function OrgSwitcher() {
   const { user } = useAuth()
   const { organization } = useOrganization()
-  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [orgs, setOrgs] = useState<OrgOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -85,14 +83,17 @@ export function OrgSwitcher() {
   // Don't show if still loading, no orgs, or only 1 org
   if (loading || orgs.length <= 1) return null
 
-  const handleSwitch = (org: OrgOption) => {
+  const handleSwitch = async (org: OrgOption) => {
     if (org.id === organization?.id) {
       setIsOpen(false)
       return
     }
-    // Navigate to the new org's dashboard — middleware will handle cookies
-    router.push(`/${org.slug}/dashboard`)
+    // Set org cookie and reload — middleware will pick up the new org
+    document.cookie = `__auth_org_id=v1:${org.id}:0; path=/; max-age=604800; SameSite=Lax`
+    document.cookie = `__auth_org_slug=${org.slug}; path=/; max-age=604800; SameSite=Lax`
     setIsOpen(false)
+    // Full reload to re-run middleware with the new org cookie
+    window.location.href = '/dashboard'
   }
 
   return (

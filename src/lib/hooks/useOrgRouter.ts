@@ -1,35 +1,17 @@
 'use client'
 
 import { useRouter as useNextRouter } from 'next/navigation'
-import { useMemo } from 'react'
-import { useOrgNavigation } from '@/lib/hooks/useOrgNavigation'
 
 /**
- * Drop-in replacement for `next/navigation` useRouter that auto-prefixes
- * the org slug on push/replace for /dashboard/* routes.
+ * Drop-in replacement for `next/navigation` useRouter.
+ * Las URLs ya no llevan slug — se delega directamente al router de Next.js.
  *
  * ```tsx
  * import { useRouter } from '@/lib/hooks/useOrgRouter'
  * const router = useRouter()
- * router.push('/dashboard/votos')  // → /<slug>/dashboard/votos
+ * router.push('/dashboard/votos')  // → /dashboard/votos
  * ```
  */
 export function useRouter() {
-  const nextRouter = useNextRouter()
-  const { orgPath } = useOrgNavigation()
-
-  return useMemo(() => {
-    const prefixIfDashboard = (href: string) =>
-      href.startsWith('/dashboard') ? orgPath(href) : href
-
-    return {
-      ...nextRouter,
-      push(href: string, options?: Parameters<typeof nextRouter.push>[1]) {
-        return nextRouter.push(prefixIfDashboard(href), options)
-      },
-      replace(href: string, options?: Parameters<typeof nextRouter.replace>[1]) {
-        return nextRouter.replace(prefixIfDashboard(href), options)
-      },
-    }
-  }, [nextRouter, orgPath])
+  return useNextRouter()
 }

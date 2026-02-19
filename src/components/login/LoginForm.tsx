@@ -116,7 +116,7 @@ export default function LoginForm() {
         .maybeSingle()
       
       const orgSlug = (orgData as any)?.organizaciones?.slug || null
-      const dashboardPath = orgSlug ? `/${orgSlug}/dashboard` : '/dashboard'
+      const dashboardPath = '/dashboard'
       
       // PASO 6: Redirigir al dashboard
       console.log('🚀 [Login] Redirigiendo a', dashboardPath);

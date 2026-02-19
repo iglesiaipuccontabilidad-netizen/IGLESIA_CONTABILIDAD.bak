@@ -19,7 +19,8 @@ function copyCookies(from: NextResponse, to: NextResponse) {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // ── 1. Detect org-slug URL pattern: /<slug>/dashboard[/...] ──
+  // ── 1. Detect legacy org-slug URL pattern: /<slug>/dashboard[/...] ──
+  // These are redirected to /dashboard/... (slug removed from URL, saved to cookie)
   const slugMatch = pathname.match(/^\/([^/]+)(\/dashboard(?:\/.*)?)$/)
   const urlSlug = slugMatch && !SYSTEM_PATHS.has(slugMatch[1]) ? slugMatch[1] : null
   const rewritePath = urlSlug ? slugMatch![2] : null
@@ -118,9 +119,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── 5. Routing decisions ──
+  // NOTA: Las URLs usan /dashboard/... directamente (sin slug).
+  // La organización activa se identifica por la cookie __auth_org_id.
 
   // 5-pre. Org pendiente/rechazada/suspendida → redirigir a /pendiente-aprobacion
-  // (excepto si va a /super-admin, /pendiente-aprobacion, o rutas públicas)
   if (
     user &&
     orgEstado &&
@@ -128,7 +130,7 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith('/super-admin') &&
     !pathname.startsWith('/pendiente-aprobacion') &&
     !isPublicRoute &&
-    (pathname.startsWith('/dashboard') || urlSlug)
+    pathname.startsWith('/dashboard')
   ) {
     const url = request.nextUrl.clone()
     url.pathname = '/pendiente-aprobacion'
@@ -145,10 +147,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 5b. User at /login → redirect to org dashboard
+  // 5b. User at /login → redirect to dashboard (sin slug en URL)
   if (user && pathname === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = userOrgSlug ? `/${userOrgSlug}/dashboard` : '/dashboard'
+    url.pathname = '/dashboard'
     const response = NextResponse.redirect(url)
     copyCookies(supabaseResponse, response)
     return response
@@ -156,49 +158,28 @@ export async function middleware(request: NextRequest) {
 
   // 5c. Root → allow public landing at '/' — redirect only for authenticated users
   if (pathname === '/') {
-    // Authenticated users continue to their dashboard
     if (user) {
       const url = request.nextUrl.clone()
-      url.pathname = userOrgSlug ? `/${userOrgSlug}/dashboard` : '/dashboard'
+      url.pathname = '/dashboard'
       const response = NextResponse.redirect(url)
       copyCookies(supabaseResponse, response)
       return response
     }
-
-    // Unauthenticated users: let the request proceed so `/` can serve the public landing
     return supabaseResponse
   }
 
-  // 5d. /<slug>/dashboard/... → validate slug ownership & rewrite
-  // Handles: server-side renders, hard refreshes, back/forward navigation
+  // 5d. Legacy /<slug>/dashboard/... URLs → redirect to /dashboard/...
+  // Cookies already set above with the correct org, just strip the slug
   if (urlSlug && user) {
-    if (userOrgSlug === urlSlug) {
-      // Valid slug — rewrite to actual filesystem route (/dashboard/...)
-      const rewriteUrl = request.nextUrl.clone()
-      rewriteUrl.pathname = rewritePath!
-      const response = NextResponse.rewrite(rewriteUrl)
-      copyCookies(supabaseResponse, response)
-      return response
-    } else {
-      // Invalid slug → redirect to user's default org
-      const url = request.nextUrl.clone()
-      url.pathname = userOrgSlug ? `/${userOrgSlug}/dashboard` : '/dashboard'
-      const response = NextResponse.redirect(url)
-      copyCookies(supabaseResponse, response)
-      return response
-    }
-  }
-
-  // 5e. Bare /dashboard/... → redirect to /<slug>/dashboard/...
-  if (pathname.startsWith('/dashboard') && user && userOrgSlug) {
     const url = request.nextUrl.clone()
-    url.pathname = `/${userOrgSlug}${pathname}`
+    url.pathname = rewritePath!
     url.search = request.nextUrl.search
     const response = NextResponse.redirect(url)
     copyCookies(supabaseResponse, response)
     return response
   }
 
+  // 5e. /dashboard/... → just continue (no redirect needed, org is in cookie)
   return supabaseResponse
 }
 
