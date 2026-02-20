@@ -14,9 +14,10 @@ type Proposito = Database['public']['Tables']['propositos']['Row']
 
 interface NuevoVotoFormProps {
   miembros: Pick<TablaMiembros, 'id' | 'nombres' | 'apellidos'>[]
+  propositos: Proposito[]
 }
 
-export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
+export function NuevoVotoForm({ miembros, propositos }: NuevoVotoFormProps) {
   const router = useRouter()
   const supabase = createClient()
   
@@ -27,26 +28,10 @@ export function NuevoVotoForm({ miembros }: NuevoVotoFormProps) {
     miembroId: '' as string | null,
     propositoId: '' as string | null
   })
-  const [propositos, setPropositos] = useState<Proposito[]>([])
   const [showNuevoPropositoModal, setShowNuevoPropositoModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Cargar propósitos activos
-  useEffect(() => {
-    async function loadPropositos() {
-      const { data } = await supabase
-        .from('propositos')
-        .select('*')
-        .eq('estado', 'activo')
-        .order('nombre')
-      
-      if (data) {
-        setPropositos(data as Proposito[])
-      }
-    }
-    loadPropositos()
-  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
