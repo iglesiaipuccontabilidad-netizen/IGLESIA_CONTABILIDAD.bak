@@ -307,56 +307,58 @@ export async function deleteVoto(id: string): Promise<{
   success: boolean;
   error: any | null;
 }> {
-  const supabase = await createClient()
-  
-  try {
-    // Verificar autenticación y permisos
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      throw new Error('No autenticado')
+  return withRetry(async () => {
+    const supabase = await createClient()
+    
+    try {
+      // Verificar autenticación y permisos
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('No autenticado')
+      }
+
+      const { data: userData } = await supabase
+        .from('organizacion_usuarios')
+        .select('rol, estado')
+        .eq('usuario_id', user.id)
+        .eq('estado', 'activo')
+        .maybeSingle()
+
+      if (!userData) {
+        throw new Error('Usuario no autorizado')
+      }
+
+      // Admin y tesorero pueden eliminar votos
+      if (!['admin', 'tesorero'].includes((userData as any).rol)) {
+        throw new Error('No tienes permisos para eliminar votos')
+      }
+
+      // Primero eliminar los pagos asociados
+      const { error: pagosError } = await (supabase as any)
+        .from('pagos')
+        .delete()
+        .eq('voto_id', id)
+
+      if (pagosError) throw pagosError
+
+      // Luego eliminar el voto
+      const { error } = await (supabase as any)
+        .from('votos')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Revalidar datos
+      revalidatePath('/dashboard/votos')
+      revalidatePath('/dashboard')
+
+      return { success: true, error: null }
+    } catch (error) {
+      console.error('Error al eliminar voto:', error)
+      return { success: false, error }
     }
-
-    const { data: userData } = await supabase
-      .from('organizacion_usuarios')
-      .select('rol, estado')
-      .eq('usuario_id', user.id)
-      .eq('estado', 'activo')
-      .maybeSingle()
-
-    if (!userData) {
-      throw new Error('Usuario no autorizado')
-    }
-
-    // Solo admin puede eliminar votos
-    if ((userData as any).rol !== 'admin') {
-      throw new Error('No tienes permisos para eliminar votos')
-    }
-
-    // Primero eliminar los pagos asociados
-    const { error: pagosError } = await (supabase as any)
-      .from('pagos')
-      .delete()
-      .eq('voto_id', id)
-
-    if (pagosError) throw pagosError
-
-    // Luego eliminar el voto
-    const { error } = await (supabase as any)
-      .from('votos')
-      .delete()
-      .eq('id', id)
-
-    if (error) throw error
-
-    // Revalidar datos
-    revalidatePath('/dashboard/votos')
-    revalidatePath('/dashboard')
-
-    return { success: true, error: null }
-  } catch (error) {
-    console.error('Error al eliminar voto:', error)
-    return { success: false, error }
-  }
+  }, 3, 1000)
 }
 
 export async function updatePago(
